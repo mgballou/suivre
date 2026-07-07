@@ -1,0 +1,119 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Worktree Remover (Postgres / Herd / Linear)
+#
+# Removes a worktree created by bin/worktree-create, including its database,
+# Herd link, git branch (when safe), and directory.
+#
+# Usage:
+#   bin/worktree-remove <branch> [--force]
+#
+# Arguments:
+#   branch  -- the branch / worktree directory name used in worktree-create
+#   --force -- remove even with uncommitted changes or unmerged commits
+
+BRANCH="${1:?Usage: bin/worktree-remove <branch> [--force]}"
+FORCE="${2:-}"
+
+MAIN_ROOT="$(git worktree list --porcelain | awk '/^worktree /{print $2; exit}')"
+PARENT_DIR="$(dirname "$MAIN_ROOT")"
+WT_DIR="$PARENT_DIR/$BRANCH"
+PROJECT="$(basename "$(git -C "$MAIN_ROOT" remote get-url origin 2>/dev/null || echo "$MAIN_ROOT")" .git)"
+
+TICKET="$(printf '%s' "$BRANCH" | grep -oiE '^SUI-[0-9]+' | head -1 || true)"
+if [ -z "$TICKET" ]; then
+    TICKET="$(printf '%s' "$BRANCH" | tr '[:upper:]' '[:lower:]' | tr -c 'a-z0-9' '-' | sed 's/-\{2,\}/-/g; s/^-//; s/-$//')"
+fi
+# Lowercase to match the host Herd registered in worktree-create.
+TICKET="$(printf '%s' "$TICKET" | tr '[:upper:]' '[:lower:]')"
+SITE="${TICKET}.${PROJECT}"
+DB_NAME="$(printf '%s_%s' "$PROJECT" "$TICKET" | tr '-' '_' | tr '[:upper:]' '[:lower:]')"
+
+DB_HOST="$(grep -E '^DB_HOST=' "$MAIN_ROOT/.env" | cut -d= -f2)"
+DB_PORT="$(grep -E '^DB_PORT=' "$MAIN_ROOT/.env" | cut -d= -f2)"
+DB_USER="$(grep -E '^DB_USERNAME=' "$MAIN_ROOT/.env" | cut -d= -f2)"
+DB_PASS="$(grep -E '^DB_PASSWORD=' "$MAIN_ROOT/.env" | cut -d= -f2-)"
+: "${DB_HOST:=127.0.0.1}" "${DB_PORT:=5432}" "${DB_USER:=root}"
+
+# Drop a Postgres database via herd php + PDO (psql is not on PATH). WITH (FORCE)
+# terminates lingering connections (Postgres 13+); fall back without it.
+pg_drop_database() {
+    PGH="$DB_HOST" PGP="$DB_PORT" PGU="$DB_USER" PGPW="$DB_PASS" PGDB="$1" \
+        herd php -r '
+        $pdo = new PDO(sprintf("pgsql:host=%s;port=%s;dbname=postgres", getenv("PGH"), getenv("PGP")), getenv("PGU"), getenv("PGPW"), [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]);
+        $db = preg_replace("/[^a-zA-Z0-9_]/", "", (string) getenv("PGDB"));
+        try { $pdo->exec("DROP DATABASE IF EXISTS \"" . $db . "\" WITH (FORCE)"); }
+        catch (\Throwable $e) { $pdo->exec("DROP DATABASE IF EXISTS \"" . $db . "\""); }
+    '
+}
+
+# Echo any parallel-test clone databases (<db>_test_<n>) Laravel's --parallel run
+# may have created against Postgres.
+pg_list_test_clones() {
+    PGH="$DB_HOST" PGP="$DB_PORT" PGU="$DB_USER" PGPW="$DB_PASS" PGDB="$DB_NAME" \
+        herd php -r '
+        $pdo = new PDO(sprintf("pgsql:host=%s;port=%s;dbname=postgres", getenv("PGH"), getenv("PGP")), getenv("PGU"), getenv("PGPW"), [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]);
+        $db = preg_replace("/[^a-zA-Z0-9_]/", "", (string) getenv("PGDB"));
+        $rows = $pdo->query("SELECT datname FROM pg_database WHERE datname LIKE " . $pdo->quote($db . "_test_%"))->fetchAll(PDO::FETCH_COLUMN);
+        foreach ($rows as $r) { echo $r . "\n"; }
+    '
+}
+
+if [ ! -d "$WT_DIR" ]; then
+    echo "ERROR: Worktree not found at $WT_DIR"
+    exit 1
+fi
+
+echo "Removing worktree: $BRANCH"
+echo "  Directory:  $WT_DIR"
+echo "  Database:   $DB_NAME"
+echo "  Site:       $SITE"
+echo ""
+
+if [ -n "$(git -C "$WT_DIR" status --porcelain 2>/dev/null)" ] && [ "$FORCE" != "--force" ]; then
+    echo "ERROR: Worktree has uncommitted changes."
+    echo "  Commit or stash them first, or use: bin/worktree-remove $BRANCH --force"
+    exit 1
+fi
+
+# -- Herd: stop serving the subdomain --
+echo "Unlinking from Herd..."
+herd unisolate --site="$SITE" >/dev/null 2>&1 || true
+herd unsecure "$SITE" >/dev/null 2>&1 || true
+herd unlink "$SITE" >/dev/null 2>&1 || true
+
+# -- Git worktree (force-remove falls back to rm + prune when untracked files
+#    like vendor/ or node_modules/ block removal) --
+echo "Removing git worktree..."
+if ! git -C "$MAIN_ROOT" worktree remove "$WT_DIR" --force 2>/dev/null; then
+    rm -rf "$WT_DIR"
+    git -C "$MAIN_ROOT" worktree prune
+fi
+
+# -- Branch --
+if git -C "$MAIN_ROOT" show-ref --verify --quiet "refs/heads/$BRANCH"; then
+    if [ "$FORCE" = "--force" ]; then
+        git -C "$MAIN_ROOT" branch -D "$BRANCH" >/dev/null 2>&1 || true
+        echo "  Force-deleted branch: $BRANCH"
+    else
+        git -C "$MAIN_ROOT" branch -d "$BRANCH" 2>/dev/null \
+            || echo "  Branch $BRANCH kept (unmerged commits). Use --force to delete."
+    fi
+fi
+
+# -- Database: the worktree DB plus any parallel-test clones (<db>_test_N that
+#    Laravel's --parallel creates). DROP ... IF EXISTS keeps this a no-op when
+#    the DB was never created, and the ticket suffix means it can never target
+#    the main DB. Clones are matched by a regex anchored to the FULL base name
+#    (^<db>_test_<digits>$), so a sibling ticket's database is never touched
+#    even if one ticket id is a prefix of another. --
+echo "Dropping database..."
+pg_drop_database "$DB_NAME" 2>/dev/null || true
+for clone in $(pg_list_test_clones 2>/dev/null | grep -E "^${DB_NAME}_test_[0-9]+$" || true); do
+    pg_drop_database "$clone" 2>/dev/null || true
+    echo "  Dropped parallel-test clone: $clone"
+done
+
+echo ""
+echo "Worktree $BRANCH removed."

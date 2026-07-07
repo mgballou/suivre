@@ -1,0 +1,150 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Worktree Creator (Postgres / Herd / Linear)
+#
+# Creates an isolated git worktree as a sibling directory with its own Postgres
+# database and Herd subdomain, then installs dependencies, builds assets, and
+# seeds the database — so the worktree is ready to serve immediately.
+#
+# Herd parks the parent directory, so each sibling worktree is reachable at a
+# <ticket>.<project>.test subdomain. The main checkout is unaffected.
+#
+# Usage:
+#   bin/worktree-create <branch>
+#
+# Arguments:
+#   branch -- the branch to create the worktree for, e.g. SUI-12_Add-calendar.
+#             Checked out if it already exists, otherwise created off main.
+#             The worktree directory is named after the branch; the database
+#             and URL are derived from the SUI-<id> ticket in the branch name.
+#
+# Creates:
+#   ../<branch>/                       -- worktree directory (sibling of main)
+#   Postgres:  <project>_<ticket>      -- isolated database
+#   URL:       https://<ticket>.<project>.test
+#
+# Notes:
+#   - All PHP/Composer runs through Herd (herd php / herd composer).
+#   - Postgres has no CREATE DATABASE IF NOT EXISTS, and psql is not on PATH
+#     (databases are managed via TablePlus/Herd), so the database is created and
+#     dropped through `herd php` + PDO against the maintenance `postgres` db.
+
+BRANCH="${1:?Usage: bin/worktree-create <branch>}"
+
+# -- Resolve the primary checkout (main) so we branch off it and copy its .env,
+#    regardless of which worktree this script is invoked from --
+MAIN_ROOT="$(git worktree list --porcelain | awk '/^worktree /{print $2; exit}')"
+PARENT_DIR="$(dirname "$MAIN_ROOT")"
+WT_DIR="$PARENT_DIR/$BRANCH"
+
+# Project name from the origin remote, falling back to the checkout directory
+# name when there is no remote yet.
+PROJECT="$(basename "$(git -C "$MAIN_ROOT" remote get-url origin 2>/dev/null || echo "$MAIN_ROOT")" .git)"
+
+# Ticket is the Linear SUI-<n> prefix of the branch; fall back to the whole
+# branch sanitized for a URL host when there's no ticket.
+TICKET="$(printf '%s' "$BRANCH" | grep -oiE '^SUI-[0-9]+' | head -1 || true)"
+if [ -z "$TICKET" ]; then
+    TICKET="$(printf '%s' "$BRANCH" | tr '[:upper:]' '[:lower:]' | tr -c 'a-z0-9' '-' | sed 's/-\{2,\}/-/g; s/^-//; s/-$//')"
+fi
+
+# Hostnames are case-insensitive and Herd/browsers serve the lowercased host,
+# so lowercase the ticket to keep SITE/URL/APP_URL matching the live host.
+TICKET="$(printf '%s' "$TICKET" | tr '[:upper:]' '[:lower:]')"
+
+SITE="${TICKET}.${PROJECT}"
+URL="https://${SITE}.test"
+DB_NAME="$(printf '%s_%s' "$PROJECT" "$TICKET" | tr '-' '_' | tr '[:upper:]' '[:lower:]')"
+
+DB_HOST="$(grep -E '^DB_HOST=' "$MAIN_ROOT/.env" | cut -d= -f2)"
+DB_PORT="$(grep -E '^DB_PORT=' "$MAIN_ROOT/.env" | cut -d= -f2)"
+DB_USER="$(grep -E '^DB_USERNAME=' "$MAIN_ROOT/.env" | cut -d= -f2)"
+DB_PASS="$(grep -E '^DB_PASSWORD=' "$MAIN_ROOT/.env" | cut -d= -f2-)"
+: "${DB_HOST:=127.0.0.1}" "${DB_PORT:=5432}" "${DB_USER:=root}"
+
+# Create the worktree's Postgres database if it does not already exist.
+# Identifiers cannot be bound, so the sanitized DB name is interpolated.
+pg_create_database() {
+    PGH="$DB_HOST" PGP="$DB_PORT" PGU="$DB_USER" PGPW="$DB_PASS" PGDB="$DB_NAME" \
+        herd php -r '
+        $pdo = new PDO(sprintf("pgsql:host=%s;port=%s;dbname=postgres", getenv("PGH"), getenv("PGP")), getenv("PGU"), getenv("PGPW"), [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]);
+        $db = preg_replace("/[^a-zA-Z0-9_]/", "", (string) getenv("PGDB"));
+        $exists = $pdo->query("SELECT 1 FROM pg_database WHERE datname = " . $pdo->quote($db))->fetchColumn();
+        if (! $exists) {
+            $pdo->exec("CREATE DATABASE \"" . $db . "\"");
+        }
+    '
+}
+
+# PHP version Composer resolves against, for Herd isolation (best-effort).
+PHP_VERSION="$(herd php -r '$j=json_decode(file_get_contents("'"$MAIN_ROOT"'/composer.json"),true); $v=$j["config"]["platform"]["php"]??($j["require"]["php"]??""); if(preg_match("/([0-9]+\.[0-9]+)/",$v,$m)){echo $m[1];}' 2>/dev/null || true)"
+
+if [ -d "$WT_DIR" ]; then
+    echo "ERROR: Worktree already exists at $WT_DIR"
+    echo "To remove: bin/worktree-remove $BRANCH"
+    exit 1
+fi
+
+echo "Creating worktree: $BRANCH"
+echo "  Directory:  $WT_DIR"
+echo "  Database:   $DB_NAME"
+echo "  URL:        $URL"
+echo "  PHP:        ${PHP_VERSION:-(default)}"
+echo ""
+
+# -- Git worktree --
+echo "Creating git worktree..."
+if git -C "$MAIN_ROOT" show-ref --verify --quiet "refs/heads/$BRANCH"; then
+    git -C "$MAIN_ROOT" worktree add "$WT_DIR" "$BRANCH"
+else
+    git -C "$MAIN_ROOT" worktree add -b "$BRANCH" "$WT_DIR" main
+fi
+
+cd "$WT_DIR"
+
+# -- Environment --
+echo "Configuring .env..."
+cp "$MAIN_ROOT/.env" "$WT_DIR/.env"
+sed -i '' "s|^APP_URL=.*|APP_URL=${URL}|" .env
+sed -i '' "s|^DB_DATABASE=.*|DB_DATABASE=${DB_NAME}|" .env
+
+# Laravel loads .env.testing instead of .env when APP_ENV=testing (phpunit.xml).
+# This project's suite runs on sqlite :memory: (configured in phpunit.xml), so a
+# .env.testing is optional; copy it verbatim when present.
+if [ -f "$MAIN_ROOT/.env.testing" ]; then
+    cp "$MAIN_ROOT/.env.testing" "$WT_DIR/.env.testing"
+fi
+
+# -- Database (cache and sessions are database-backed, so a dedicated DB
+#    isolates them too — no cache/session prefix needed) --
+echo "Creating database..."
+pg_create_database
+
+# -- Dependencies --
+echo "Installing dependencies..."
+herd composer install --no-scripts --quiet
+herd php artisan package:discover --quiet
+npm ci --silent
+npm run build
+
+# -- Database setup --
+echo "Migrating and seeding..."
+herd php artisan migrate:fresh --seed --force
+herd php artisan storage:link --quiet 2>/dev/null || true
+
+# -- Herd: serve the subdomain over HTTPS on the resolved PHP version --
+echo "Linking with Herd..."
+if [ -n "$PHP_VERSION" ]; then
+    herd link "$SITE" --secure --isolate="$PHP_VERSION" >/dev/null 2>&1 || herd link "$SITE" --secure >/dev/null 2>&1 || true
+else
+    herd link "$SITE" --secure >/dev/null 2>&1 || true
+fi
+
+echo ""
+echo "Worktree ready."
+echo ""
+echo "  cd $WT_DIR"
+echo "  open $URL"
+echo ""
+echo "  To remove: bin/worktree-remove $BRANCH"

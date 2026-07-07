@@ -94,3 +94,20 @@ Running record of major decisions made while brainstorming the rebuild. Newest d
 - **Carry-forward note:** Pest runs on sqlite `:memory:`; the food classifier's `pg_trgm` matching will need a Postgres test DB or an abstraction to be testable.
 - **Why:** Newer versions are current as of the build date, resolve cleanly together, and give better cohesion (bespoke app + Filament both on Livewire 4) plus Flux's vetted components — a win for a non-frontend-guru maintainer.
 - **Rules out:** Downgrading to Laravel 12 / Livewire 3; a separate Volt package.
+
+## D14 — AI docs via Laravel Boost + a preserved custom guideline; Claude Code only
+
+- **Decision:** Adopt **Laravel Boost** as the AI-assist foundation (version-pinned guidelines, 6 curated skills, Boost MCP server). Project-specific rules live in **`.ai/guidelines/suivre.md`** (Boost's custom-guideline directory) so they are **woven into the generated `CLAUDE.md` / `AGENTS.md` guideline block and preserved across regenerations** — never hand-appended outside the block. Target **Claude Code only**; the auto-generated Cursor artifacts (`.cursor/`) were removed.
+- **Suivre guideline content:** Herd-only toolchain; `architectural-sensibility.md` as authoritative convention (wins over generic Boost guidance); Filament = backstage only; PHPStan level 9 with no baseline; pointers to the decision log + design spec.
+- **Why:** Boost keeps framework guidance version-accurate and adds real MCP tooling; the custom-guideline mechanism is the durable way to layer project rules (editing the generated files directly is fragile — `GuidelineWriter` only rewrites the tagged block but leaves stray outside-block content).
+- **Rules out:** Hand-editing `CLAUDE.md`/`AGENTS.md` outside the Boost block; maintaining Cursor config.
+
+## D15 — Team workflow tooling: Linear (SUI), Postgres worktree scripts, guideline blades
+
+- **Linear:** workspace `matthewbuiltthat`, team key **`SUI`** (issues `SUI-<n>`). Branch convention **`SUI-<n>_<Short-Slug>`** (mirrors the team's `CU-<id>_<Slug>` pattern); the worktree scripts derive ticket/DB/URL from the `SUI-<n>` prefix.
+- **Worktree tooling:** adopted the team's `bin/worktree-{create,list,remove}` scripts, **adapted to Postgres + Herd + Linear**. Key changes: MySQL→Postgres (DB create/drop via `herd php` + PDO to the maintenance `postgres` db, since `psql` isn't on `PATH` and DBs are managed via TablePlus), `php`/`composer`→`herd`, ticket regex `CU|CRM|CORC`→`SUI-<n>`, port 3306→5432, and a project-name fallback to the dir name when there's no git remote yet. Per-worktree DB `suivre_<ticket>`, URL `https://<ticket>.suivre.test`.
+- **Custom skills live in `.ai/skills/<name>/SKILL.md`** (Boost's `SkillComposer` discovers them there and symlinks into `.claude/skills/`). Custom guidelines live in **`.ai/guidelines/*.blade.php`** (or `.md`), woven into `CLAUDE.md`/`AGENTS.md` by Boost.
+- **Guidelines placed:** `testing-conventions`, `filament-testing`, `spatie-data` (blade). Trimmed from the team originals: Frontend-lint pipeline, `NotificationTemplateNotifiable`, RadioDeck (all reference infra/packages this project doesn't have yet) — restore/adapt on request.
+- **Skills:** deduped the team set to a Linear-based `investigate-ticket` (drop the ClickUp `ticket-discovery` + Jira `investigate-ticket` duplicates), `starting-work` (drives `bin/`), and the multi-agent `self-review` + `simplify-code`. `capture-screenshots` held until there's real UI (Livewire/Flux, single-tenant, no roles yet).
+- **Why:** reuses the team's proven workflow while fitting Suivre's actual stack (Postgres/Herd/Linear/Livewire).
+- **Rules out:** MySQL worktree DBs; the unprovided `create-worktree` script/hook machinery; ClickUp/Jira trackers.
