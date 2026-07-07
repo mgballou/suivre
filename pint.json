@@ -1,0 +1,39 @@
+{
+    "preset": "laravel",
+    "rules": {
+        "class_definition": {
+            "multi_line_extends_each_single_line": true,
+            "single_item_single_line": true,
+            "single_line": false
+        },
+        "concat_space": { "spacing": "one" },
+        "declare_strict_types": true,
+        "fully_qualified_strict_types": {
+            "import_symbols": true,
+            "leading_backslash_in_global_namespace": true
+        },
+        "global_namespace_import": true,
+        "new_with_parentheses": {
+            "anonymous_class": false,
+            "named_class": true
+        },
+        "ordered_class_elements": {
+            "order": [
+                "use_trait",
+                "constant",
+                "property",
+                "construct",
+                "phpunit",
+                "public",
+                "protected",
+                "private",
+                "method_public_static",
+                "method_protected_static",
+                "method_private_static"
+            ],
+            "sort_algorithm": "none"
+        },
+        "single_line_empty_body": true,
+        "single_trait_insert_per_statement": true
+    }
+}
