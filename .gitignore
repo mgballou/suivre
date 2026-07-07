@@ -26,3 +26,6 @@ yarn-error.log
 /.phpstan.cache
 
 /.claude/settings.local.json
+
+# Boost re-generates Cursor config on every run; we use Claude Code only
+/.cursor/

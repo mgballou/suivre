@@ -1,4 +1,163 @@
 <laravel-boost-guidelines>
+=== .ai/filament-testing rules ===
+
+# Testing Filament Actions
+
+## Overview
+
+For standard Filament action testing documentation (table actions, bulk actions, schema actions, modals, validation, halted actions, etc.), use `search-docs` with queries like `['testing actions', 'TestAction', 'callAction']`.
+
+This guideline covers project-specific conventions only.
+
+## Prefer Action Classes Over Strings
+
+When a custom action class exists, always use the class in `TestAction::make()` instead of a string name. This improves IDE support and refactoring safety.
+
+<code-snippet name="Prefer action class over string" lang="php">
+// ✅ Preferred - use action class
+TestAction::make(SendInvoiceAction::class)->table($invoice)
+
+// ❌ Avoid - string names when class exists
+TestAction::make('send')->table($invoice)
+</code-snippet>
+
+## Variable Assignment for Repeated Actions
+
+**IMPORTANT**: When asserting the same action multiple times in a single test, assign the `TestAction` to a variable to avoid recreation:
+
+<code-snippet name="Single action variable assignment" lang="php">
+use App\Filament\Resources\Invoices\Actions\SendInvoiceAction;
+use Filament\Actions\Testing\TestAction;
+use function Pest\Livewire\livewire;
+
+$invoice = Invoice::factory()->createQuietly();
+
+$action = TestAction::make(SendInvoiceAction::class)->table($invoice);
+
+livewire(EditInvoice::class)
+    ->assertActionExists($action)
+    ->assertActionVisible($action);
+</code-snippet>
+
+## Multiple Actions Naming Convention
+
+When multiple actions exist in a single test, name variables descriptively—but only if used more than once:
+
+<code-snippet name="Multiple action variables" lang="php">
+use App\Filament\Resources\Invoices\Actions\EditInvoiceAction;
+use App\Filament\Resources\Invoices\Actions\DeleteInvoiceAction;
+use Filament\Actions\Testing\TestAction;
+use function Pest\Livewire\livewire;
+
+$invoice = Invoice::factory()->createQuietly();
+
+$editAction = TestAction::make(EditInvoiceAction::class)->table($invoice);
+
+livewire(ListInvoices::class)
+    // Used once - inline is fine
+    ->assertActionExists(TestAction::make(DeleteInvoiceAction::class)->table($invoice))
+    // Used multiple times - use variable
+    ->assertActionExists($editAction)
+    ->assertActionVisible($editAction);
+</code-snippet>
+
+## Making Custom Actions Testable by Class Name
+
+For custom action classes with a static `make()` method, add the `#[ActionName]` attribute or a `getDefaultName()` method so Filament can discover the action name without instantiation:
+
+<code-snippet name="ActionName attribute for static make() pattern" lang="php">
+use Filament\Actions\Action;
+use Filament\Actions\ActionName;
+
+#[ActionName('send')]
+class SendInvoiceAction
+{
+    public static function make(): Action
+    {
+        return Action::make('send')
+            ->requiresConfirmation()
+            ->action(fn () => /* ... */);
+    }
+}
+</code-snippet>
+
+<code-snippet name="getDefaultName for classes extending Action" lang="php">
+use Filament\Actions\Action;
+
+class SendInvoiceAction extends Action
+{
+    public static function getDefaultName(): ?string
+    {
+        return 'send';
+    }
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->requiresConfirmation()
+            ->action(fn () => /* ... */);
+    }
+}
+</code-snippet>
+
+## Schema Extraction
+
+- Always extract Filament `form()`, `table()`, and `infolist()` definitions into separate classes, regardless of size.
+- Use a consistent naming scheme:
+    - `{Model}Form` for form schemas
+    - `{ModelPlural}Table` for tables
+    - `{Model}Infolist` for infolists
+- Place these classes in a resource-specific folder structure: `App/Filament/Resources/{Resource}/Schemas/`.
+- Each class must expose a static `configure()` method.
+- Call the `configure()` method from the resource to apply the schema or table.
+- Do not use a required base class or interface, so `configure()` can accept custom parameters for flexible reuse.
+
+## Filament Enum Badges
+
+- When an enum implements `HasLabel`, `HasColor`, and `HasIcon`, use `->badge()` only on `TextColumn`/`TextEntry`. Filament auto-resolves label, color, and icon from the enum contracts when the model column is cast to the enum. Do not add manual `formatStateUsing()`, `color()`, or `icon()` closures — they are redundant and will drift from the enum's source of truth.
+
+=== .ai/spatie-data rules ===
+
+# Spatie Data Objects
+
+## Overview
+
+This project uses [Spatie Laravel Data](https://spatie.be/docs/laravel-data/v4) for data transfer objects that cross boundaries (gateway returns, computed snapshots, request DTOs). For trivial value objects, plain `readonly` classes are fine.
+
+## Magic Creation Methods (`from*`)
+
+Spatie Data's `from()` method automatically dispatches to magic `from{TypeName}` methods based on the argument type. This means calling `self::from()`, `parent::from()`, or `static::from()` inside a magic creation method with the same type **will cause infinite recursion**.
+
+Always use `new self(...)` with explicit property mapping in magic creation methods.
+
+<code-snippet name="Correct magic creation method" lang="php">
+// ✅ Correct — use new self() with explicit mapping
+public static function fromMeal(Meal $meal): self
+{
+    return new self(
+        id: $meal->id,
+        eatenAt: $meal->eaten_at,
+        tags: $meal->categoryTags(),
+    );
+}
+</code-snippet>
+
+<code-snippet name="Incorrect magic creation method" lang="php">
+// ❌ Infinite recursion — from() dispatches back to fromMeal()
+public static function fromMeal(Meal $meal): self
+{
+    $data = self::from($meal);
+    $data->tags = $meal->categoryTags();
+
+    return $data;
+}
+</code-snippet>
+
+## Immutability
+
+DTOs are immutable by convention. Mutating helpers belong on Actions or model accessors, not on the DTO.
+
 === .ai/suivre rules ===
 
 # Suivre — Project Rules
@@ -31,6 +190,173 @@ Suivre is a **personal food-and-symptom journal** that correlates diet/lifestyle
 - `herd composer check` runs **Pint + PHPStan (level 9) + tests**. Keep all three green. There is **no PHPStan baseline** — fix causes, never suppress.
 - Pest 4, tests mirror source paths. The suite runs on **sqlite `:memory:`**; Postgres-only features (e.g. `pg_trgm` used by the food classifier) need a Postgres-backed test or an abstraction.
 
+=== .ai/testing-conventions rules ===
+
+# Testing Conventions
+
+## Overview
+
+For standard Pest and Laravel testing documentation, use `search-docs` with queries like `['pest testing', 'feature tests', 'mocking']`.
+
+This guideline covers project-specific conventions only.
+
+## General Conventions
+
+- Avoid adding comments in tests unless the logic is particularly complex.
+- Avoid using `->and()` method in Pest tests. Use separate `expect` assertions for clarity.
+- All tests relying on Laravel application boot should be in `tests/Feature`.
+- Test file paths should mirror the relative path of the file being tested.
+- All test files should have a namespace corresponding to their directory.
+- If a test file already exists, run the tests first to see failures before making changes.
+
+## Mocking Conventions
+
+- **Never mock Laravel Models or Model functions.**
+- Prefer `->expects('method')` over `->shouldReceive('method')` for readability.
+- Use `->expects('method')->never()` to explicitly assert a method should not be called.
+- When using `->withArgs` with closures, use assertions directly and `return true`.
+
+<code-snippet name="Mock with withArgs closure" lang="php">
+$this->mock(Example::class)
+    ->expects('method')
+    ->withArgs(function ($arg1, $arg2) {
+        expect($arg1)->toBe('expectedValue');
+        expect($arg2)->toBeGreaterThan(0);
+
+        return true;
+    });
+</code-snippet>
+
+## Laravel Fakes Conventions
+
+- Always import full facade namespace: `use Illuminate\Support\Facades\Event;` not `use Event;`
+- Place `Exceptions::fake()` in `beforeEach` when asserting exceptions were reported.
+- When asserting with closures in Laravel fakes, use assertions directly and `return true`.
+
+<code-snippet name="Laravel fakes with closure assertions" lang="php">
+Event::assertDispatched(function ($event) {
+    expect($event->property)->toBe('expectedValue');
+
+    return true;
+});
+
+Http::assertSent(function (Request $request) {
+    expect($request->url())->toBe('expectedValue');
+
+    return true;
+});
+
+Queue::assertPushed(function ($job) {
+    expect($job->property)->toBe('expectedValue');
+
+    return true;
+});
+
+Notification::assertSentTo(function ($notifiable) {
+    expect($notifiable->property)->toBe('expectedValue');
+
+    return true;
+});
+</code-snippet>
+
+## Model Factories Conventions
+
+- Use `createQuietly()` to avoid triggering events during test setup.
+- Use `create()` when you need to trigger model events.
+- Check for helper methods in factories to set polymorphic relationships. Create the helper if it doesn't exist.
+
+<code-snippet name="Polymorphic relationship factory usage" lang="php">
+$meal = Meal::factory()->createQuietly();
+$entry = FoodEntry::factory()->for($meal)->createQuietly();
+$review = ReviewItem::factory()->reviewable($entry)->createQuietly();
+</code-snippet>
+
+<code-snippet name="Factory helper for polymorphic relationships" lang="php">
+public function reviewable(Model $model): self
+{
+    return $this->state([
+        'reviewable_type' => $model->getMorphClass(),
+        'reviewable_id' => $model->getKey(),
+    ]);
+}
+</code-snippet>
+
+## Architecture
+
+- The `app/Services` directory should contain all business/domain logic where possible, grouped by domain/integration as much as possible. Exceptions:
+    - Filament related classes, which can remain in `app/Filament`.
+    - Laravel-specific classes like Jobs, Commands, etc.
+    - Prefer using action classes to extract logic.
+- The authoritative expansion of these rules is `architectural-sensibility.md` at the repo root.
+
+## Database Constraints
+
+- Snapshot or junction tables with a "one per type per parent" pattern must have a composite unique index on `(parent_id, type)` to enforce uniqueness at the database level — not just in application code.
+
+## Code Style
+
+- Always import fully qualified namespaces (including `Throwable`, `Exception`); import Filament components directly.
+- Always import classes at the top with `use` statements and reference them by their unqualified (short) class name.
+- Fully qualified class names should not be used inline, except in special cases (like dynamic resolution).
+- Use `CarbonImmutable` instead of `Carbon` when working with dates. This prevents accidental mutation. Model date columns are automatically cast to `CarbonImmutable` when retrieved.
+- All actions should be invokable classes with a single `__invoke` method containing the action logic.
+- Prefer the `config()` / `config()->set(...)` helper over the `Config` facade.
+- Prefer the `session()` / `session()->put(...)` / `session()->forget(...)` helpers over the `Session` facade.
+- All Model morph types should be defined in `Relation::enforceMorphMap()` in the `RelationServiceProvider`.
+    - To retrieve a model's morph type, use `$model->getMorphClass()` rather than hardcoding it.
+    - The morph type should generally match the model table name.
+
+## Type Safety & PHPStan Compliance
+
+### Configuration Access
+
+- Use typed config methods for type safety instead of generic `config()`:
+
+<code-snippet name="Typed config access" lang="php">
+// ✅ Correct — typed config
+$timezone = config()->string('app.timezone');
+$debug = config()->boolean('app.debug');
+
+// ❌ Avoid — returns mixed
+$timezone = config('app.timezone');
+</code-snippet>
+
+### PHPDoc Array Types
+
+- Always specify array value types for better static analysis:
+
+<code-snippet name="PHPDoc array shapes" lang="php">
+// ✅ Correct
+/**
+ * @return array<int, string>
+ */
+public static function encrypted(): array
+
+// ❌ Incomplete
+public static function encrypted(): array
+</code-snippet>
+
+### Eloquent Column Casts
+
+- Explicitly cast integer columns in `$casts` (e.g. `'intensity' => 'integer'`). Eloquent returns `mixed` for uncast attributes, which fails PHPStan level 9.
+
+### Model Attribute Accessors & Relationships
+
+- When a computed attribute accessor depends on an optional relationship, guard access with `$this->relationLoaded('relation')`. This prevents lazy-loading violations in strict mode. If the relation is not loaded, return a safe default, and document the contract with a test.
+- When iterating a collection where each item accesses a parent relationship in a computed attribute, use `setRelation()` to backfill the parent before the loop to prevent N+1 queries:
+
+<code-snippet name="Backfill parent relation to avoid N+1" lang="php">
+// ✅ Correct — set relation once, no N+1
+$meal->entries->each(fn ($entry) => $entry->setRelation('meal', $meal));
+
+// ❌ Each iteration lazy-loads the parent
+foreach ($meal->entries as $entry) {
+    $entry->label; // accesses $this->meal->...
+}
+</code-snippet>
+
+- **After writing an accessor that accesses a relationship**, grep for every place the model is rendered or iterated (Filament `TextEntry`, `RepeatableEntry`, blade loops, collection maps) and add `setRelation()` backfill at each call site. `Model::shouldBeStrict()` is enabled — missed call sites throw in production, not just log.
+
 === foundation rules ===
 
 # Laravel Boost Guidelines
@@ -57,6 +383,10 @@ This application is a Laravel application and its main Laravel ecosystems packag
 - pestphp/pest (PEST) - v4
 - phpunit/phpunit (PHPUNIT) - v12
 - tailwindcss (TAILWINDCSS) - v4
+
+## Skills Activation
+
+This project has domain-specific skills available in `**/skills/**`. You MUST activate the relevant skill whenever you work in that domain—don't wait until you're stuck.
 
 ## Conventions
 

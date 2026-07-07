@@ -1,0 +1,43 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Worktree Lister
+#
+# Lists the git worktrees created by bin/worktree-create — every sibling
+# worktree except the main checkout — with its branch, URL, and database.
+#
+# Usage:
+#   bin/worktree-list
+
+MAIN_ROOT="$(git worktree list --porcelain | awk '/^worktree /{print $2; exit}')"
+PROJECT="$(basename "$(git -C "$MAIN_ROOT" remote get-url origin 2>/dev/null || echo "$MAIN_ROOT")" .git)"
+
+echo "Worktrees ($PROJECT)"
+echo ""
+
+COUNT=0
+while read -r dir _hash rest; do
+    [ "$dir" = "$MAIN_ROOT" ] && continue
+    branch="$(printf '%s' "$rest" | tr -d '[]')"
+    name="$(basename "$dir")"
+
+    ticket="$(printf '%s' "$name" | grep -oiE '^SUI-[0-9]+' | head -1 || true)"
+    if [ -z "$ticket" ]; then
+        ticket="$(printf '%s' "$name" | tr '[:upper:]' '[:lower:]' | tr -c 'a-z0-9' '-' | sed 's/-\{2,\}/-/g; s/^-//; s/-$//')"
+    fi
+    ticket="$(printf '%s' "$ticket" | tr '[:upper:]' '[:lower:]')"
+    db="$(printf '%s_%s' "$PROJECT" "$ticket" | tr '-' '_' | tr '[:upper:]' '[:lower:]')"
+
+    echo "  $branch"
+    echo "    Dir:    $dir"
+    echo "    URL:    https://${ticket}.${PROJECT}.test"
+    echo "    DB:     $db"
+    echo ""
+    COUNT=$((COUNT + 1))
+done < <(git -C "$MAIN_ROOT" worktree list)
+
+if [ "$COUNT" -eq 0 ]; then
+    echo "  No worktrees found (only the main checkout exists)."
+    echo "  Create one: bin/worktree-create <branch>"
+    echo ""
+fi
