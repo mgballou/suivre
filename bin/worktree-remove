@@ -18,12 +18,13 @@ FORCE="${2:-}"
 
 MAIN_ROOT="$(git worktree list --porcelain | awk '/^worktree /{print $2; exit}')"
 PARENT_DIR="$(dirname "$MAIN_ROOT")"
-WT_DIR="$PARENT_DIR/$BRANCH"
+WT_NAME="$(basename "$BRANCH")"
+WT_DIR="$PARENT_DIR/$WT_NAME"
 PROJECT="$(basename "$(git -C "$MAIN_ROOT" remote get-url origin 2>/dev/null || echo "$MAIN_ROOT")" .git)"
 
-TICKET="$(printf '%s' "$BRANCH" | grep -oiE '^SUI-[0-9]+' | head -1 || true)"
+TICKET="$(printf '%s' "$BRANCH" | grep -oiE 'sui-[0-9]+' | head -1 || true)"
 if [ -z "$TICKET" ]; then
-    TICKET="$(printf '%s' "$BRANCH" | tr '[:upper:]' '[:lower:]' | tr -c 'a-z0-9' '-' | sed 's/-\{2,\}/-/g; s/^-//; s/-$//')"
+    TICKET="$(printf '%s' "$WT_NAME" | tr '[:upper:]' '[:lower:]' | tr -c 'a-z0-9' '-' | sed 's/-\{2,\}/-/g; s/^-//; s/-$//')"
 fi
 # Lowercase to match the host Herd registered in worktree-create.
 TICKET="$(printf '%s' "$TICKET" | tr '[:upper:]' '[:lower:]')"
