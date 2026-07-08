@@ -21,7 +21,7 @@ while read -r dir _hash rest; do
     branch="$(printf '%s' "$rest" | tr -d '[]')"
     name="$(basename "$dir")"
 
-    ticket="$(printf '%s' "$name" | grep -oiE '^SUI-[0-9]+' | head -1 || true)"
+    ticket="$(printf '%s' "$branch" | grep -oiE 'sui-[0-9]+' | head -1 || true)"
     if [ -z "$ticket" ]; then
         ticket="$(printf '%s' "$name" | tr '[:upper:]' '[:lower:]' | tr -c 'a-z0-9' '-' | sed 's/-\{2,\}/-/g; s/^-//; s/-$//')"
     fi

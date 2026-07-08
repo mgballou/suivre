@@ -1,13 +1,13 @@
 ---
 name: starting-work
-description: "Use when beginning a new Linear ticket, feature, or task and you need to set up to write code — phrasings like \"starting on SUI-…\", \"kick off this ticket\", \"get me a branch going\", or \"set me up\". Creates a correctly-named SUI-<id> branch off up-to-date main, by default in an isolated git worktree (its own Postgres database and Herd URL) via bin/worktree-create. This is environment/branch setup to begin work — not deep ticket analysis (use investigate-ticket), and not for work already in progress on an existing branch."
+description: "Use when beginning a new Linear ticket, feature, or task and you need to set up to write code — phrasings like \"starting on SUI-…\", \"kick off this ticket\", \"get me a branch going\", or \"set me up\". Creates a branch off up-to-date main using Linear's suggested branch name, by default in an isolated git worktree (its own Postgres database and Herd URL) via bin/worktree-create. This is environment/branch setup to begin work — not deep ticket analysis (use investigate-ticket), and not for work already in progress on an existing branch."
 ---
 
 # Starting Work
 
 ## Overview
 
-Standardizes how new work begins: never start on top of uncommitted changes or a stale base, always create a branch following the `SUI-<id>_<Short-Slug>` convention, and — by default — set up an isolated worktree so parallel work never collides. Worktrees get their own Postgres database and `<ticket>.suivre.test` Herd URL, so the main checkout is never touched.
+Standardizes how new work begins: never start on top of uncommitted changes or a stale base, always create a branch using **Linear's suggested branch name** (which auto-links it to the issue), and — by default — set up an isolated worktree so parallel work never collides. Worktrees get their own Postgres database and `<ticket>.suivre.test` Herd URL, so the main checkout is never touched.
 
 Run all PHP/Composer/Artisan through **Herd** (`herd php`, `herd composer`).
 
@@ -45,12 +45,12 @@ Ask for a Linear ticket id/URL (preferred) or, if there's no ticket, a short slu
 
 If a ticket is given and the Linear MCP is available, fetch a brief summary (read-only) and report 2–3 lines: title, state, one-line intent. Don't do deep investigation here (that's **investigate-ticket**), and never write to Linear.
 
-### 4. Derive the branch name (enforce the convention)
+### 4. Derive the branch name (Linear convention)
 
-- With a ticket: `SUI-<id>_<Short-Slug>` — derive `<Short-Slug>` from the ticket title, a few hyphen-joined words (e.g. `SUI-12_Add-daily-checkin`).
+- With a ticket: **use Linear's suggested branch name** — read `gitBranchName` from the issue via the Linear MCP `get_issue` (e.g. `matthewbuiltthat/sui-12-add-daily-checkin`). This is what Linear auto-links to the issue.
 - Without a ticket: a plain `<slug>`.
 
-The worktree directory, database (`suivre_<ticket>`), and URL (`<ticket>.suivre.test`) are all derived from this branch name by the script — so the `SUI-<id>` prefix matters. Show the final branch name and confirm before creating anything.
+The worktree directory (a flat sibling named after the branch's last segment, e.g. `sui-12-add-daily-checkin`), database (`suivre_sui_<n>`), and URL (`sui-<n>.suivre.test`) are all derived from the `sui-<n>` identifier in the branch — so keep that identifier intact. Show the final branch name and confirm before creating anything.
 
 ### 5. Create the worktree (default)
 
@@ -105,7 +105,7 @@ Give a 2–3 line summary of what's being started. For a full investigation, off
 - **Re-running bootstrap after the create script.** It already ran composer, npm, build, migrate, and seed. Re-running wastes time and `migrate:fresh` blows away the seed data.
 - **Operating on the main checkout after creating a worktree.** Subsequent tool calls — especially spawned agents — must use the worktree path as cwd.
 - **Branching off a stale or dirty base.** Sync main and confirm a clean tree first.
-- **Skipping the naming convention.** Branches must be `SUI-<id>_<Short-Slug>` when there's a ticket so the script can derive the DB/URL.
+- **Not using Linear's branch name.** With a ticket, use its `gitBranchName` (contains `sui-<n>`) so the script can derive the DB/URL and Linear auto-links the branch to the issue.
 - **Herd not running.** The script creates the Postgres DB via `herd php`; ensure `herd start` first.
 - **Doing deep ticket investigation inline.** That's investigate-ticket's job; keep this skill to setup.
 - **Writing to Linear.** Reads only — never create, comment, assign, or change status during setup.

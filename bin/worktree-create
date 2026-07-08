@@ -14,10 +14,12 @@ set -euo pipefail
 #   bin/worktree-create <branch>
 #
 # Arguments:
-#   branch -- the branch to create the worktree for, e.g. SUI-12_Add-calendar.
-#             Checked out if it already exists, otherwise created off main.
-#             The worktree directory is named after the branch; the database
-#             and URL are derived from the SUI-<id> ticket in the branch name.
+#   branch -- the branch to create the worktree for. Prefer Linear's suggested
+#             name (its gitBranchName, e.g. matthewbuiltthat/sui-12-add-calendar)
+#             so it auto-links to the issue. Checked out if it already exists,
+#             otherwise created off main. The worktree directory is a flat
+#             sibling named after the branch's last path segment; the database
+#             and URL are derived from the sui-<n> ticket found in the branch.
 #
 # Creates:
 #   ../<branch>/                       -- worktree directory (sibling of main)
@@ -36,17 +38,21 @@ BRANCH="${1:?Usage: bin/worktree-create <branch>}"
 #    regardless of which worktree this script is invoked from --
 MAIN_ROOT="$(git worktree list --porcelain | awk '/^worktree /{print $2; exit}')"
 PARENT_DIR="$(dirname "$MAIN_ROOT")"
-WT_DIR="$PARENT_DIR/$BRANCH"
+# Flat sibling dir named after the branch's last segment, so Linear's slashed
+# branch names (matthewbuiltthat/sui-12-...) don't nest under a username folder.
+WT_NAME="$(basename "$BRANCH")"
+WT_DIR="$PARENT_DIR/$WT_NAME"
 
 # Project name from the origin remote, falling back to the checkout directory
 # name when there is no remote yet.
 PROJECT="$(basename "$(git -C "$MAIN_ROOT" remote get-url origin 2>/dev/null || echo "$MAIN_ROOT")" .git)"
 
-# Ticket is the Linear SUI-<n> prefix of the branch; fall back to the whole
-# branch sanitized for a URL host when there's no ticket.
-TICKET="$(printf '%s' "$BRANCH" | grep -oiE '^SUI-[0-9]+' | head -1 || true)"
+# Ticket is the Linear sui-<n> identifier found anywhere in the branch (Linear
+# branch names look like matthewbuiltthat/sui-12-slug); fall back to the branch's
+# last segment sanitized for a URL host when there's no ticket.
+TICKET="$(printf '%s' "$BRANCH" | grep -oiE 'sui-[0-9]+' | head -1 || true)"
 if [ -z "$TICKET" ]; then
-    TICKET="$(printf '%s' "$BRANCH" | tr '[:upper:]' '[:lower:]' | tr -c 'a-z0-9' '-' | sed 's/-\{2,\}/-/g; s/^-//; s/-$//')"
+    TICKET="$(printf '%s' "$WT_NAME" | tr '[:upper:]' '[:lower:]' | tr -c 'a-z0-9' '-' | sed 's/-\{2,\}/-/g; s/^-//; s/-$//')"
 fi
 
 # Hostnames are case-insensitive and Herd/browsers serve the lowercased host,
