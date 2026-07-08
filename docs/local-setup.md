@@ -96,6 +96,20 @@ bin/worktree-list
 bin/worktree-remove SUI-123          # tears down the worktree and drops its DB
 ```
 
+### Protecting main
+
+`main` is protected by convention, not server-side rules (GitHub's free plan has no branch
+protection or rulesets on private repos). A tracked pre-push hook blocks direct pushes to `main`
+so all changes land via PR. **Activate it once per clone:**
+
+```bash
+git config core.hooksPath .githooks
+```
+
+After that, `git push` to `main` is refused locally — branch off, push the branch, and open a PR
+(`gh pr create`). CI (`linter` + `tests`) runs on every PR. Emergency bypass, discouraged:
+`git push --no-verify`.
+
 ## 5. Quality gate
 
 `herd composer check` runs the full gate — Pint, PHPStan (**level 9, no baseline**), and the
