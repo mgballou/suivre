@@ -1,0 +1,27 @@
+#!/usr/bin/env bash
+#
+# Blocks direct pushes to main. All changes to main go through a pull request.
+# Activate once per clone:  git config core.hooksPath .githooks
+# Emergency bypass (discouraged): git push --no-verify
+#
+set -euo pipefail
+
+protected="refs/heads/main"
+
+while read -r _local_ref _local_sha remote_ref _remote_sha; do
+    if [[ "$remote_ref" == "$protected" ]]; then
+        echo "" >&2
+        echo "✗ Direct pushes to main are blocked." >&2
+        echo "" >&2
+        echo "  Open a pull request from a feature branch instead:" >&2
+        echo "    bin/worktree-create SUI-<n>      # branch + isolated worktree + DB" >&2
+        echo "    # ...commit your work..." >&2
+        echo "    git push -u origin HEAD && gh pr create" >&2
+        echo "" >&2
+        echo "  Emergency bypass (discouraged): git push --no-verify" >&2
+        echo "" >&2
+        exit 1
+    fi
+done
+
+exit 0
