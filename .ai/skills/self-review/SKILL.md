@@ -44,7 +44,7 @@ Dispatch naming (all agents, steps 3–5): `review: <lens>` — `review: general
 Dispatch four independent agents in parallel, each focused on exactly ONE area over the same diff (the bullets are starting points, not exhaustive checklists):
 
 - **Correctness** — logic bugs, edge cases, null-safety, data integrity; do the tests actually verify behavior?
-- **Conventions** — adherence to `architectural-sensibility.md`, this project's `CLAUDE.md` / `.ai/guidelines`, naming, structure, idioms (Actions carry logic, enums as domain primitives, policies return `Response`, strict Eloquent, PHPStan level 9).
+- **Conventions** — adherence to this project's `CLAUDE.md` / `.ai/guidelines` (architecture, suivre, testing), naming, structure, idioms (Actions carry logic, enums as domain primitives, policies return `Response`, strict Eloquent, PHPStan level 9).
 - **Performance** — N+1 queries, redundant work, missing indexes/eager-loads, lazy-loading violations under strict mode, hot paths.
 - **Security** — authorization/policy scoping, per-user data isolation, injection, mass-assignment, data exposure.
 

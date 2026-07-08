@@ -29,7 +29,7 @@ The four cleanup lenses (dispatch as read-only Explore / general-purpose agents)
 - **simplify: altitude** — is each change at the right depth, not a fragile bandaid? Special cases layered on shared infrastructure signal the fix isn't deep enough; prefer generalizing the underlying mechanism.
 
 The framework pass:
-- **simplify: laravel** — dispatch the `laravel:laravel-simplifier` agent in **REPORT-ONLY** mode. Instruct it explicitly: do NOT edit files (and no `git checkout`/`switch`); return a written list of proposed simplifications (`file`, `line`, the change, why) — clarity/conciseness that preserves behavior and matches this project's Laravel/Filament conventions (`architectural-sensibility.md`, `.ai/guidelines`).
+- **simplify: laravel** — dispatch the `laravel:laravel-simplifier` agent in **REPORT-ONLY** mode. Instruct it explicitly: do NOT edit files (and no `git checkout`/`switch`); return a written list of proposed simplifications (`file`, `line`, the change, why) — clarity/conciseness that preserves behavior and matches this project's Laravel/Filament conventions (`.ai/guidelines`).
 
 ## 3. Synthesize the consensus
 
