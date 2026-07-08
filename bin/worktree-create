@@ -130,6 +130,10 @@ pg_create_database
 # -- Dependencies --
 echo "Installing dependencies..."
 herd composer install --no-scripts --quiet
+# `--no-scripts` skips composer's post-install-cmd, so wire the git hooks explicitly.
+# Best-effort: a hooks failure shouldn't abort an otherwise-working worktree.
+hooks_ok=true
+bin/install-git-hooks || hooks_ok=false
 herd php artisan package:discover --quiet
 npm ci --silent
 npm run build
@@ -149,6 +153,10 @@ fi
 
 echo ""
 echo "Worktree ready."
+if [ "$hooks_ok" = false ]; then
+    echo ""
+    echo "  ⚠ Git hooks not installed. Run 'bin/install-git-hooks' inside the worktree."
+fi
 echo ""
 echo "  cd $WT_DIR"
 echo "  open $URL"

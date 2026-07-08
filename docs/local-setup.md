@@ -96,19 +96,24 @@ bin/worktree-list
 bin/worktree-remove SUI-123          # tears down the worktree and drops its DB
 ```
 
-### Protecting main
+### Git hooks (and protecting main)
 
-`main` is protected by convention, not server-side rules (GitHub's free plan has no branch
-protection or rulesets on private repos). A tracked pre-push hook blocks direct pushes to `main`
-so all changes land via PR. **Activate it once per clone:**
+Hooks live in the tracked `.githooks/` dir. `herd composer install` wires them automatically
+(via `post-install-cmd` → `bin/install-git-hooks`, which sets `core.hooksPath`); `bin/worktree-create`
+installs them into each worktree too. To wire them by hand (or if hooks stop firing):
 
 ```bash
-git config core.hooksPath .githooks
+bin/install-git-hooks     # sets: git config core.hooksPath .githooks
 ```
 
-After that, `git push` to `main` is refused locally — branch off, push the branch, and open a PR
-(`gh pr create`). CI (`linter` + `tests`) runs on every PR. Emergency bypass, discouraged:
-`git push --no-verify`.
+- **pre-commit** — runs Pint on staged PHP files and re-stages the result (staged files only).
+- **pre-push** — blocks direct pushes to `main`, then runs PHPStan + the changed classes' mirror
+  tests. The full gate (`herd composer check`) is left to you / CI.
+
+`main` is protected **by convention**, not server-side rules (GitHub's free plan has no branch
+protection or rulesets on private repos). The pre-push hook refuses pushes to `main`, so branch
+off, push the branch, and open a PR (`gh pr create`); CI (`linter` + `tests`) runs on every PR.
+Emergency bypass, discouraged: `git push --no-verify`.
 
 ## 5. Quality gate
 
