@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Point this repo's hooks at the committed .githooks/ dir. Called by composer's
+# post-install-cmd and by bin/worktree-create (which runs `herd composer install
+# --no-scripts`, so it must invoke this explicitly). Written to the shared git
+# config with a relative path, so one write covers every worktree, any layout.
+#
+# Troubleshooting: if hooks stop firing, check `git config core.hooksPath`. If a
+# clone has `extensions.worktreeConfig` enabled (repo-local, per-clone), a
+# per-worktree override can shadow this — inspect with `git config --worktree --list`.
+
+# No-op outside a git work tree (e.g. deploy artifacts, CI without .git).
+git rev-parse --is-inside-work-tree >/dev/null 2>&1 || exit 0
+
+git config core.hooksPath .githooks
+
+# Git silently ignores non-executable hooks. The files are committed 100755, but
+# restore the bit defensively in case a checkout or copy ever drops it.
+chmod +x .githooks/* 2>/dev/null || true

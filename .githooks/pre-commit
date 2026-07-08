@@ -1,0 +1,16 @@
+#!/bin/sh
+# Format staged PHP files with Pint, then re-stage what it changed.
+# Scoped to staged files only — never reformats the whole repo (that is `herd composer lint`).
+# Note: a file staged with only *some* of its hunks will be fully staged after
+# re-add; stage whole files when you want the hook to leave the split intact.
+
+staged=$(git diff --cached --name-only --diff-filter=ACM -- '*.php')
+[ -z "$staged" ] && exit 0
+
+# Resolve the project's PHP via Herd (falls back to ambient php).
+PHP=$(herd which-php 2>/dev/null || command -v php)
+
+printf '%s\n' "$staged" | xargs "$PHP" vendor/bin/pint || exit 1
+printf '%s\n' "$staged" | xargs git add --
+
+exit 0
