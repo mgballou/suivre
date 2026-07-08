@@ -29,3 +29,5 @@ yarn-error.log
 
 # Boost re-generates Cursor config on every run; we use Claude Code only
 /.cursor/
+# Added by code-review-graph
+.code-review-graph/
