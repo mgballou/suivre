@@ -101,7 +101,7 @@ public function reviewable(Model $model): self
     - Filament related classes, which can remain in `app/Filament`.
     - Laravel-specific classes like Jobs, Commands, etc.
     - Prefer using action classes to extract logic.
-- The authoritative expansion of these rules is `architectural-sensibility.md` at the repo root.
+- The authoritative expansion of these rules is the `.ai/architecture` rules.
 
 ## Database Constraints
 
