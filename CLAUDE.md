@@ -180,7 +180,7 @@ scanning cannot.
 > Local dependency: the `code-review-graph` CLI must be installed and the graph
 > built for these tools to be available (see `docs/local-setup.md`). This
 > guideline is the source of truth for the instructions — Laravel Boost weaves it
-> into `CLAUDE.md` / `AGENTS.md`, so do not re-add it to those files by hand.
+> into `CLAUDE.md`, so do not re-add it to that file by hand.
 
 ## When to use graph tools FIRST
 
