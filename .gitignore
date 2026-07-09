@@ -31,3 +31,5 @@ yarn-error.log
 /.cursor/
 # Added by code-review-graph
 .code-review-graph/
+# Playwright MCP scratch output (console logs, snapshots, screenshots)
+/.playwright-mcp/
