@@ -1,19 +1,23 @@
 <?php
 
 use App\Concerns\ProfileValidationRules;
-use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Flux\Flux;
+use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Session;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Title;
 use Livewire\Component;
 
-new #[Title('Profile settings')] class extends Component {
+new #[Title('Profile settings')] class extends Component
+{
     use ProfileValidationRules;
 
     public string $name = '';
+
     public string $email = '';
+
+    public string $timezone = '';
 
     /**
      * Mount the component.
@@ -22,6 +26,18 @@ new #[Title('Profile settings')] class extends Component {
     {
         $this->name = Auth::user()->name;
         $this->email = Auth::user()->email;
+        $this->timezone = Auth::user()->timezone;
+    }
+
+    /**
+     * The timezone identifiers a user may choose between.
+     *
+     * @return array<int, string>
+     */
+    #[Computed]
+    public function timezones(): array
+    {
+        return timezone_identifiers_list();
     }
 
     /**
@@ -31,7 +47,10 @@ new #[Title('Profile settings')] class extends Component {
     {
         $user = Auth::user();
 
-        $validated = $this->validate($this->profileRules($user->id));
+        $validated = $this->validate([
+            ...$this->profileRules($user->id),
+            'timezone' => $this->timezoneRules(),
+        ]);
 
         $user->fill($validated);
 
@@ -106,6 +125,12 @@ new #[Title('Profile settings')] class extends Component {
                     </div>
                 @endif
             </div>
+
+            <flux:select wire:model="timezone" :label="__('Timezone')" :description="__('Your day starts at midnight in this timezone.')">
+                @foreach ($this->timezones as $identifier)
+                    <flux:select.option :value="$identifier">{{ $identifier }}</flux:select.option>
+                @endforeach
+            </flux:select>
 
             <div class="flex items-center gap-4">
                 <div class="flex items-center justify-end">
