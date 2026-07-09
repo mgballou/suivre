@@ -33,3 +33,6 @@ yarn-error.log
 .code-review-graph/
 # Playwright MCP scratch output (console logs, snapshots, screenshots)
 /.playwright-mcp/
+
+# Superpowers brainstorming scratch
+.superpowers/

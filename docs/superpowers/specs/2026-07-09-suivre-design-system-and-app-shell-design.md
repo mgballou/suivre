@@ -1,0 +1,321 @@
+# Suivre — Design System & App Shell
+
+- **Date:** 2026-07-09
+- **Status:** Approved (design)
+- **Tickets:** parent SUI-5, split into two sub-issues (Ticket A, Ticket B below)
+- **Supersedes:** D7 (Livewire/Volt bespoke PWA), the frontend half of D13, the UI layer of D16
+- **Amends:** D8 (one charting standard)
+
+---
+
+## 1. Context
+
+Suivre's user-facing app does not exist yet. `resources/views/**` is the unmodified Laravel
+Livewire starter kit: a placeholder dashboard, stock sidebar chrome linking to the Laravel docs,
+and 1,623 lines of Flux-built auth and settings views. SUI-5 is the first product UI ticket.
+
+Two questions were settled during brainstorming:
+
+1. **The stack.** Livewire 4 + Flux is replaced by **Inertia + React 19 + TypeScript + shadcn/ui**
+   for the user-facing app. Filament stays on `/admin`, unchanged, and keeps `livewire/livewire`
+   as its own dependency.
+2. **The design.** A coherent visual and behavioural philosophy — recorded below — that the
+   calendar (SUI-6), day view (SUI-7) and insights (E4) all inherit.
+
+The stack change was made at the cheapest possible moment: zero user-facing screens exist, and the
+official React starter kit ships passkeys, 2FA, email verification and settings against the same
+Fortify backend already configured here. The migration is *delete and adopt*, not *port*.
+
+**The stack change was not made because Flux has a paid tier.** Flux free covers roughly forty
+components; the paywall bites on two the roadmap needs (autocomplete, tag input), both in E3, both
+deferrable. The switch was made on developer fluency, and the fact that shadcn happens to include
+combobox, slider, tabs, sidebar and date-picker for free is a dividend, not a rationale.
+
+The domain layer — Actions, enums, events, policies, strict Eloquent, PHPStan level 9 — is
+untouched by any of this. `.ai/spatie-data`'s rule that Actions return `readonly` DTOs rather than
+arrays turns out to be exactly what Inertia props want.
+
+---
+
+## 2. Design philosophy — *quiet instrument*
+
+Suivre is a measuring device that happens to be kind. It is not a friend, it does not cheer, and it
+never softens the data to make you feel better. What makes it calm is not rounded corners and a
+warm typeface — it is that the instrument refuses to judge you.
+
+Calm is therefore relocated from ornament to behaviour:
+
+- **Calm lives in the semantics.** The intensity ramp is one hue deepening. There is no red. A
+  severe month renders as depth, not damage — a topography, not a report card.
+- **Calm lives in the copy.** Per D11: "suggestive, not proof", sample sizes always visible. The
+  app says *"12 of your 19 dairy days preceded a flare"* and stops talking. It never says *"dairy
+  is your trigger"*, and it never says *"great job logging today!"*
+- **Calm lives in what is absent.** No streaks. No completion rings. No guilt notifications.
+  Missing a day is data, not failure; empty cells are quiet, not accusatory. **This is the most
+  important rule in the system.** Every tracker that broke it became a source of anxiety for
+  exactly the people it was built for.
+- **Calm lives in restraint of motion.** See §3.
+- **Credibility lives in the surface.** Inter with tabular figures, radius 8, a tight grid, petrol.
+  The visual language of a well-made readout.
+
+### Failure modes of this direction
+
+**Density must not eat the tap target.** This is a phone app whose core interaction is two taps.
+Every interactive element gets a **44×44px minimum hit area** (`min-h-11 min-w-11`) regardless of
+how small it renders. Enforced by review habit, not tooling.
+
+**Cold is the risk; copy and motion are the antidotes.** With ornament stripped out, writing and
+movement carry the entire emotional load. Tone is specified alongside colour and is not decoration.
+
+---
+
+## 3. Motion
+
+**Motion explains, and it breathes. It never celebrates.**
+
+Warmth in motion comes from easing and timing, not displacement. Bounce reads as toy. A long
+decelerating tail reads as considered — an object with friction, settling.
+
+**Curves.** The default `ease-in-out` is banned. Two tokens, and only two:
+
+- `--ease-quiet: cubic-bezier(0.32, 0.72, 0, 1)` — entrances and spatial moves. Fast commit, long
+  soft settle, zero overshoot.
+- `--ease-exit: cubic-bezier(0.4, 0, 1, 1)` — exits. Quicker and less precious; nobody watches a
+  thing leave.
+
+**Durations:**
+
+| Token | Value | Used for |
+|---|---|---|
+| `--dur-micro` | 120ms | Tap feedback, hover, focus rings |
+| `--dur-base` | 220ms | Cross-fades, tab changes, toasts |
+| `--dur-spatial` | 380ms | Day cell → day view, month pans |
+| `--dur-arrival` | 600ms | A logged value's colour easing into the calendar |
+
+**Panning carries meaning.** Next month slides left, previous slides right — the motion *is* the
+direction of time. Tapping a day lifts the day view up out of that cell; back lowers it home.
+Nothing hard-swaps; everything cross-fades.
+
+**The one moment of whimsy.** When a check-in is logged, the day's colour does not snap on. It
+*arrives* — a `--dur-arrival` ease from empty to its level. That is the entire acknowledgement.
+No checkmark, no toast, no praise. The app quietly takes on the colour of what it was told.
+
+**Stagger, sparingly.** On first paint of a month, cells fade in with ~8ms-per-cell stagger, capped
+at ~250ms total. On subsequent navigation, no stagger — a repeated gesture becomes a delay.
+
+**Explicitly vetoed.** A pulsing "today" ring (on an unlogged day it is a nag wearing a pretty
+dress). Streaks, completion rings, confetti. These are behaviour decisions, already ruled out by §2.
+
+**Reduced motion.** `prefers-reduced-motion` collapses everything to opacity-only cross-fades at
+`--dur-base`. Feedback is never removed, only displacement. The colour still arrives; it does not
+travel.
+
+---
+
+## 4. Tokens
+
+Tokens **set shadcn's contract** rather than living beside it: `--background`, `--foreground`,
+`--primary`, `--muted`, `--border`, `--ring`, `--radius` are defined in `:root` and `.dark`. Petrol
+becomes `--primary`. One thing is added that shadcn has no opinion about: the intensity ramp.
+
+```
+--radius: 0.5rem                   /* 8px — shadcn default */
+--primary: petrol 600
+--intensity-0 … --intensity-5      /* 0 = no entry */
+--dur-micro | --dur-base | --dur-spatial | --dur-arrival
+--ease-quiet: cubic-bezier(0.32, 0.72, 0, 1)
+--ease-exit:  cubic-bezier(0.4, 0, 1, 1)
+```
+
+### The ramp is defined twice, not inverted
+
+In light mode intensity climbs by getting **darker**. In dark mode it climbs by getting
+**lighter**. A programmatic lightness flip breaks this. The empty cell is near-neutral in both
+modes, never pure grey, never the same value as level 1.
+
+**Starting values (light, on `#FBFBFA`):**
+
+| Level | Hex | Foreground | Contrast |
+|---|---|---|---|
+| 0 (empty) | `#EFF1F1` | `#16201F` @ 30% | decorative |
+| 1 | `#E2EEEE` | `#16201F` | pass |
+| 2 | `#BEDBDA` | `#16201F` | pass |
+| 3 | `#92C0BF` | `#16201F` | 8.29:1 |
+| 4 | `#66A19F` | `#16201F` | 5.66:1 |
+| 5 | `#3F7D7B` | `#FFFFFF` | 4.79:1 |
+
+**Starting values (dark, on `#131314`):** `#1B1F1F` (empty), `#1E2E2E`, `#2A4646`, `#3A6362`,
+`#4E8483`, `#68A7A5`.
+
+### Two known defects, to be resolved in Ticket B
+
+1. **The approved mockup put white text on level 4** (`#66A19F`). White on that swatch is **2.93:1
+   — fails WCAG AA**. The correct rule is **dark ink through level 4, white only at level 5**.
+   The mockup is wrong; this table is right.
+2. **The dark ramp has a contrast dead zone at level 4** (`#4E8483`): white gives 4.24:1 and dark
+   ink gives 3.91:1 — *both fail AA for small text*. The dark ramp's mid-high steps must be
+   retuned, or day numbers must stop sitting inside filled cells at high intensity. These hexes are
+   a validated-by-eye starting point, not final values. **Resolving this is in Ticket B's scope.**
+
+### Type
+
+Inter, served via Bunny (already the project's font provider). `font-variant-numeric: tabular-nums`
+globally on data surfaces — day numbers, intensities, sample sizes, lift percentages — so figures
+align in columns and do not shimmer when they change.
+
+### Condition hues are chosen, not picked
+
+SUI-8 gives each `Condition` a user-set `color`. A free colour picker kills the system: a user
+picks neon magenta, the ramp construction breaks, dark-mode contrast fails. Users choose from a
+**curated set of six to eight hues**, each shipping a pre-built five-step ramp built exactly as
+petrol's is. Petrol is reserved for the application itself and is not offered as a condition hue.
+
+---
+
+## 5. Component inventory
+
+**From shadcn**, in `resources/js/components/ui/`, unmodified where possible: button, input, label,
+form, select, checkbox, radio-group, switch, textarea, dialog, drawer, dropdown-menu, popover,
+tooltip, badge, card, separator, skeleton, sonner, tabs, slider, avatar, alert, sidebar, combobox.
+
+**Ours**, in `resources/js/components/suivre/`: `TabBar`, `MonthGrid`, `DayCell`,
+`IntensityLegend`, `ScalePicker` (3-point mood/sleep/stress), `IntensityPicker` (0–10),
+`InsightCard`, `LagHeatmap`, `EmptyState`.
+
+These nine are the product. They would have been ours in any stack.
+
+### Amendment to D8
+
+D8 requires one charting library across Filament widgets and the user app. That is no longer
+possible: Recharts (which shadcn's chart wraps) is React-only; Filament's widgets are ApexCharts
+and are configured, not authored.
+
+**Amended:** Recharts in the user app, governed by the `dataviz` skill for palette and
+accessibility. Filament's stock charts in the backstage, ungoverned. D8's rationale — cohesion for
+a solo maintainer — survives, because charts are *authored* in exactly one place. Two libraries,
+one authored.
+
+---
+
+## 6. Shell architecture
+
+### Routing
+
+| Route | Name | Notes |
+|---|---|---|
+| `/` | `home` | Guest: `welcome`. Authed: redirect to `calendar`. No public marketing (D6). |
+| `/calendar/{month?}` | `calendar` | Landing route. `month` is `YYYY-MM`, validated. Ticket B ships shell + placeholder body; SUI-6 fills it. |
+| `/day/{date}` | `day` | Defined now so SUI-7 does not move URLs. Placeholder in Ticket B. |
+| `/insights` | `insights` | Placeholder. The tab ships now; nav shape must not change when E4 lands. |
+| `/settings/*` | — | Unchanged, on the React kit's pages. |
+
+`config/fortify.php` `home` → `/calendar`. The `dashboard` route is retired. `/admin` untouched.
+
+Path segments rather than query params: deep-linkable, survive the PWA `start_url`, and the back
+button does the right thing for month navigation.
+
+### Layout
+
+`AppLayout` is an **Inertia persistent layout**. If the layout remounts on navigation the tab bar
+re-animates on every tab change, and §3's "motion explains" premise collapses. Persistent layout
+keeps the chrome in place; only content cross-fades.
+
+- **Mobile:** `<TabBar>` fixed to the bottom, with `padding-bottom: env(safe-area-inset-bottom)`.
+  Without that inset the iPhone home indicator overlaps the tabs — and this is an installable PWA.
+- **Desktop:** shadcn `sidebar` in icon-rail mode.
+- One `<nav>` definition, two presentations. Three destinations: Calendar, Insights, Settings.
+
+### "Today" is server-derived
+
+`new Date()` in the browser uses the **device** timezone. SUI-1 established that a Suivre day is
+midnight in the user's **configured** timezone, and the two diverge the moment the user travels.
+
+The shell receives `today` as a shared Inertia prop, computed server-side via the existing
+`ResolveUserDay` action. **The client never derives a date.**
+
+---
+
+## 7. Sequencing — two sub-issues under SUI-5
+
+### Ticket A — Migrate the user-facing app to Inertia + React + shadcn
+
+Install Inertia and TypeScript. Adopt the React starter kit's `resources/js/{pages,layouts,
+components}` for auth, 2FA, passkeys and settings. Point Fortify's view responses at Inertia.
+Delete `livewire/flux`, `resources/views/pages/**`, the Flux layouts, components and published
+stubs. Keep `livewire/livewire` and `livewire/blaze` — Filament needs them. Rewrite the UI section
+of `.ai/guidelines/architecture.blade.php`; retire the `livewire-development` and
+`fluxui-development` skills.
+
+Port `tests/Feature/Auth/*` and `tests/Feature/Settings/*` from `livewire()` component calls to
+HTTP + `assertInertia`.
+
+**Exit criteria.** Login, registration, email verification, password reset, password confirmation,
+2FA and passkeys all work exactly as they do today. All three settings pages work. `/admin` is
+unaffected. `herd composer check` is green. **No product surface changes** — if a screenshot of
+`/settings/security` looks different, the ticket overreached.
+
+**Blocks Ticket B.**
+
+### Ticket B — Design tokens and the app shell
+
+Tokens into `resources/css/app.css`: petrol ramp for both modes (resolving the two contrast defects
+in §4), radius, motion tokens, tabular figures. Build `TabBar`, the desktop icon rail, and
+`AppLayout` as a persistent layout. Wire the routes in §6 with placeholder pages for calendar, day
+and insights. Repoint Fortify `home`. Retire `dashboard`.
+
+**Exit criteria.** SUI-5's stated criteria — guest redirected to login, authenticated user lands on
+the shell at `/calendar`, `/admin` unaffected — plus: the tab bar honours safe-area insets;
+`prefers-reduced-motion` is respected; every interactive element clears 44×44px; both ramp defects
+from §4 are fixed and the resolved values are documented back into this spec.
+
+---
+
+## 8. Testing
+
+`tests/Feature/DashboardTest.php` already encodes SUI-5's acceptance criteria. It becomes
+`ShellTest` rather than being deleted.
+
+**Server contract — Pest, and the bulk of the coverage:**
+
+```php
+$this->actingAs($user)->get('/calendar')
+    ->assertInertia(fn (Assert $page) => $page
+        ->component('calendar')
+        ->where('today', '2026-07-09')
+    );
+```
+
+Cases: guest → login redirect; authed `/` → `/calendar`; `/admin` still 200s for an authed user;
+`/calendar/2026-13` is rejected; **`today` respects a user whose timezone differs from the
+server's** — write that one first, it is the trap from §6.
+
+**Component behaviour — Vitest + React Testing Library**, small and targeted: `TabBar` marks the
+correct tab active per route; `DayCell` renders the correct ramp step per level and clears 44px.
+Not a broad JS suite — the two components with logic.
+
+**Gate.** `herd composer check` remains the single command. `npm run check` (tsc + vitest) is
+folded into it, so one invocation gates Pint, PHPStan level 9, Pest, types and JS tests. Two
+commands means one of them stops being run.
+
+**Not now.** Pest 4 browser tests belong to SUI-7's two-tap flow, where there is an interaction
+worth driving. Playwright to assert a tab bar exists is theatre.
+
+---
+
+## 9. Non-goals
+
+- PWA manifest and service worker (E6 / SUI-27, SUI-28).
+- The calendar month grid itself (SUI-6) and the day view (SUI-7). This spec ships placeholders and
+  fixes their URLs.
+- Offline capture. Explicitly out of scope for MVP; the Inertia + React stack does not block it
+  later, which is a dividend of the switch rather than its motivation.
+- Filament backstage changes of any kind.
+- The condition hue palette's final six-to-eight values (needed by SUI-8, not by SUI-5).
+
+## 10. Open questions
+
+- Exact dark-ramp values at levels 4–5, pending contrast resolution (Ticket B).
+- Whether `DayCell` shows the day number inside the filled cell at high intensity, or moves it out.
+  Driven by the same contrast work.
+- Motion library: Motion (`motion.dev`) versus the View Transitions API for the day-cell shared
+  element. Decide during Ticket B; both satisfy §3.
