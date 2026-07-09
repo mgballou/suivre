@@ -3,14 +3,21 @@
 # Scoped to staged files only — never reformats the whole repo (that is `herd composer lint`).
 # Note: a file staged with only *some* of its hunks will be fully staged after
 # re-add; stage whole files when you want the hook to leave the split intact.
+#
+# Paths are read NUL-separated: Livewire 4 single-file components carry a `⚡` in
+# their filename, which `--name-only` would otherwise escape to `\342\232\241`
+# and quote, handing Pint a path it cannot open. NUL also survives spaces.
 
-staged=$(git diff --cached --name-only --diff-filter=ACM -- '*.php')
-[ -z "$staged" ] && exit 0
+list=$(mktemp)
+trap 'rm -f "$list"' EXIT
+
+git diff --cached --name-only -z --diff-filter=ACM -- '*.php' > "$list"
+[ -s "$list" ] || exit 0
 
 # Resolve the project's PHP via Herd (falls back to ambient php).
 PHP=$(herd which-php 2>/dev/null || command -v php)
 
-printf '%s\n' "$staged" | xargs "$PHP" vendor/bin/pint || exit 1
-printf '%s\n' "$staged" | xargs git add --
+xargs -0 "$PHP" vendor/bin/pint < "$list" || exit 1
+xargs -0 git add -- < "$list"
 
 exit 0

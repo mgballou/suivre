@@ -40,6 +40,40 @@ class ProfileUpdateTest extends TestCase
         $this->assertNull($user->email_verified_at);
     }
 
+    public function test_timezone_can_be_updated(): void
+    {
+        $user = User::factory()->create();
+
+        $this->actingAs($user);
+
+        $response = Livewire::test('pages::settings.profile')
+            ->set('name', $user->name)
+            ->set('email', $user->email)
+            ->set('timezone', 'America/New_York')
+            ->call('updateProfileInformation');
+
+        $response->assertHasNoErrors();
+
+        $this->assertEquals('America/New_York', $user->refresh()->timezone);
+    }
+
+    public function test_timezone_must_be_a_recognised_identifier(): void
+    {
+        $user = User::factory()->create();
+
+        $this->actingAs($user);
+
+        $response = Livewire::test('pages::settings.profile')
+            ->set('name', $user->name)
+            ->set('email', $user->email)
+            ->set('timezone', 'Mars/Olympus_Mons')
+            ->call('updateProfileInformation');
+
+        $response->assertHasErrors(['timezone']);
+
+        $this->assertEquals('UTC', $user->refresh()->timezone);
+    }
+
     public function test_email_verification_status_is_unchanged_when_email_address_is_unchanged(): void
     {
         $user = User::factory()->create();

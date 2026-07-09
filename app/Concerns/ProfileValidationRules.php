@@ -25,6 +25,16 @@ trait ProfileValidationRules
     }
 
     /**
+     * Get the validation rules used to validate user timezones.
+     *
+     * @return array<int, ValidationRule|array<mixed>|string>
+     */
+    protected function timezoneRules(): array
+    {
+        return ['required', 'string', 'timezone:all'];
+    }
+
+    /**
      * Get the validation rules used to validate user names.
      *
      * @return array<int, ValidationRule|array<mixed>|string>

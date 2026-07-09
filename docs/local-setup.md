@@ -65,6 +65,19 @@ herd php artisan migrate
 The `pg_trgm` extension ships with Herd's Postgres (migrations that need it should
 `CREATE EXTENSION IF NOT EXISTS pg_trgm`).
 
+### The test database
+
+The Pest suite runs against Postgres, not sqlite — `phpunit.xml` pins it to a dedicated
+`suivre_test` database so a test run can never touch your dev data. Create it once:
+
+```bash
+herd php -r '$p=new PDO("pgsql:host=127.0.0.1;port=5432;dbname=postgres","root","");
+$p->exec("CREATE DATABASE suivre_test");'
+```
+
+`RefreshDatabase` migrates it on first run and wraps each test in a transaction thereafter.
+Worktrees share this one database, so don't run two suites concurrently.
+
 ## 3. MCP servers
 
 `.mcp.json` registers three servers:
