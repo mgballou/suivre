@@ -29,6 +29,7 @@ class UserFactory extends Factory
         return [
             'name' => fake()->name(),
             'email' => fake()->unique()->safeEmail(),
+            'timezone' => 'UTC',
             'email_verified_at' => now(),
             'password' => static::$password ??= Hash::make('password'),
             'remember_token' => Str::random(10),
@@ -36,6 +37,16 @@ class UserFactory extends Factory
             'two_factor_recovery_codes' => null,
             'two_factor_confirmed_at' => null,
         ];
+    }
+
+    /**
+     * Indicate that the model resolves its days in the given timezone.
+     */
+    public function inTimezone(string $timezone): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'timezone' => $timezone,
+        ]);
     }
 
     /**
