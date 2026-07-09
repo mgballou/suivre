@@ -1,21 +1,21 @@
-#!/usr/bin/env bash
-#
-# Blocks direct pushes to main. All changes to main go through a pull request.
-# Activate once per clone:  git config core.hooksPath .githooks
-# Emergency bypass (discouraged): git push --no-verify
-#
-set -euo pipefail
+#!/bin/sh
+# Pre-push gate:
+#   1. Block direct pushes to main — all changes to main go through a PR
+#      (the private repo has no server-side branch protection on the free plan).
+#   2. Gate feature-branch pushes with PHPStan + the changed classes' mirror tests.
+# The full suite (`herd composer check`) is left to the developer / CI.
+# Bypass a single push deliberately with `git push --no-verify`.
 
 protected="refs/heads/main"
 
+# 1. Refuse any push whose destination ref is main.
 while read -r _local_ref _local_sha remote_ref _remote_sha; do
-    if [[ "$remote_ref" == "$protected" ]]; then
+    if [ "$remote_ref" = "$protected" ]; then
         echo "" >&2
         echo "✗ Direct pushes to main are blocked." >&2
         echo "" >&2
         echo "  Open a pull request from a feature branch instead:" >&2
         echo "    bin/worktree-create SUI-<n>      # branch + isolated worktree + DB" >&2
-        echo "    # ...commit your work..." >&2
         echo "    git push -u origin HEAD && gh pr create" >&2
         echo "" >&2
         echo "  Emergency bypass (discouraged): git push --no-verify" >&2
@@ -23,5 +23,41 @@ while read -r _local_ref _local_sha remote_ref _remote_sha; do
         exit 1
     fi
 done
+
+# Resolve the project's PHP (8.4) — the ambient `php` may be Herd's older default,
+# which trips the composer platform check. Herd resolves the isolated version per site.
+PHP=$(herd which-php 2>/dev/null || command -v php)
+
+# Scope "changed" to this branch's delta from main.
+base=$(git merge-base HEAD origin/main 2>/dev/null)
+
+echo "→ PHPStan…"
+"$PHP" vendor/bin/phpstan analyse --memory-limit=2G --no-progress || exit 1
+
+if [ -z "$base" ]; then
+    echo "→ Skipping targeted tests (no origin/main to diff against)."
+    exit 0
+fi
+
+# For each changed PHP file, derive its mirror test class and keep only the
+# ones that actually have a test file — a class without a mirror test is skipped.
+filters=""
+for f in $(git diff --name-only "$base" HEAD -- 'app/*.php' 'tests/*.php'); do
+    case "$f" in
+        tests/*) testclass=$(basename "$f" .php) ;;   # a test file is its own class
+        *)       testclass="$(basename "$f" .php)Test" ;;
+    esac
+    if [ -n "$(find tests -name "${testclass}.php" -print -quit)" ]; then
+        filters="${filters}${filters:+|}${testclass}"
+    fi
+done
+
+if [ -z "$filters" ]; then
+    echo "→ No changed classes with mirror tests."
+    exit 0
+fi
+
+echo "→ Mirror tests: $filters"
+"$PHP" vendor/bin/pest --filter="($filters)" --compact || exit 1
 
 exit 0
