@@ -6,7 +6,7 @@ namespace Tests\Feature\Settings;
 
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Livewire\Livewire;
+use Inertia\Testing\AssertableInertia as Assert;
 use Tests\TestCase;
 
 class ProfileUpdateTest extends TestCase
@@ -15,28 +15,32 @@ class ProfileUpdateTest extends TestCase
 
     public function test_profile_page_is_displayed(): void
     {
-        $this->actingAs($user = User::factory()->create());
-
-        $this->get(route('profile.edit'))->assertOk();
+        $this->actingAs(User::factory()->create())
+            ->get(route('profile.edit'))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('settings/profile')
+                ->has('timezones')
+            );
     }
 
     public function test_profile_information_can_be_updated(): void
     {
         $user = User::factory()->create();
 
-        $this->actingAs($user);
-
-        $response = Livewire::test('pages::settings.profile')
-            ->set('name', 'Test User')
-            ->set('email', 'test@example.com')
-            ->call('updateProfileInformation');
-
-        $response->assertHasNoErrors();
+        $this->actingAs($user)
+            ->patch(route('profile.update'), [
+                'name' => 'Test User',
+                'email' => 'test@example.com',
+                'timezone' => $user->timezone,
+            ])
+            ->assertSessionHasNoErrors()
+            ->assertRedirect(route('profile.edit'));
 
         $user->refresh();
 
-        $this->assertEquals('Test User', $user->name);
-        $this->assertEquals('test@example.com', $user->email);
+        $this->assertSame('Test User', $user->name);
+        $this->assertSame('test@example.com', $user->email);
         $this->assertNull($user->email_verified_at);
     }
 
@@ -44,48 +48,44 @@ class ProfileUpdateTest extends TestCase
     {
         $user = User::factory()->create();
 
-        $this->actingAs($user);
+        $this->actingAs($user)
+            ->patch(route('profile.update'), [
+                'name' => $user->name,
+                'email' => $user->email,
+                'timezone' => 'America/New_York',
+            ])
+            ->assertSessionHasNoErrors();
 
-        $response = Livewire::test('pages::settings.profile')
-            ->set('name', $user->name)
-            ->set('email', $user->email)
-            ->set('timezone', 'America/New_York')
-            ->call('updateProfileInformation');
-
-        $response->assertHasNoErrors();
-
-        $this->assertEquals('America/New_York', $user->refresh()->timezone);
+        $this->assertSame('America/New_York', $user->refresh()->timezone);
     }
 
     public function test_timezone_must_be_a_recognised_identifier(): void
     {
         $user = User::factory()->create();
 
-        $this->actingAs($user);
+        $this->actingAs($user)
+            ->from(route('profile.edit'))
+            ->patch(route('profile.update'), [
+                'name' => $user->name,
+                'email' => $user->email,
+                'timezone' => 'Mars/Olympus_Mons',
+            ])
+            ->assertSessionHasErrors('timezone');
 
-        $response = Livewire::test('pages::settings.profile')
-            ->set('name', $user->name)
-            ->set('email', $user->email)
-            ->set('timezone', 'Mars/Olympus_Mons')
-            ->call('updateProfileInformation');
-
-        $response->assertHasErrors(['timezone']);
-
-        $this->assertEquals('UTC', $user->refresh()->timezone);
+        $this->assertSame('UTC', $user->refresh()->timezone);
     }
 
-    public function test_email_verification_status_is_unchanged_when_email_address_is_unchanged(): void
+    public function test_email_verification_status_is_unchanged_when_the_email_address_is_unchanged(): void
     {
         $user = User::factory()->create();
 
-        $this->actingAs($user);
-
-        $response = Livewire::test('pages::settings.profile')
-            ->set('name', 'Test User')
-            ->set('email', $user->email)
-            ->call('updateProfileInformation');
-
-        $response->assertHasNoErrors();
+        $this->actingAs($user)
+            ->patch(route('profile.update'), [
+                'name' => 'Test User',
+                'email' => $user->email,
+                'timezone' => $user->timezone,
+            ])
+            ->assertSessionHasNoErrors();
 
         $this->assertNotNull($user->refresh()->email_verified_at);
     }
@@ -94,31 +94,24 @@ class ProfileUpdateTest extends TestCase
     {
         $user = User::factory()->create();
 
-        $this->actingAs($user);
+        $this->actingAs($user)
+            ->delete(route('profile.destroy'), ['password' => 'password'])
+            ->assertSessionHasNoErrors()
+            ->assertRedirect(route('home'));
 
-        $response = Livewire::test('pages::settings.delete-user-modal')
-            ->set('password', 'password')
-            ->call('deleteUser');
-
-        $response
-            ->assertHasNoErrors()
-            ->assertRedirect('/');
-
+        $this->assertGuest();
         $this->assertNull($user->fresh());
-        $this->assertFalse(auth()->check());
     }
 
     public function test_correct_password_must_be_provided_to_delete_account(): void
     {
         $user = User::factory()->create();
 
-        $this->actingAs($user);
-
-        $response = Livewire::test('pages::settings.delete-user-modal')
-            ->set('password', 'wrong-password')
-            ->call('deleteUser');
-
-        $response->assertHasErrors(['password']);
+        $this->actingAs($user)
+            ->from(route('profile.edit'))
+            ->delete(route('profile.destroy'), ['password' => 'wrong-password'])
+            ->assertSessionHasErrors('password')
+            ->assertRedirect(route('profile.edit'));
 
         $this->assertNotNull($user->fresh());
     }

@@ -10,9 +10,10 @@
     "skills": [
         "fortify-development",
         "laravel-best-practices",
-        "fluxui-development",
+        "wayfinder-development",
         "livewire-development",
         "pest-testing",
+        "inertia-react-development",
         "tailwindcss-development",
         "addressing-pr-feedback",
         "investigate-ticket",
