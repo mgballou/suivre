@@ -36,3 +36,7 @@ yarn-error.log
 
 # Superpowers brainstorming scratch
 .superpowers/
+
+/resources/js/actions
+/resources/js/routes
+/resources/js/wayfinder

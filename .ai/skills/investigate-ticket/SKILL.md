@@ -37,7 +37,7 @@ After gathering, write a brief summary of what the ticket is asking for — repr
 
 ## Phase 3: Investigate the Codebase
 
-Find the relevant code (Glob/Grep/Read). This app's layering (see the `.ai/architecture` rules): business logic lives in **invokable Actions** under `app/Services/{Domain}/Actions/`; the operator UI is **Filament 5** (`app/Filament/`); the end-user UI is **bespoke Livewire 4 / Flux** components + Blade; models in `app/Models/`.
+Find the relevant code (Glob/Grep/Read). This app's layering (see the `.ai/architecture` rules): business logic lives in **invokable Actions** under `app/Services/{Domain}/Actions/`; the operator UI is **Filament 5** (`app/Filament/`); the end-user UI is **bespoke Inertia + React + shadcn/ui** (`resources/js/pages/`, `resources/js/components/`); models in `app/Models/`.
 
 - **Identify the affected area** — the Actions, models, Filament resources/pages, Livewire components, routes, and migrations that match the ticket's surface.
 - **Trace the execution path** — follow from entry point to the described behavior. Read the actual code; don't guess. Controllers/models are thin — the logic usually sits in an Action, an enum, an observer/event, or a Filament/Livewire class.
