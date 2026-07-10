@@ -20,10 +20,10 @@ Suivre is a **personal food-and-symptom journal** that correlates diet/lifestyle
 ## Architecture
 
 - **Filament 5 is the operator backstage only** — data oversight, taxonomy/catalog curation, the classification review queue, runtime settings, internal dashboards. It is **not** the end-user UI.
-- The **user-facing app is bespoke Livewire 4 (native single-file components) + Flux + Tailwind**, delivered as an installable **PWA** (online-first for MVP).
+- The **user-facing app is bespoke Inertia + React 19 + TypeScript + shadcn/ui + Tailwind**, delivered as an installable **PWA** (online-first for MVP). Filament stays on Livewire, on `/admin`.
 - Both share the domain layer defined in the `.ai/architecture` rules.
 
 ## Quality gates
 
-- `herd composer check` runs **Pint + PHPStan (level 9) + tests**. Keep all three green. There is **no PHPStan baseline** — fix causes, never suppress.
+- `herd composer check` runs **Pint + PHPStan (level 9) + `wayfinder:generate` + `tsc --noEmit` + tests**. Keep them all green. There is **no PHPStan baseline** — fix causes, never suppress. Wayfinder's output is gitignored, so it must be generated before `tsc` can typecheck.
 - Pest 4, tests mirror source paths. The suite runs on **sqlite `:memory:`**; Postgres-only features (e.g. `pg_trgm` used by the food classifier) need a Postgres-backed test or an abstraction.
