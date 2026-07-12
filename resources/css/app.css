@@ -59,77 +59,113 @@
     --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
     --color-sidebar-border: var(--sidebar-border);
     --color-sidebar-ring: var(--sidebar-ring);
+
+    /* Intensity ramp — one hue deepening. Defined twice below, never inverted. */
+    --color-intensity-0: var(--intensity-0);
+    --color-intensity-1: var(--intensity-1);
+    --color-intensity-2: var(--intensity-2);
+    --color-intensity-3: var(--intensity-3);
+    --color-intensity-4: var(--intensity-4);
+    --color-intensity-5: var(--intensity-5);
+
+    /* Motion — the only two curves; ease-in-out is banned. */
+    --ease-quiet: cubic-bezier(0.32, 0.72, 0, 1);
+    --ease-exit: cubic-bezier(0.4, 0, 1, 1);
 }
 
 :root {
-    --background: oklch(1 0 0);
-    --foreground: oklch(0.145 0 0);
-    --card: oklch(1 0 0);
-    --card-foreground: oklch(0.145 0 0);
-    --popover: oklch(1 0 0);
-    --popover-foreground: oklch(0.145 0 0);
-    --primary: oklch(0.205 0 0);
-    --primary-foreground: oklch(0.985 0 0);
-    --secondary: oklch(0.97 0 0);
-    --secondary-foreground: oklch(0.205 0 0);
-    --muted: oklch(0.97 0 0);
-    --muted-foreground: oklch(0.556 0 0);
-    --accent: oklch(0.97 0 0);
-    --accent-foreground: oklch(0.205 0 0);
-    --destructive: oklch(0.577 0.245 27.325);
-    --destructive-foreground: oklch(0.577 0.245 27.325);
-    --border: oklch(0.922 0 0);
-    --input: oklch(0.922 0 0);
-    --ring: oklch(0.87 0 0);
-    --chart-1: oklch(0.646 0.222 41.116);
-    --chart-2: oklch(0.6 0.118 184.704);
-    --chart-3: oklch(0.398 0.07 227.392);
-    --chart-4: oklch(0.828 0.189 84.429);
-    --chart-5: oklch(0.769 0.188 70.08);
-    --radius: 0.625rem;
-    --sidebar: oklch(0.985 0 0);
-    --sidebar-foreground: oklch(0.145 0 0);
-    --sidebar-primary: oklch(0.205 0 0);
-    --sidebar-primary-foreground: oklch(0.985 0 0);
-    --sidebar-accent: oklch(0.97 0 0);
-    --sidebar-accent-foreground: oklch(0.205 0 0);
-    --sidebar-border: oklch(0.922 0 0);
-    --sidebar-ring: oklch(0.87 0 0);
+    /* Light — a well-made readout. Petrol on warm near-white, dark ink. */
+    --background: #fbfbfa;
+    --foreground: #16201f;
+    --card: #ffffff;
+    --card-foreground: #16201f;
+    --popover: #ffffff;
+    --popover-foreground: #16201f;
+    --primary: #3f7d7b;
+    --primary-foreground: #ffffff;
+    --secondary: #eff1f1;
+    --secondary-foreground: #16201f;
+    --muted: #eff1f1;
+    --muted-foreground: #55625f;
+    --accent: #e2eeee;
+    --accent-foreground: #16201f;
+    --destructive: #b23a2e;
+    --destructive-foreground: #ffffff;
+    --border: #e4e7e6;
+    --input: #e4e7e6;
+    --ring: #3f7d7b;
+    --chart-1: #3f7d7b;
+    --chart-2: #66a19f;
+    --chart-3: #92c0bf;
+    --chart-4: #bedbda;
+    --chart-5: #e2eeee;
+    --radius: 0.5rem;
+    --sidebar: #f4f5f5;
+    --sidebar-foreground: #16201f;
+    --sidebar-primary: #3f7d7b;
+    --sidebar-primary-foreground: #ffffff;
+    --sidebar-accent: #e2eeee;
+    --sidebar-accent-foreground: #16201f;
+    --sidebar-border: #e4e7e6;
+    --sidebar-ring: #3f7d7b;
+
+    /* Intensity ramp (light) — climbs by getting darker. Level 0 = no entry. */
+    --intensity-0: #eff1f1;
+    --intensity-1: #e2eeee;
+    --intensity-2: #bedbda;
+    --intensity-3: #92c0bf;
+    --intensity-4: #66a19f;
+    --intensity-5: #3f7d7b;
+
+    /* Motion durations. */
+    --dur-micro: 120ms;
+    --dur-base: 220ms;
+    --dur-spatial: 380ms;
+    --dur-arrival: 600ms;
 }
 
 .dark {
-    --background: oklch(0.145 0 0);
-    --foreground: oklch(0.985 0 0);
-    --card: oklch(0.145 0 0);
-    --card-foreground: oklch(0.985 0 0);
-    --popover: oklch(0.145 0 0);
-    --popover-foreground: oklch(0.985 0 0);
-    --primary: oklch(0.985 0 0);
-    --primary-foreground: oklch(0.205 0 0);
-    --secondary: oklch(0.269 0 0);
-    --secondary-foreground: oklch(0.985 0 0);
-    --muted: oklch(0.269 0 0);
-    --muted-foreground: oklch(0.708 0 0);
-    --accent: oklch(0.269 0 0);
-    --accent-foreground: oklch(0.985 0 0);
-    --destructive: oklch(0.396 0.141 25.723);
-    --destructive-foreground: oklch(0.637 0.237 25.331);
-    --border: oklch(0.269 0 0);
-    --input: oklch(0.269 0 0);
-    --ring: oklch(0.439 0 0);
-    --chart-1: oklch(0.488 0.243 264.376);
-    --chart-2: oklch(0.696 0.17 162.48);
-    --chart-3: oklch(0.769 0.188 70.08);
-    --chart-4: oklch(0.627 0.265 303.9);
-    --chart-5: oklch(0.645 0.246 16.439);
-    --sidebar: oklch(0.205 0 0);
-    --sidebar-foreground: oklch(0.985 0 0);
-    --sidebar-primary: oklch(0.985 0 0);
-    --sidebar-primary-foreground: oklch(0.985 0 0);
-    --sidebar-accent: oklch(0.269 0 0);
-    --sidebar-accent-foreground: oklch(0.985 0 0);
-    --sidebar-border: oklch(0.269 0 0);
-    --sidebar-ring: oklch(0.439 0 0);
+    /* Dark — petrol lifts off near-black. The ramp climbs by getting lighter. */
+    --background: #131314;
+    --foreground: #edeeee;
+    --card: #1b1c1d;
+    --card-foreground: #edeeee;
+    --popover: #1b1c1d;
+    --popover-foreground: #edeeee;
+    --primary: #68a7a5;
+    --primary-foreground: #101917;
+    --secondary: #262a2a;
+    --secondary-foreground: #edeeee;
+    --muted: #262a2a;
+    --muted-foreground: #9ba6a4;
+    --accent: #262a2a;
+    --accent-foreground: #edeeee;
+    --destructive: #c25548;
+    --destructive-foreground: #ffffff;
+    --border: #2a2e2e;
+    --input: #2a2e2e;
+    --ring: #68a7a5;
+    --chart-1: #68a7a5;
+    --chart-2: #4e8483;
+    --chart-3: #3a6362;
+    --chart-4: #2a4646;
+    --chart-5: #1e2e2e;
+    --sidebar: #17191a;
+    --sidebar-foreground: #edeeee;
+    --sidebar-primary: #68a7a5;
+    --sidebar-primary-foreground: #101917;
+    --sidebar-accent: #262a2a;
+    --sidebar-accent-foreground: #edeeee;
+    --sidebar-border: #2a2e2e;
+    --sidebar-ring: #68a7a5;
+
+    /* Intensity ramp (dark) — defined independently, not a lightness flip. */
+    --intensity-0: #1b1f1f;
+    --intensity-1: #1e2e2e;
+    --intensity-2: #2a4646;
+    --intensity-3: #3a6362;
+    --intensity-4: #4e8483;
+    --intensity-5: #68a7a5;
 }
 
 @layer base {
