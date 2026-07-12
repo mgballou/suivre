@@ -66,4 +66,4 @@ ENV APP_ENV=staging \
 
 # FrankenPHP binds Railway's injected $PORT (defaults to 8000 locally)
 EXPOSE 8000
-CMD ["sh", "-c", "php artisan octane:start --server=frankenphp --host=0.0.0.0 --port=${PORT:-8000}"]
+CMD ["sh", "-c", "php artisan octane:start --server=frankenphp --host=:: --port=${PORT:-8000}"]
