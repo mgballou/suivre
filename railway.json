@@ -5,7 +5,6 @@
     "dockerfilePath": "Dockerfile"
   },
   "deploy": {
-    "startCommand": "php artisan config:cache && php artisan event:cache && php artisan octane:start --server=frankenphp --host=:: --port=${PORT:-8080}",
     "preDeployCommand": "php artisan migrate --force",
     "healthcheckPath": "/up",
     "healthcheckTimeout": 120,

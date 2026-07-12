@@ -65,5 +65,8 @@ ENV APP_ENV=staging \
     OCTANE_SERVER=frankenphp
 
 # FrankenPHP binds Railway's injected $PORT (defaults to 8000 locally)
-EXPOSE 8000
-CMD ["sh", "-c", "php artisan octane:start --server=frankenphp --host=:: --port=${PORT:-8000}"]
+# Railway injects $PORT. Caching runs here (in a real shell) at container start —
+# NOT via railway.json startCommand, which Railway execs without shell expansion.
+# No route:cache: settings.php has a closure route that can't be serialised.
+EXPOSE 8080
+CMD ["sh", "-c", "php artisan config:cache && php artisan event:cache && php artisan octane:start --server=frankenphp --host=0.0.0.0 --port=${PORT:-8080}"]
