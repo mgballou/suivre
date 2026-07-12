@@ -1,0 +1,40 @@
+name: deploy
+
+# Deploys staging to Railway only after the `tests` workflow passes on `main`.
+# This is our CI gate: a red main never reaches `railway up`. Uses a Railway
+# project token (RAILWAY_TOKEN secret) instead of Railway's GitHub App, which we
+# could not connect for this repo.
+on:
+  workflow_run:
+    workflows: [tests]
+    types: [completed]
+
+concurrency:
+  group: deploy-staging
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    # Gate: the tests run must have succeeded, on a push to main (not a PR run).
+    if: >-
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.head_branch == 'main' &&
+      github.event.workflow_run.event == 'push'
+    runs-on: ubuntu-latest
+    env:
+      RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+    steps:
+      - name: Checkout the tested commit
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+          persist-credentials: false
+
+      - name: Install Railway CLI
+        run: npm install -g @railway/cli
+
+      - name: Deploy web
+        run: railway up --service web --ci
+
+      - name: Deploy worker
+        run: railway up --service worker --ci

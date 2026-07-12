@@ -51,23 +51,26 @@ and `user@suivre.staging`, both password **`<redacted>`**, pre-verified.
   not in the image (local runs must stay HTTP).
 - `public/frankenphp-worker.php` is committed (the image doesn't run `octane:install`).
 
-## CI-gated auto-deploy (Wait-for-CI)
+## CI-gated auto-deploy (GitHub Actions)
 
-Branch protection is unavailable on the free private repo (D17). The gate is
-Railway's **"Wait for CI"** instead: Railway deploys a `main` commit only after
-its `quality` + `ci (8.4)` checks pass. The `.githooks/pre-push` block on direct
-pushes to `main` + the PR workflow supply the merge discipline.
+Branch protection is unavailable on the free private repo (D17), and Railway's
+GitHub App could not be connected to this repo (the Railway account's GitHub link
+wouldn't attach `mgballou/suivre`). So deploy runs from **GitHub Actions**, not
+Railway's GitHub integration.
 
-**This is wired up after SUI-32 merges to `main`** (until then `main` has no
-Dockerfile). Once merged, run:
+`.github/workflows/deploy.yml` triggers via `workflow_run` after the **`tests`**
+workflow completes, and deploys only when that run **succeeded**, on a **push to
+`main`**. So a red `main` never reaches `railway up` — that's the CI gate. It
+deploys with a Railway **project token** (`RAILWAY_TOKEN` secret), running
+`railway up --service web` then `--service worker`; Railway builds the Dockerfile
+and runs the `migrate` preDeploy. The `.githooks/pre-push` block on direct pushes
+to `main` + the PR workflow supply the merge discipline. (Pint/`lint` gates PRs
+and pre-commit; it is not a deploy blocker.)
 
-```bash
-railway service source connect --repo mgballou/suivre --branch main --service web
-railway service source connect --repo mgballou/suivre --branch main --service worker
-```
-
-Then, in the Railway dashboard for **each** service → Settings → Deploy, enable
-**"Wait for CI"** (check-suites-must-pass) — not currently exposed on the CLI.
+**One-time setup:** create a project token in the Railway dashboard →
+`suivre-staging` → **Settings → Tokens** (scope: `production` environment), then
+add it to GitHub → repo **Settings → Secrets and variables → Actions** as
+**`RAILWAY_TOKEN`**.
 
 ## Operations
 
