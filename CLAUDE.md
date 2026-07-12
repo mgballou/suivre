@@ -178,8 +178,9 @@ Events decouple cross-domain reactions to a state change.
 - **Testing** — see the `.ai/testing-conventions` and `.ai/filament-testing` rules.
 - **DTOs (Spatie Data)** — see the `.ai/spatie-data` rules.
 - **Quality gate**: `herd composer check` = Pint + PHPStan (level 9, no baseline) + `wayfinder:generate`
-  + `tsc --noEmit` + Pest. Keep them all green; fix causes, never suppress. Tests run on sqlite
-  `:memory:` — Postgres-only features (e.g. `pg_trgm`) need a Postgres-backed test or an abstraction.
+  + `tsc --noEmit` + Pest. Keep them all green; fix causes, never suppress. Tests run on a dedicated
+  **Postgres** database (`suivre_test`) — Postgres-only features like `pg_trgm` work in both local
+  (Herd) and CI (`postgres:18`) and need only `CREATE EXTENSION IF NOT EXISTS pg_trgm`, not an abstraction.
 
 === .ai/code-review-graph rules ===
 
@@ -415,7 +416,7 @@ Suivre is a **personal food-and-symptom journal** that correlates diet/lifestyle
 ## Quality gates
 
 - `herd composer check` runs **Pint + PHPStan (level 9) + `wayfinder:generate` + `tsc --noEmit` + tests**. Keep them all green. There is **no PHPStan baseline** — fix causes, never suppress. Wayfinder's output is gitignored, so it must be generated before `tsc` can typecheck.
-- Pest 4, tests mirror source paths. The suite runs on **sqlite `:memory:`**; Postgres-only features (e.g. `pg_trgm` used by the food classifier) need a Postgres-backed test or an abstraction.
+- Pest 4, tests mirror source paths. The suite runs on a dedicated **Postgres** database (`suivre_test`); Postgres-only features like `pg_trgm` (used by the food classifier) work in both local (Herd) and CI (`postgres:18`) and need only `CREATE EXTENSION IF NOT EXISTS pg_trgm` in a migration — not an abstraction.
 
 === .ai/testing-conventions rules ===
 
