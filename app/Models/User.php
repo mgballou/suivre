@@ -6,6 +6,8 @@ namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Database\Factories\UserFactory;
+use Filament\Models\Contracts\FilamentUser;
+use Filament\Panel;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -33,7 +35,7 @@ use Laravel\Fortify\TwoFactorAuthenticatable;
  */
 #[Fillable(['name', 'email', 'password', 'timezone'])]
 #[Hidden(['password', 'two_factor_secret', 'two_factor_recovery_codes', 'remember_token'])]
-class User extends Authenticatable implements PasskeyUser
+class User extends Authenticatable implements FilamentUser, PasskeyUser
 {
     /** @use HasFactory<UserFactory> */
     use HasFactory;
@@ -41,6 +43,17 @@ class User extends Authenticatable implements PasskeyUser
     use Notifiable;
     use PasskeyAuthenticatable;
     use TwoFactorAuthenticatable;
+
+    /**
+     * Filament's Authenticate middleware 403s any non-local environment unless
+     * the user implements FilamentUser. MVP is single-user, so every account is
+     * the operator — role-gating the backstage is deferred until Suivre goes
+     * multi-user (see decision-log D16).
+     */
+    public function canAccessPanel(Panel $panel): bool
+    {
+        return true;
+    }
 
     /**
      * Get the user's initials
