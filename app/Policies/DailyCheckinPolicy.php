@@ -1,0 +1,39 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Policies;
+
+use App\Models\DailyCheckin;
+use App\Models\User;
+use Illuminate\Auth\Access\Response;
+
+class DailyCheckinPolicy
+{
+    public function view(User $user, DailyCheckin $checkin): Response
+    {
+        return $this->owns($user, $checkin);
+    }
+
+    public function create(User $user): Response
+    {
+        return Response::allow();
+    }
+
+    public function update(User $user, DailyCheckin $checkin): Response
+    {
+        return $this->owns($user, $checkin);
+    }
+
+    public function delete(User $user, DailyCheckin $checkin): Response
+    {
+        return $this->owns($user, $checkin);
+    }
+
+    private function owns(User $user, DailyCheckin $checkin): Response
+    {
+        return $user->id === $checkin->user_id
+            ? Response::allow()
+            : Response::deny('You may only manage your own check-ins.');
+    }
+}
