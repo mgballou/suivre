@@ -4,7 +4,10 @@ declare(strict_types=1);
 
 namespace App\Providers;
 
+use App\Models\Condition;
+use App\Models\ConditionLog;
 use App\Models\DailyCheckin;
+use App\Models\FlareEvent;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\ServiceProvider;
@@ -19,6 +22,9 @@ class RelationServiceProvider extends ServiceProvider
      */
     private array $morphMap = [
         'daily_checkins' => DailyCheckin::class,
+        'conditions' => Condition::class,
+        'condition_logs' => ConditionLog::class,
+        'flare_events' => FlareEvent::class,
     ];
 
     public function boot(): void
