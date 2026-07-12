@@ -137,5 +137,6 @@ Pest suite. Keep all three green; fix causes, never suppress.
 herd composer check
 ```
 
-The test suite runs on sqlite `:memory:`; Postgres-only features (e.g. `pg_trgm`) need a
-Postgres-backed test or an abstraction.
+The test suite runs on a dedicated **Postgres** database (`suivre_test`), not sqlite; Postgres-only
+features like `pg_trgm` work in both local (Herd) and CI (`postgres:18`) and need only
+`CREATE EXTENSION IF NOT EXISTS pg_trgm` in a migration — not an abstraction.

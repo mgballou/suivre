@@ -177,5 +177,6 @@ Events decouple cross-domain reactions to a state change.
 - **Testing** — see the `.ai/testing-conventions` and `.ai/filament-testing` rules.
 - **DTOs (Spatie Data)** — see the `.ai/spatie-data` rules.
 - **Quality gate**: `herd composer check` = Pint + PHPStan (level 9, no baseline) + `wayfinder:generate`
-  + `tsc --noEmit` + Pest. Keep them all green; fix causes, never suppress. Tests run on sqlite
-  `:memory:` — Postgres-only features (e.g. `pg_trgm`) need a Postgres-backed test or an abstraction.
+  + `tsc --noEmit` + Pest. Keep them all green; fix causes, never suppress. Tests run on a dedicated
+  **Postgres** database (`suivre_test`) — Postgres-only features like `pg_trgm` work in both local
+  (Herd) and CI (`postgres:18`) and need only `CREATE EXTENSION IF NOT EXISTS pg_trgm`, not an abstraction.
