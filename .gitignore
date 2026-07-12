@@ -42,5 +42,4 @@ yarn-error.log
 /resources/js/wayfinder
 
 **/caddy
-frankenphp
-frankenphp-worker.php
+/frankenphp
