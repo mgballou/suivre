@@ -67,6 +67,30 @@ class User extends Authenticatable implements FilamentUser, PasskeyUser
     }
 
     /**
+     * @return HasMany<Condition, $this>
+     */
+    public function conditions(): HasMany
+    {
+        return $this->hasMany(Condition::class);
+    }
+
+    /**
+     * @return HasMany<ConditionLog, $this>
+     */
+    public function conditionLogs(): HasMany
+    {
+        return $this->hasMany(ConditionLog::class);
+    }
+
+    /**
+     * @return HasMany<FlareEvent, $this>
+     */
+    public function flareEvents(): HasMany
+    {
+        return $this->hasMany(FlareEvent::class);
+    }
+
+    /**
      * Get the user's initials
      */
     public function initials(): string
