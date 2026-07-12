@@ -64,9 +64,10 @@ COPY --from=build /app /app
 ENV APP_ENV=staging \
     OCTANE_SERVER=frankenphp
 
-# FrankenPHP binds Railway's injected $PORT (defaults to 8000 locally)
-# Railway injects $PORT. Caching runs here (in a real shell) at container start —
-# NOT via railway.json startCommand, which Railway execs without shell expansion.
-# No route:cache: settings.php has a closure route that can't be serialised.
+COPY docker/entrypoint.sh /usr/local/bin/entrypoint.sh
+RUN chmod +x /usr/local/bin/entrypoint.sh
+
+# Role-aware start (web serves Octane, worker runs queue:work). Runs via a real
+# shell so $PORT expands — Railway execs a railway.json startCommand without one.
 EXPOSE 8080
-CMD ["sh", "-c", "php artisan config:cache && php artisan event:cache && php artisan octane:start --server=frankenphp --host=0.0.0.0 --port=${PORT:-8080}"]
+CMD ["/usr/local/bin/entrypoint.sh"]
