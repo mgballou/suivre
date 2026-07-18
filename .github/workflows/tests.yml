@@ -17,13 +17,84 @@ on:
 permissions:
   contents: read
 
-jobs:
-  ci:
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        php-version: ['8.4']
+# Cancel superseded runs on the same ref so a fresh push gets feedback faster
+# and we don't burn minutes on stale commits. Deploy has its own (non-cancelling)
+# concurrency group, so this never interrupts a staging deploy.
+concurrency:
+  group: tests-${{ github.ref }}
+  cancel-in-progress: true
 
+jobs:
+  static-analysis:
+    name: PHPStan (Larastan, level 9)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          persist-credentials: false
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # v2
+        with:
+          php-version: '8.4'
+          extensions: pdo_pgsql, pgsql
+          tools: composer:v2
+
+      - name: Install PHP Dependencies
+        uses: ramsey/composer-install@3cf229dc2919194e9e36783941438d17239e8520 # 3.1.1
+
+      - name: Copy Environment File
+        run: cp .env.example .env
+
+      - name: Generate Application Key
+        run: php artisan key:generate
+
+      - name: Run PHPStan (Larastan, level 9)
+        run: composer types:check
+
+  frontend:
+    name: Frontend (tsc + vitest)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          persist-credentials: false
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # v2
+        with:
+          php-version: '8.4'
+          tools: composer:v2
+
+      - name: Install PHP Dependencies
+        uses: ramsey/composer-install@3cf229dc2919194e9e36783941438d17239e8520 # 3.1.1
+
+      - name: Setup Node
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install Node Dependencies
+        run: npm ci
+
+      - name: Copy Environment File
+        run: cp .env.example .env
+
+      - name: Generate Application Key
+        run: php artisan key:generate
+
+      - name: Generate Wayfinder Types
+        run: php artisan wayfinder:generate --with-form
+
+      - name: Run Frontend Checks (tsc + vitest)
+        run: npm run check
+
+  test:
+    name: Pest (Postgres)
+    runs-on: ubuntu-latest
     services:
       postgres:
         image: postgres:18
@@ -38,7 +109,6 @@ jobs:
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
-
     steps:
       - name: Checkout code
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
@@ -48,24 +118,21 @@ jobs:
       - name: Setup PHP
         uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # v2
         with:
-          php-version: ${{ matrix.php-version }}
+          php-version: '8.4'
           extensions: pdo_pgsql, pgsql
           tools: composer:v2
-          coverage: xdebug
+
+      - name: Install PHP Dependencies
+        uses: ramsey/composer-install@3cf229dc2919194e9e36783941438d17239e8520 # 3.1.1
 
       - name: Setup Node
         uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6
         with:
           node-version: '22'
+          cache: 'npm'
 
       - name: Install Node Dependencies
-        run: npm i
-
-      - name: Add Flux Credentials Loaded From ENV
-        run: composer config http-basic.composer.fluxui.dev "${{ secrets.FLUX_USERNAME }}" "${{ secrets.FLUX_LICENSE_KEY }}"
-
-      - name: Install Dependencies
-        run: composer install --no-interaction --prefer-dist --optimize-autoloader
+        run: npm ci
 
       - name: Copy Environment File
         run: cp .env.example .env
@@ -73,17 +140,8 @@ jobs:
       - name: Generate Application Key
         run: php artisan key:generate
 
-      - name: Generate Wayfinder Types
-        run: php artisan wayfinder:generate --with-form
-
       - name: Build Assets
         run: npm run build
-
-      - name: Run Frontend Checks (tsc + vitest)
-        run: npm run check
-
-      - name: Run PHPStan (Larastan, level 9)
-        run: composer types:check
 
       - name: Run Tests
         run: php artisan test
