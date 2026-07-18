@@ -44,7 +44,9 @@ fi
 filters=""
 for f in $(git diff --name-only "$base" HEAD -- 'app/*.php' 'tests/*.php'); do
     case "$f" in
-        tests/*) testclass=$(basename "$f" .php) ;;   # a test file is its own class
+        tests/Browser/*) continue ;;                  # browser/screenshot tests aren't in the Unit/Feature suites — they run explicitly (screenshots.yml), not in this gate
+        tests/*Test.php) testclass=$(basename "$f" .php) ;;  # a test file is its own class
+        tests/*) continue ;;                          # support files (Pest.php, TestCase.php, helpers) aren't test classes
         *)       testclass="$(basename "$f" .php)Test" ;;
     esac
     if [ -n "$(find tests -name "${testclass}.php" -print -quit)" ]; then
