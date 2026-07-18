@@ -43,3 +43,6 @@ yarn-error.log
 
 **/caddy
 /frankenphp
+
+# Generated browser screenshots (captured on demand / by CI; never committed)
+/tests/Browser/Screenshots
