@@ -11,7 +11,9 @@ use Filament\Models\Contracts\FilamentUser;
 use Filament\Panel;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Str;
@@ -32,6 +34,7 @@ use Laravel\Fortify\TwoFactorAuthenticatable;
  * @property string|null $remember_token
  * @property CarbonImmutable|null $created_at
  * @property CarbonImmutable|null $updated_at
+ * @property-read Collection<int, DailyCheckin> $dailyCheckins
  */
 #[Fillable(['name', 'email', 'password', 'timezone'])]
 #[Hidden(['password', 'two_factor_secret', 'two_factor_recovery_codes', 'remember_token'])]
@@ -53,6 +56,14 @@ class User extends Authenticatable implements FilamentUser, PasskeyUser
     public function canAccessPanel(Panel $panel): bool
     {
         return true;
+    }
+
+    /**
+     * @return HasMany<DailyCheckin, $this>
+     */
+    public function dailyCheckins(): HasMany
+    {
+        return $this->hasMany(DailyCheckin::class);
     }
 
     /**
