@@ -19,6 +19,8 @@
         "investigate-ticket",
         "self-review",
         "simplify-code",
-        "starting-work"
+        "starting-work",
+        "create-pr",
+        "capture-screenshots"
     ]
 }
