@@ -371,13 +371,14 @@ def test_lag_profile_peaks_at_true_lag():
 
 
 def test_stratified_lift_recovers_a_only_effect():
-    # A causes the effect; B always rides with A but is inert.
-    inten = np.array([0, 8, 0, 8, 0, 0])
-    a = np.array([True, False, True, False, False, False])
-    b = np.array([True, False, True, False, False, False])  # co-occurs with A
-    strat = stratified_lift(inten, a, b, 1)  # A on B-absent days
-    # with B always co-occurring, B-absent exposed days may be few; assert it runs and returns keys
-    assert set(strat) >= {"lift", "n_exposed"}
+    # A raises same-day intensity by 5; B is inert but co-occurs with A on day 0.
+    # Stratifying to A-present/B-absent days (2, 4) must recover A's true +5 effect.
+    inten = np.array([5, 0, 5, 0, 5, 0, 0, 0, 0, 0])
+    a = np.array([True, False, True, False, True, False, False, False, False, False])
+    b = np.array([True, False, False, False, False, False, False, False, False, False])
+    strat = stratified_lift(inten, a, b, 0)  # window 0: exposed = presence day itself
+    assert strat["n_exposed"] == 2          # days 2 and 4 (day 0 dropped: B present)
+    assert np.isclose(strat["lift"], 5.0)
 ```
 
 - [ ] **Step 2: Run tests to verify they fail**
