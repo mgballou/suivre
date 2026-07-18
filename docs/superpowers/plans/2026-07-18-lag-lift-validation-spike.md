@@ -341,8 +341,8 @@ def test_exposed_mask_dedupes_close_occurrences():
 
 
 def test_lift_is_mean_difference():
-    inten = np.array([0, 5, 5, 0, 0, 0])
-    pres = np.array([True, False, False, False, False, False])  # exposed {0,1} at window 1
+    inten = np.array([0, 5, 0, 0, 0, 0])
+    pres = np.array([True, False, False, False, False, False])  # exposed {0,1} at window 1; baseline {2,3,4,5} all 0
     r = lift_for_tag(inten, pres, 1)
     assert r["n_exposed"] == 2
     assert r["n_occurrences"] == 1
@@ -364,7 +364,7 @@ def test_rank_orders_by_lift_desc():
 def test_lag_profile_peaks_at_true_lag():
     inten = np.zeros(50)
     pres = np.zeros(50, dtype=bool)
-    pres[::5] = True
+    pres[::10] = True                     # spacing 10 > max_lag 5, so baseline days survive
     inten[np.flatnonzero(pres) + 2] = 8   # effect lands exactly 2 days later
     prof = lag_profile(inten, pres, max_lag=5)
     assert int(np.argmax(prof)) == 2
