@@ -7,16 +7,30 @@ description: "Use when asked to capture, take, or grab screenshots of app pages 
 
 ## Overview
 
-Generate screenshots with a throwaway, request-scoped **Pest browser test** (`pestphp/pest-plugin-browser`,
-installed) that seeds its own factory data, authenticates via `actingAs`, visits the target Filament/Inertia
-pages, and calls `->screenshot()`. The flagship use is PR screenshots — embeddable via SHA-pinned git-history
-URLs (§4) — but the same flow serves any "get me a shot of page X" request.
+Generate screenshots with a throwaway, request-scoped **Pest browser test** that seeds its own factory data,
+authenticates via `actingAs`, visits the target Filament/Inertia pages, and calls `->screenshot()`. The
+flagship use is PR screenshots — embeddable via SHA-pinned git-history URLs (§4) — but the same flow serves
+any "get me a shot of page X" request.
 
 The screenshots directory is a **live snapshot, not an archive**: on a re-run, capture each surface to the
 filename it already uses, so the directory always represents the most recent version of every surface.
 
 Run everything through **Herd**: `herd php artisan test tests/Browser/…`. Tests run on the `suivre_test`
-Postgres DB. `tests/Browser/` may not exist yet — this skill creates the first browser test.
+Postgres DB.
+
+### Prerequisites (one-time — the repo has no browser tests yet)
+
+`visit()` needs the browser plugin + Playwright, which are **not installed by default**. If a run reports
+"Using the visit() function requires the Pest Plugin Browser to be installed", run once:
+
+```bash
+herd composer require pestphp/pest-plugin-browser:^4.0 --dev
+npm install -D playwright && npx playwright install chromium
+```
+
+Pest only binds `TestCase` + `RefreshDatabase` to `->in('Feature')`, so add `Browser` to that binding in
+`tests/Pest.php` (`->in('Feature', 'Browser')`) or the browser test boots with no app/DB. This is the first
+`tests/Browser/` test — creating it is expected.
 
 Core principles:
 - **Seed factory data, never the live/dev DB.** `actingAs` means you never need a password, and you never
