@@ -10,17 +10,18 @@
     "skills": [
         "fortify-development",
         "laravel-best-practices",
+        "octane-development",
         "wayfinder-development",
         "livewire-development",
         "pest-testing",
         "inertia-react-development",
         "tailwindcss-development",
         "addressing-pr-feedback",
+        "capture-screenshots",
+        "create-pr",
         "investigate-ticket",
         "self-review",
         "simplify-code",
-        "starting-work",
-        "create-pr",
-        "capture-screenshots"
+        "starting-work"
     ]
 }
