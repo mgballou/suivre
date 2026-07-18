@@ -46,6 +46,32 @@
 
 ---
 
+## Round 2 — push harder on 30 days
+
+**Origin:** Round-1 found the multi-fire soft-alert precision ceilings at ~0.58 at 30 days. Before concluding 30 days can't carry *any* honest correlation surface, test the **softest possible** version: surface only the single strongest tentative hint, and see whether it clears a usable bar for users who actually have a **strong** trigger.
+
+### Task 10: `top_hint_precision` (softest surface)
+
+**Files:** Modify `src/insights/alerts.py`; add tests to `tests/test_alerts.py`.
+
+**Interface (produce):**
+- `top_hint_precision(config, days, n_datasets=300, require_noise_band=True) -> dict` — per Monte Carlo draw (seeded `config.seed+s`, `days` via `replace`), take the **single #1-ranked tag** (`rank_suspects` row 0) as a tentative hint; if `require_noise_band`, only "surface" it when its lift exceeds the 95th-pct noise band (reuse `sweep.noise_band`), else stay silent. Keys: `precision` (share of SURFACED hints that are a true trigger; NaN if none surfaced), `coverage` (share of datasets that surfaced anything), `n_surfaced`.
+
+**Test intents:** a strong clean single-trigger config → precision 1.0, coverage > 0; a config with only noise tags (no true trigger) at a strict noise band → low coverage and precision NaN/low; determinism holds.
+
+**Steps:** TDD; full suite green; commit `Add top_hint_precision (single-hint 30-day surface)`.
+
+### Task 11: notebook Round-2 cells + Task-8 review fix
+
+**Files:** Modify `notebooks/01_lag_lift_spike.ipynb`; regenerate `outputs/thirty_day_pushharder.png`.
+
+**Cells:**
+1. **Self-containment fix (Task 8 review, Important):** add a cell in the adjustment section that actually computes and prints the per-dataset marginal-vs-adjusted top-3 agreement breakdown (agree/disagree, fixes/breaks) the markdown currently asserts (verified 210 agree / 90 disagree, 22 fixes / 22 breaks) — so the notebook is self-contained.
+2. **Precision@1 vs effect size at 30 days:** `top_hint_precision` at `days=30` across `effect_points ∈ {1,2,3,4}` (and a 60/90-day reference line); plot precision@1 and coverage vs effect size, with the 0.7 trust bar. Answers: for a user with a genuinely strong trigger, is a single tentative 30-day hint honest? Save `outputs/thirty_day_pushharder.png`.
+3. **Round-2 verdict scratch (md):** does 30 days clear the bar for strong triggers under the softest surface — yes/no, with numbers.
+
+**Steps:** author → execute headless → confirm clean + figure written → force-add + commit. Report the precision@1/coverage numbers at 30 days by effect size.
+
 ## Task 9: findings note + README + outward actions
 
-Unchanged from base-plan Task 6, but the note now carries the deep-dive: the **ADJUST-plus** verdict, the sleep/stress-confound conclusion (why food-only can't escape it), the 30-day reality, and whether a conservative soft-alert framing is viable. Then README, private repo create + push, Linear attach (outward actions — user already approved).
+Unchanged intent, but the note now carries both rounds: the **ADJUST-plus** verdict, the sleep/stress-confound conclusion (why food-only can't escape it — co-occurrence with a real trigger is the dominant contaminant), the 30-day reality **including the push-harder single-hint result**, and whether a conservative soft-alert framing is viable and from what data volume. Then README, private repo create + push, Linear attach (outward actions — user already approved). Runs after Round 2.
