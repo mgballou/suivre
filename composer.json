@@ -83,7 +83,7 @@
             "@lint",
             "@types:check",
             "@php artisan wayfinder:generate --with-form",
-            "npm run types:check",
+            "npm run check",
             "@php artisan test"
         ],
         "post-autoload-dump": [

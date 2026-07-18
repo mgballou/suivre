@@ -147,15 +147,29 @@ modes, never pure grey, never the same value as level 1.
 **Starting values (dark, on `#131314`):** `#1B1F1F` (empty), `#1E2E2E`, `#2A4646`, `#3A6362`,
 `#4E8483`, `#68A7A5`.
 
-### Two known defects, to be resolved in Ticket B
+### Two known defects — resolved in Ticket B (SUI-31)
 
 1. **The approved mockup put white text on level 4** (`#66A19F`). White on that swatch is **2.93:1
    — fails WCAG AA**. The correct rule is **dark ink through level 4, white only at level 5**.
    The mockup is wrong; this table is right.
 2. **The dark ramp has a contrast dead zone at level 4** (`#4E8483`): white gives 4.24:1 and dark
-   ink gives 3.91:1 — *both fail AA for small text*. The dark ramp's mid-high steps must be
-   retuned, or day numbers must stop sitting inside filled cells at high intensity. These hexes are
-   a validated-by-eye starting point, not final values. **Resolving this is in Ticket B's scope.**
+   ink gives 3.91:1 — *both fail AA for small text*. A mid-tone teal cannot carry AA small text
+   with either foreground, so no single swatch retune fixes it without either forcing a lightness
+   jump or moving text off the swatch.
+
+**Resolution (SUI-31).** Legibility is **decoupled from the swatch**: the day number lives in a
+small **neutral, bordered chip** (`--background` fill, `--border` hairline, `--foreground` number,
+tabular figures), so contrast is guaranteed at every intensity — the same treatment on every cell,
+no threshold switch. This lets **both ramps keep their smooth, even topography** (§2's priority):
+
+- **Light ramp — values unchanged.** The "dark ink through level 4, white at level 5" rule holds
+  on the swatch itself (verified: L4 ink `#16201F` = 5.68:1, L5 white = 4.74:1), and the chip gives
+  the number ≥16:1 regardless.
+- **Dark ramp — values unchanged** (`#1B1F1F #1E2E2E #2A4646 #3A6362 #4E8483 #68A7A5`). The dead
+  zone at L4 no longer carries text; the chip does, at ≥15:1.
+
+Implemented as `resources/js/components/suivre/day-cell.tsx`; ramp tokens live in
+`resources/css/app.css` as `--intensity-0…5`, defined twice (light/dark), never inverted.
 
 ### Type
 
@@ -314,8 +328,12 @@ worth driving. Playwright to assert a tab bar exists is theatre.
 
 ## 10. Open questions
 
-- Exact dark-ramp values at levels 4–5, pending contrast resolution (Ticket B).
-- Whether `DayCell` shows the day number inside the filled cell at high intensity, or moves it out.
-  Driven by the same contrast work.
+- ~~Exact dark-ramp values at levels 4–5, pending contrast resolution (Ticket B).~~ **Resolved
+  (SUI-31):** dark-ramp values kept as §4; legibility moved into a neutral bordered chip.
+- ~~Whether `DayCell` shows the day number inside the filled cell at high intensity, or moves it
+  out.~~ **Resolved (SUI-31):** the number sits in a neutral bordered chip on *every* cell — neither
+  bare-on-swatch nor moved outside — so the treatment is uniform across intensities.
 - Motion library: Motion (`motion.dev`) versus the View Transitions API for the day-cell shared
-  element. Decide during Ticket B; both satisfy §3.
+  element. **Still open** — SUI-31's shell motion is CSS motion tokens only (tab active state,
+  content cross-fade); the shared-element choice defers to SUI-6/SUI-7, where the interaction
+  worth driving exists. Both satisfy §3.
