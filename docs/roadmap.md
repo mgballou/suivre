@@ -11,9 +11,9 @@ Six epics decomposed from the MVP design spec (`docs/superpowers/specs/2026-07-0
 The smallest real slice: open the PWA and log a two-tap daily check-in on a calendar.
 
 - `User` timezone; day = user-local midnight.
-- Enums: `MealType`, `MoodLevel` (3-point), `SleepQuality`, `StressLevel`.
+- Enums: `MoodLevel` (3-point), `SleepQuality`, `StressLevel`.
 - `DailyCheckin` (one per user/date): sleep, mood, stress, optional note.
-- **Calendar UI** (Livewire 4 / Flux, period-tracker style) + day view + check-in flow.
+- **Calendar UI** (Inertia + React 19 + shadcn/ui, period-tracker style) + day view + check-in flow.
 
 **Depends on:** scaffold (done).
 
@@ -28,6 +28,7 @@ The smallest real slice: open the PWA and log a two-tap daily check-in on a cale
 
 ## E3 — Food & taxonomy
 
+- Enum: `MealType` (breakfast/lunch/dinner/snack).
 - `Category` curated trigger taxonomy (Filament backstage).
 - `FoodItem` global catalog, bootstrapped from **Open Food Facts** (auto-derive allergen/ingredient tags).
 - Deterministic classifier (normalize → synonym → `pg_trgm` fuzzy match) + `ReviewItem` queue.

@@ -9,8 +9,10 @@ Suivre is a **personal food-and-symptom journal** that correlates diet/lifestyle
 ## Authoritative references (read before non-trivial work)
 
 - **The `.ai/architecture` rules** (woven into this file) — the authoritative spec for how this codebase is built: invokable **Actions** carry all business logic; **enums** are domain primitives with predicate + set helpers; **domain events** decouple side-effects; **policies** return `Response`; strict Eloquent; PHPStan **level 9**. Where it is more specific than the generic Boost guidelines, it wins.
-- **`docs/decisions/decision-log.md`** — every major product/architecture decision and its reasoning. Consult before revisiting a settled choice.
-- **`docs/superpowers/specs/2026-07-06-suivre-mvp-design.md`** — the MVP design spec.
+- **The `.ai/documentation` rules** — how the docs fit together and the definition-of-done that keeps them from drifting. Read before making, or acting on, a decision that changes a settled fact.
+- **`docs/decisions/decision-log.md`** — every major product/architecture decision and its reasoning. Consult before revisiting a settled choice; the newest entries win.
+- **`docs/superpowers/specs/2026-07-09-suivre-design-system-and-app-shell-design.md`** — the current design-system & app-shell spec: the *quiet instrument* philosophy and the Inertia + React 19 + shadcn/ui stack.
+- **`docs/superpowers/specs/2026-07-06-suivre-mvp-design.md`** — the original MVP product & data-model spec. **Superseded on stack (D19) and test DB (D18)** — the product scope, principles and data model still hold; the Livewire/Flux and sqlite `:memory:` statements do not. Read its Status banner.
 
 ## Toolchain — always use Herd
 
