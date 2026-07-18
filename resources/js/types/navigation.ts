@@ -11,4 +11,10 @@ export type NavItem = {
     href: NonNullable<InertiaLinkProps['href']>;
     icon?: LucideIcon | null;
     isActive?: boolean;
+    /**
+     * Path prefix used for active-state matching. Defaults to `href`.
+     * Lets a destination stay active across sub-paths (e.g. `/settings`
+     * highlights on `/settings/security`).
+     */
+    match?: NonNullable<InertiaLinkProps['href']>;
 };
