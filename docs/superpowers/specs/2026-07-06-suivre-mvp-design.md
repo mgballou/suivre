@@ -1,8 +1,10 @@
 # Suivre — MVP Design Spec
 
 - **Date:** 2026-07-06
-- **Status:** Approved (design); scaffolding in progress
+- **Status:** **Superseded on stack (D19) and test DB (D18)**; product scope, principles and data model still current. Current stack lives in the `.ai/guidelines/*` (woven into `CLAUDE.md`); the current UI/design spec is `docs/superpowers/specs/2026-07-09-suivre-design-system-and-app-shell-design.md`.
 - **Decision log:** see `docs/decisions/decision-log.md` (D1–D12) for the reasoning behind each choice
+
+> **Superseded dimensions — do not act on these below.** The user-facing stack is **Inertia + React 19 + TypeScript + shadcn/ui**, not Livewire/Flux (D19). The Pest suite runs on **Postgres** (`suivre_test`), not sqlite `:memory:`, and `pg_trgm` needs **no abstraction** (D18). Everything else — goals, principles, data model, correlation design — still holds.
 
 ---
 
@@ -39,11 +41,11 @@ AI/LLM logging or tagging; offline capture; photo logging; meds/supplements trac
 > **Scaffolded stack (2026-07-06):** Laravel **13.18**, Livewire **4.3** (single-file components native — the "Volt" style is built in; no separate package), **Flux 2** UI kit (ships with the Livewire starter kit), Filament **5.6**, Fortify auth, Pest 4 + Larastan, Pint. Newer than originally assumed; see decision log **D13**.
 
 - **One Laravel 13 application.**
-- **User-facing app:** bespoke **Livewire 4 (native single-file components) + Flux + Tailwind + Alpine**, installable **PWA**, **online-first** (no offline in MVP).
+- **User-facing app:** bespoke **Livewire 4 (native single-file components) + Flux + Tailwind + Alpine**, installable **PWA**, **online-first** (no offline in MVP). _(Superseded by D19: now Inertia + React 19 + TypeScript + shadcn/ui.)_
 - **Operator backstage:** **Filament 5** panel — taxonomy & catalog curation, classification review queue, user/data oversight, runtime settings (Spatie Settings), internal chart/stat dashboards.
 - **Shared domain layer** underneath both UIs, per `architectural-sensibility.md`: `app/Services/{Domain}/Actions`, `Enums/`, `Events/{Domain}/`, `Observers/`, `Listeners/{Domain}/`, `Jobs/{Domain}/`, `Policies/`, `Models/` (+ `Concerns/`, `Scopes/`, `Collections/`), `Settings/`. Directory skeleton scaffolded; `ModelServiceProvider` (strict mode) and `RelationServiceProvider` (morph map) in place.
-- **Database:** **PostgreSQL** (D-default) — chosen for `pg_trgm` trigram fuzzy matching in the classifier and stronger analytical/array/jsonb support. **Note:** the Pest suite runs on sqlite `:memory:`; Postgres-specific features (e.g. `pg_trgm`) will need a Postgres test DB or an abstraction when the classifier is built.
-- **Auth:** Laravel's official **Livewire starter kit** (Fortify under the hood).
+- **Database:** **PostgreSQL** (D-default) — chosen for `pg_trgm` trigram fuzzy matching in the classifier and stronger analytical/array/jsonb support. ~~**Note:** the Pest suite runs on sqlite `:memory:`; Postgres-specific features (e.g. `pg_trgm`) will need a Postgres test DB or an abstraction when the classifier is built.~~ _(Superseded by D18: the Pest suite runs on Postgres `suivre_test`; `pg_trgm` needs only `CREATE EXTENSION IF NOT EXISTS pg_trgm` — no abstraction.)_
+- **Auth:** Laravel's official **Livewire starter kit** (Fortify under the hood). _(Superseded by D19: the React starter kit, same Fortify backend.)_
 
 ## 5. Data Model (MVP)
 
@@ -89,7 +91,7 @@ All user data is **scoped by `user_id`** from day one (D6). Enums are backed dom
 
 ## 8. UI
 
-### 8.1 Bespoke user app (Livewire/Volt PWA)
+### 8.1 Bespoke user app (Inertia + React PWA) <!-- was Livewire/Volt; superseded by D19 -->
 - **Calendar** (month view, per-day markers for check-in/meals/flares).
 - **Day view** — check-in (sleep/mood/stress), the day's meals, condition ratings, flare events; add flows.
 - **Meal entry** — free-text → classifier → confirm/edit tags.
