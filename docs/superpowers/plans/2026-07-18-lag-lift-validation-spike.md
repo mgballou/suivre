@@ -4,15 +4,15 @@
 
 **Goal:** Build a persisted private Python POC that stress-tests the D11 lag-lift insight on realistic synthetic personal-health data, and emit a go/no-go/adjust findings note for SUI-21/SUI-22.
 
-**Architecture:** A `uv`-managed, notebook-forward repo `suivre-insights-poc` (sibling of `suivre`). Pure functions in `src/insights/` (`config`, `generate`, `lag_lift`, `sweep`) are driven by one narrative notebook that renders committed figures into `outputs/`. Every draw is seeded, so figures are byte-stable. The findings note is committed back into `suivre/docs/`.
+**Architecture:** A venv+pip-managed, notebook-forward repo `suivre-insights-poc` (sibling of `suivre`). Pure functions in `src/insights/` (`config`, `generate`, `lag_lift`, `sweep`) are driven by one narrative notebook that renders committed figures into `outputs/`. Every draw is seeded, so figures are byte-stable. The findings note is committed back into `suivre/docs/`.
 
-**Tech Stack:** Python 3.12+, numpy, pandas, matplotlib, pytest, Jupyter — all via `uv`.
+**Tech Stack:** Python 3.12+, numpy, pandas, matplotlib, pytest, Jupyter — all in a project `.venv` (venv + pip).
 
 ## Global Constraints
 
 Every task's requirements implicitly include these (verbatim from the spec):
 
-- **Repo:** private GitHub repo `suivre-insights-poc` at `/Users/matthewballou/projects/suivre-insights-poc` (sibling of `suivre`). `uv`-managed.
+- **Repo:** private GitHub repo `suivre-insights-poc` at `/Users/matthewballou/projects/suivre-insights-poc` (sibling of `suivre`). venv+pip-managed: a project `.venv/`, editable install (`pip install -e .`), pinned `requirements.txt`. Invoke tools as `.venv/bin/pytest`, `.venv/bin/jupyter`.
 - **No real data; one user, one condition, one outcome series.** Intensity is an integer 0–10.
 - **Grounding is walled off:** no condition name, trigger list, or clinical claim in the repo, product, or decision log. Tag names are generic (`tag_0…`, with `dairy`/`sugar` used only as neutral labels for the co-occurring cluster).
 - **Lift = mean difference in intensity points** (headline); standardized `d` = lift / pooled SD (frontier only).
@@ -27,7 +27,7 @@ Every task's requirements implicitly include these (verbatim from the spec):
 ### Task 1: Scaffold repo + `SimConfig`
 
 **Files:**
-- Create: `/Users/matthewballou/projects/suivre-insights-poc/pyproject.toml` (via `uv init`)
+- Create: `/Users/matthewballou/projects/suivre-insights-poc/pyproject.toml` (minimal, setuptools src-layout) + `requirements.txt`, `.venv/`
 - Create: `src/insights/__init__.py`
 - Create: `src/insights/config.py`
 - Create: `tests/test_config.py`
@@ -39,12 +39,28 @@ Every task's requirements implicitly include these (verbatim from the spec):
 
 ```bash
 cd /Users/matthewballou/projects
-uv init suivre-insights-poc --package
-cd suivre-insights-poc
-uv add numpy pandas matplotlib jupyter
-uv add --dev pytest
+mkdir suivre-insights-poc && cd suivre-insights-poc
+python3 -m venv .venv
+.venv/bin/pip install --upgrade pip
+.venv/bin/pip install numpy pandas matplotlib jupyter pytest
 mkdir -p src/insights tests outputs notebooks
 touch src/insights/__init__.py
+cat > pyproject.toml <<'EOF'
+[project]
+name = "insights"
+version = "0.1.0"
+requires-python = ">=3.12"
+dependencies = ["numpy", "pandas", "matplotlib"]
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+EOF
+.venv/bin/pip install -e .
+.venv/bin/pip freeze > requirements.txt
 git init -q && printf '.venv/\n__pycache__/\n.ipynb_checkpoints/\noutputs/*.png\n' > .gitignore
 ```
 
@@ -71,7 +87,7 @@ def test_rng_is_deterministic():
 
 - [ ] **Step 3: Run test to verify it fails**
 
-Run: `uv run pytest tests/test_config.py -v`
+Run: `.venv/bin/pytest tests/test_config.py -v`
 Expected: FAIL with `ModuleNotFoundError: No module named 'insights.config'`
 
 - [ ] **Step 4: Write `src/insights/config.py`**
@@ -113,7 +129,7 @@ class SimConfig:
 
 - [ ] **Step 5: Run test to verify it passes**
 
-Run: `uv run pytest tests/test_config.py -v`
+Run: `.venv/bin/pytest tests/test_config.py -v`
 Expected: PASS (2 passed)
 
 - [ ] **Step 6: Commit**
@@ -193,7 +209,7 @@ def test_determinism():
 
 - [ ] **Step 2: Run tests to verify they fail**
 
-Run: `uv run pytest tests/test_generate.py -v`
+Run: `.venv/bin/pytest tests/test_generate.py -v`
 Expected: FAIL with `ModuleNotFoundError: No module named 'insights.generate'`
 
 - [ ] **Step 3: Write `src/insights/generate.py`**
@@ -277,7 +293,7 @@ def generate_logs(config: SimConfig, rng: np.random.Generator) -> pd.DataFrame:
 
 - [ ] **Step 4: Run tests to verify they pass**
 
-Run: `uv run pytest tests/test_generate.py -v`
+Run: `.venv/bin/pytest tests/test_generate.py -v`
 Expected: PASS (4 passed). If `test_planted_trigger_raises_next_day_intensity` is borderline, confirm the kernel used in `_clean` puts weight on lag 1 — it does `(0.0, 1.0, 0.0)`.
 
 - [ ] **Step 5: Commit**
@@ -366,7 +382,7 @@ def test_stratified_lift_recovers_a_only_effect():
 
 - [ ] **Step 2: Run tests to verify they fail**
 
-Run: `uv run pytest tests/test_lag_lift.py -v`
+Run: `.venv/bin/pytest tests/test_lag_lift.py -v`
 Expected: FAIL with `ModuleNotFoundError: No module named 'insights.lag_lift'`
 
 - [ ] **Step 3: Write `src/insights/lag_lift.py`**
@@ -446,7 +462,7 @@ def stratified_lift(intensity: np.ndarray, tag_a: np.ndarray, tag_b: np.ndarray,
 
 - [ ] **Step 4: Run tests to verify they pass**
 
-Run: `uv run pytest tests/test_lag_lift.py -v`
+Run: `.venv/bin/pytest tests/test_lag_lift.py -v`
 Expected: PASS (6 passed)
 
 - [ ] **Step 5: Commit**
@@ -516,7 +532,7 @@ def test_run_sweep_shape():
 
 - [ ] **Step 2: Run tests to verify they fail**
 
-Run: `uv run pytest tests/test_sweep.py -v`
+Run: `.venv/bin/pytest tests/test_sweep.py -v`
 Expected: FAIL with `ModuleNotFoundError: No module named 'insights.sweep'`
 
 - [ ] **Step 3: Write `src/insights/sweep.py`**
@@ -584,12 +600,12 @@ def run_sweep(base: SimConfig, days_grid, effect_grid, n_datasets: int = 300) ->
 
 - [ ] **Step 4: Run tests to verify they pass**
 
-Run: `uv run pytest tests/test_sweep.py -v`
+Run: `.venv/bin/pytest tests/test_sweep.py -v`
 Expected: PASS (4 passed). `test_strong_clean_signal_has_high_hit_rate` is the load-bearing one — a clean strong signal must be reliably detectable, else the pipeline is broken.
 
 - [ ] **Step 5: Run the full suite + commit**
 
-Run: `uv run pytest -q`
+Run: `.venv/bin/pytest -q`
 Expected: all green.
 ```bash
 git add -A && git commit -m "Add sweep, detection hit criterion, and damage metrics"
@@ -622,7 +638,7 @@ Author these cells (markdown headers + code). Each code cell calls the modules �
 
 - [ ] **Step 2: Run the notebook end-to-end deterministically**
 
-Run: `uv run jupyter nbconvert --to notebook --execute --inplace notebooks/01_lag_lift_spike.ipynb`
+Run: `.venv/bin/jupyter nbconvert --to notebook --execute --inplace notebooks/01_lag_lift_spike.ipynb`
 Expected: executes with no errors; all five `outputs/` files written.
 
 - [ ] **Step 3: Force-add the figures (gitignore excludes png by default) + commit**
@@ -647,7 +663,7 @@ git commit -m "Add narrative notebook and generated figures"
 
 - [ ] **Step 1: Write the POC `README.md`**
 
-Cover: one-paragraph purpose; the walled-off grounding note; `uv run pytest` + the nbconvert command to reproduce; a "Headline verdict" section stating GO / NO-GO / ADJUST with the key numbers; a link back to the `suivre` spec.
+Cover: one-paragraph purpose; the walled-off grounding note; `.venv/bin/pytest` + the nbconvert command to reproduce; a "Headline verdict" section stating GO / NO-GO / ADJUST with the key numbers; a link back to the `suivre` spec.
 
 - [ ] **Step 2: Write the findings note** in `suivre/docs/2026-07-18-lag-lift-spike-findings.md`
 

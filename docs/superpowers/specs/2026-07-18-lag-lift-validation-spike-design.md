@@ -33,12 +33,12 @@ Parameter realism for this research session is grounded in a real chronic inflam
 
 ## Repository & layout
 
-Private GitHub repo `suivre-insights-poc`, `uv`-managed, single global seed. Notebook-forward:
+Private GitHub repo `suivre-insights-poc`, venv+pip-managed (project `.venv/`, editable install, pinned `requirements.txt`), single global seed. Notebook-forward:
 
 ```
 suivre-insights-poc/
   README.md               # what it is, how to run, headline verdict
-  pyproject.toml          # uv, pinned deps, seeded
+  pyproject.toml          # setuptools src-layout; deps pinned in requirements.txt
   notebooks/
     01_lag_lift_spike.ipynb   # narrative: model -> math -> sweep -> heatmaps -> verdict
   src/insights/
@@ -154,13 +154,13 @@ The heatmap/sweep layer is validated by eye in the notebook, not asserted.
 
 ## Reproducibility
 
-`uv` with pinned dependencies; one global seed threaded through the config; Monte Carlo draws seeded per cell so figures are byte-stable across runs. `notebooks/01_lag_lift_spike.ipynb` run-all regenerates every artifact in `outputs/`.
+A project `.venv` (venv + pip) with dependencies pinned in `requirements.txt`; one global seed threaded through the config; Monte Carlo draws seeded per cell so figures are byte-stable across runs. `notebooks/01_lag_lift_spike.ipynb` run-all regenerates every artifact in `outputs/`.
 
 ---
 
 ## Definition of done
 
-- `suivre-insights-poc` repo exists (private), runs clean via `uv`, notebook executes end-to-end deterministically.
+- `suivre-insights-poc` repo exists (private), runs clean in its `.venv`, notebook executes end-to-end deterministically.
 - All `outputs/` figures generated, including the realistic-scenario frontier, the confounding-damage panel, and the co-occurrence marginal-vs-stratified comparison.
 - Findings note committed to `suivre/docs/` with a clear GO/NO-GO/ADJUST verdict and the explicit SUI-21 / SUI-22 guidance above.
 - SUI-36 linked to the POC repo; the ticket's original "fully disposable" AC is superseded by this design (already noted on the ticket).
