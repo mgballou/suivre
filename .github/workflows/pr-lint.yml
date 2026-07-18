@@ -20,7 +20,8 @@ concurrency:
 jobs:
   body:
     name: PR body conforms to template
-    if: github.event.pull_request.draft == false
+    # Skip drafts (WIP bodies) and Dependabot (no Linear ticket by design).
+    if: github.event.pull_request.draft == false && github.actor != 'dependabot[bot]'
     runs-on: ubuntu-latest
     steps:
       - name: Validate PR body
