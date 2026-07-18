@@ -1,0 +1,52 @@
+name: pr-lint
+
+# Enforces one canonical PR shape regardless of author or tool: any PR (web or
+# `gh pr create --body`) whose body lacks a Linear ticket link, a checked "Types
+# of changes" box, or a Deployment decision fails this check. Not a required
+# check while the repo is on the free plan (no branch protection), but visible
+# on every PR and ready to be marked required once the repo goes Pro.
+
+on:
+  pull_request:
+    types: [opened, edited, reopened, ready_for_review, synchronize]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pr-lint-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  body:
+    name: PR body conforms to template
+    # Skip drafts (WIP bodies) and Dependabot (no Linear ticket by design).
+    if: github.event.pull_request.draft == false && github.actor != 'dependabot[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validate PR body
+        env:
+          # Untrusted input — passed via env, never interpolated into the script.
+          BODY: ${{ github.event.pull_request.body }}
+        run: |
+          fail=0
+
+          if ! grep -qiE 'linear\.app/[^ )]*/issue/SUI-[0-9]+' <<< "$BODY"; then
+            echo "::error::PR body is missing a Linear ticket link (linear.app/.../issue/SUI-<n>). Fill the Ticket section."
+            fail=1
+          fi
+
+          if ! grep -qiE '^- \[x\] (Bug fix|New feature|Content or styling|DevOps|Documentation)' <<< "$BODY"; then
+            echo "::error::Check at least one 'Types of changes' box (- [x])."
+            fail=1
+          fi
+
+          if ! grep -qiE '^- \[x\] (None|Yes)' <<< "$BODY"; then
+            echo "::error::Make a Deployment steps decision (check None or Yes)."
+            fail=1
+          fi
+
+          if [ "$fail" -eq 0 ]; then
+            echo "PR body conforms to the template."
+          fi
+          exit $fail

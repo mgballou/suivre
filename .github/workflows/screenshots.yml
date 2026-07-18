@@ -1,0 +1,145 @@
+name: screenshots
+
+# Novel accelerant (D22): on UI-touching PRs, run the Pest browser screenshot
+# test headless and post the shots to the PR. Images are parked on a dedicated
+# `ci-screenshots` branch and embedded via the SHA-pinned raw URL form (the only
+# form that renders in a PR body), so PR branches stay clean. Also uploaded as a
+# workflow artifact as a guaranteed fallback. The posting step is best-effort —
+# it never fails the check; a green `screenshots` check means the test rendered.
+
+on:
+  pull_request:
+    paths:
+      - 'app/Filament/**'
+      - 'resources/js/pages/**'
+      - 'resources/views/**'
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: screenshots-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  capture:
+    name: Capture + post PR screenshots
+    if: github.event.pull_request.draft == false && github.actor != 'dependabot[bot]'
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_USER: root
+          POSTGRES_DB: suivre_test
+          POSTGRES_HOST_AUTH_METHOD: trust
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          persist-credentials: false
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # v2
+        with:
+          php-version: '8.4'
+          extensions: pdo_pgsql, pgsql
+          tools: composer:v2
+
+      - name: Install PHP Dependencies
+        uses: ramsey/composer-install@3cf229dc2919194e9e36783941438d17239e8520 # 3.1.1
+
+      - name: Setup Node
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install Node Dependencies
+        run: npm ci
+
+      - name: Install Playwright (chromium)
+        run: npx playwright install --with-deps chromium
+
+      - name: Copy Environment File
+        run: cp .env.example .env
+
+      - name: Generate Application Key
+        run: php artisan key:generate
+
+      - name: Build Assets
+        run: npm run build
+
+      - name: Capture screenshots
+        run: |
+          mkdir -p tests/Browser/Screenshots/app
+          php artisan test tests/Browser/AppScreenshotsTest.php
+
+      - name: Upload screenshots artifact
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: pr-${{ github.event.pull_request.number }}-screenshots
+          path: tests/Browser/Screenshots/app/
+          if-no-files-found: warn
+
+      - name: Publish shots inline to the PR
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          PR: ${{ github.event.pull_request.number }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          SRC="$PWD/tests/Browser/Screenshots/app"
+          if ! ls "$SRC"/*.png >/dev/null 2>&1; then
+            echo "No screenshots produced — skipping."
+            exit 0
+          fi
+
+          DIR="pr-$PR/$HEAD_SHA"
+          WORK=/tmp/cishots
+          AUTH="https://x-access-token:${GH_TOKEN}@github.com/${REPO}.git"
+
+          # Append to the long-lived ci-screenshots branch, or start it fresh.
+          if git ls-remote --exit-code --heads "$AUTH" ci-screenshots >/dev/null 2>&1; then
+            git clone --quiet --branch ci-screenshots --single-branch "$AUTH" "$WORK"
+          else
+            mkdir -p "$WORK"
+            git -C "$WORK" init --quiet
+            git -C "$WORK" checkout --quiet -b ci-screenshots
+          fi
+
+          mkdir -p "$WORK/$DIR"
+          cp "$SRC"/*.png "$WORK/$DIR/"
+          git -C "$WORK" config user.name "github-actions[bot]"
+          git -C "$WORK" config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git -C "$WORK" add "$DIR"
+          git -C "$WORK" commit --quiet -m "Screenshots for PR #$PR @ $HEAD_SHA"
+          git -C "$WORK" push --quiet "$AUTH" HEAD:ci-screenshots
+          SHOT_SHA=$(git -C "$WORK" rev-parse HEAD)
+
+          {
+            echo "## 📸 Screenshots — \`${HEAD_SHA:0:7}\`"
+            echo
+            echo "_Rendered headless by the \`screenshots\` workflow; files live on the \`ci-screenshots\` branch._"
+            for f in "$SRC"/*.png; do
+              name=$(basename "$f")
+              echo
+              echo "**$name**"
+              echo
+              echo "![$name](https://github.com/${REPO}/raw/${SHOT_SHA}/${DIR}/${name})"
+            done
+          } > /tmp/comment.md
+
+          # Edit the bot's previous comment if there is one, else create it (no spam on re-push).
+          gh pr comment "$PR" --edit-last --create-if-none --body-file /tmp/comment.md

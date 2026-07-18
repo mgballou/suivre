@@ -27,3 +27,10 @@ Suivre is a **personal food-and-symptom journal** that correlates diet/lifestyle
 
 - `herd composer check` runs **Pint + PHPStan (level 9) + `wayfinder:generate` + `tsc --noEmit` + tests**. Keep them all green. There is **no PHPStan baseline** — fix causes, never suppress. Wayfinder's output is gitignored, so it must be generated before `tsc` can typecheck.
 - Pest 4, tests mirror source paths. The suite runs on a dedicated **Postgres** database (`suivre_test`); Postgres-only features like `pg_trgm` (used by the food classifier) work in both local (Herd) and CI (`postgres:18`) and need only `CREATE EXTENSION IF NOT EXISTS pg_trgm` in a migration — not an abstraction.
+- CI mirrors `herd composer check` across parallel jobs (`static-analysis` = PHPStan L9, `frontend` = `tsc --noEmit` + vitest, `test` = Pest on `postgres:18`, `quality` = Pint `--test`). A green CI run means the same thing as a green local gate; the pre-push hook is bypassable with `--no-verify`, so CI is the non-bypassable gate.
+
+## Pull requests
+
+- **One canonical shape.** Every PR body fills `.github/PULL_REQUEST_TEMPLATE.md` — keep all sections (Ticket · Technical description · Types of changes · Screenshots · Deployment steps). A `pull_request` **pr-lint** check fails any PR whose body lacks a Linear ticket link, a checked "Types of changes" box, or a Deployment decision — so `gh pr create --body …` from an agent must conform, not just the web compose box.
+- **Technical description** uses the global `CLAUDE.md` bullet style (`Verb X preposition Y … clause Z`), 5–8 bullets, focused on the branch-vs-`main` diff — not a file inventory. Invoke the **create-pr** skill to build a compliant PR; it resolves the `SUI-<id>` from the branch name and opens a draft.
+- For a UI change, offer **capture-screenshots** to generate and embed shots in the Screenshots section.
