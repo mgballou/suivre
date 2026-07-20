@@ -177,3 +177,60 @@
         @apply bg-background text-foreground;
     }
 }
+
+/*
+ * Month navigation pans in the direction of time: a later month enters from
+ * the right, an earlier month from the left. Displacement is small — the
+ * motion explains the gesture, it does not perform it.
+ */
+@keyframes pan-forward {
+    from {
+        opacity: 0;
+        transform: translateX(3%);
+    }
+
+    to {
+        opacity: 1;
+        transform: none;
+    }
+}
+
+@keyframes pan-back {
+    from {
+        opacity: 0;
+        transform: translateX(-3%);
+    }
+
+    to {
+        opacity: 1;
+        transform: none;
+    }
+}
+
+@keyframes quiet-fade {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+@layer components {
+    .pan-forward {
+        animation: pan-forward var(--dur-spatial) var(--ease-quiet) both;
+    }
+
+    .pan-back {
+        animation: pan-back var(--dur-spatial) var(--ease-quiet) both;
+    }
+}
+
+/* Reduced motion keeps the feedback, drops the displacement. */
+@media (prefers-reduced-motion: reduce) {
+    .pan-forward,
+    .pan-back {
+        animation: quiet-fade var(--dur-base) var(--ease-quiet) both;
+    }
+}
