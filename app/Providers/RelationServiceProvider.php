@@ -10,6 +10,8 @@ use App\Models\ConditionLog;
 use App\Models\DailyCheckin;
 use App\Models\FlareEvent;
 use App\Models\FoodEntry;
+use App\Models\FoodItem;
+use App\Models\FoodItemAlias;
 use App\Models\Meal;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\Relation;
@@ -31,6 +33,8 @@ class RelationServiceProvider extends ServiceProvider
         'categories' => Category::class,
         'meals' => Meal::class,
         'food_entries' => FoodEntry::class,
+        'food_items' => FoodItem::class,
+        'food_item_aliases' => FoodItemAlias::class,
     ];
 
     public function boot(): void
