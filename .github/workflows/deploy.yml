@@ -4,6 +4,12 @@ name: deploy
 # This is our CI gate: a red main never reaches `railway up`. Uses a Railway
 # project token (RAILWAY_TOKEN secret) instead of Railway's GitHub App, which we
 # could not connect for this repo.
+#
+# A docs-, guideline- or CI-only merge ships nothing, so the `changes` job below
+# skips the deploy for those. It cannot be a `paths-ignore` on this workflow:
+# `workflow_run` does not support path filters, and moving the filter onto
+# `tests.yml` would stop the suite running on docs PRs — a bigger change, and a
+# weaker gate.
 on:
   workflow_run:
     workflows: [tests]
@@ -14,12 +20,67 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  deploy:
+  changes:
+    name: Does anything deployable change?
     # Gate: the tests run must have succeeded, on a push to main (not a PR run).
     if: >-
       github.event.workflow_run.conclusion == 'success' &&
       github.event.workflow_run.head_branch == 'main' &&
       github.event.workflow_run.event == 'push'
+    runs-on: ubuntu-latest
+    outputs:
+      deployable: ${{ steps.filter.outputs.deployable }}
+    steps:
+      - name: Checkout the tested commit
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+          # Need the parent to diff against: the merge/squash commit plus one.
+          fetch-depth: 2
+          persist-credentials: false
+
+      - name: Classify the changed paths
+        id: filter
+        run: |
+          set -uo pipefail
+
+          # Paths that never reach the running application. The list is opt-out,
+          # so a new top-level directory counts as shippable until someone says
+          # otherwise. Note tests/ is absent deliberately — test files ship with
+          # the repo, and a test-only merge is rare enough that deploying is
+          # cheaper than the surprise of not doing so.
+          IGNORED='^(docs|\.ai|\.claude|\.github|bin)/|\.md$|^(\.gitignore|\.gitattributes|\.editorconfig|LICENSE)$'
+
+          # First-parent diff: for a squash merge that is the previous main; for
+          # a merge commit it is every change the merge introduced.
+          #
+          # Fails open. A multi-commit direct push to main is judged on its tip
+          # alone, and a missing parent (first commit, shallow clone) yields no
+          # diff — in both cases deploy rather than strand a real change on an
+          # undeployed main.
+          if ! changed=$(git diff --name-only HEAD^ HEAD 2>/dev/null) || [ -z "$changed" ]; then
+            echo "Could not determine changed files — deploying to be safe."
+            echo "deployable=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          echo "Changed files:"
+          echo "$changed" | sed 's/^/  /'
+
+          deployable=$(echo "$changed" | grep -vE "$IGNORED" || true)
+
+          if [ -z "$deployable" ]; then
+            echo "deployable=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::Only non-application paths changed — skipping the staging deploy."
+          else
+            echo "deployable=true" >> "$GITHUB_OUTPUT"
+            echo "Deployable changes:"
+            echo "$deployable" | sed 's/^/  /'
+          fi
+
+  deploy:
+    needs: changes
+    if: needs.changes.outputs.deployable == 'true'
     runs-on: ubuntu-latest
     env:
       RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
