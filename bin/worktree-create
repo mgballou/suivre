@@ -23,7 +23,7 @@ set -euo pipefail
 #
 # Creates:
 #   ../<branch>/                       -- worktree directory (sibling of main)
-#   Postgres:  <project>_<ticket>      -- isolated database
+#   Postgres:  <project>_<ticket>      -- isolated *development* database
 #   URL:       https://<ticket>.<project>.test
 #
 # Notes:
@@ -31,6 +31,14 @@ set -euo pipefail
 #   - Postgres has no CREATE DATABASE IF NOT EXISTS, and psql is not on PATH
 #     (databases are managed via TablePlus/Herd), so the database is created and
 #     dropped through `herd php` + PDO against the maintenance `postgres` db.
+#   - The *test* database is NOT isolated. Per D18 the suite runs on Postgres,
+#     and phpunit.xml pins DB_DATABASE=suivre_test for every checkout — so all
+#     worktrees run Pest against one shared database. Running the suite in two
+#     worktrees at once lets them migrate and truncate underneath each other,
+#     which surfaces as intermittent failures in files you never touched.
+#     Isolating it would mean dropping the hardcoded DB_DATABASE from
+#     phpunit.xml so .env.testing wins, then provisioning a per-worktree test
+#     database here. Until then: run the suite in one worktree at a time.
 
 BRANCH="${1:?Usage: bin/worktree-create <branch>}"
 
@@ -116,8 +124,13 @@ sed -i '' "s|^APP_URL=.*|APP_URL=${URL}|" .env
 sed -i '' "s|^DB_DATABASE=.*|DB_DATABASE=${DB_NAME}|" .env
 
 # Laravel loads .env.testing instead of .env when APP_ENV=testing (phpunit.xml).
-# This project's suite runs on sqlite :memory: (configured in phpunit.xml), so a
-# .env.testing is optional; copy it verbatim when present.
+# A .env.testing is optional here — phpunit.xml sets the test connection itself —
+# so copy it verbatim when present.
+#
+# Note it cannot redirect the test database: phpunit.xml pins DB_DATABASE to
+# suivre_test, and PHPUnit's <env> is set before Laravel boots, so neither
+# .env.testing nor an exported DB_DATABASE overrides it. See the shared-test-
+# database note in the header.
 if [ -f "$MAIN_ROOT/.env.testing" ]; then
     cp "$MAIN_ROOT/.env.testing" "$WT_DIR/.env.testing"
 fi
