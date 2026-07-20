@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Providers;
 
+use App\Models\Category;
 use App\Models\Condition;
 use App\Models\ConditionLog;
 use App\Models\DailyCheckin;
@@ -27,6 +28,7 @@ class RelationServiceProvider extends ServiceProvider
         'conditions' => Condition::class,
         'condition_logs' => ConditionLog::class,
         'flare_events' => FlareEvent::class,
+        'categories' => Category::class,
         'meals' => Meal::class,
         'food_entries' => FoodEntry::class,
     ];
