@@ -21,11 +21,13 @@ vi.mock('@inertiajs/react', () => ({
     },
 }));
 
+import type { IsoDate } from '@/types';
 import { MonthGrid, type CalendarDay, type MonthGridProps } from './month-grid';
 
 function daysOfJuly(overrides: CalendarDay[] = []): CalendarDay[] {
     return Array.from({ length: 31 }, (_, index) => {
-        const date = `2026-07-${String(index + 1).padStart(2, '0')}`;
+        // Zero-padding widens the type back to `string`; re-assert the format.
+        const date = `2026-07-${String(index + 1).padStart(2, '0')}` as IsoDate;
         const override = overrides.find((day) => day.date === date);
 
         return {
