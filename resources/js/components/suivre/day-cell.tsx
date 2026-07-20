@@ -1,23 +1,18 @@
 import { cn } from '@/lib/utils';
+import type { IsoDate } from '@/types';
 
+/** Step 0 is an unlogged day; 1–5 climb the ramp. */
 export type IntensityLevel = 0 | 1 | 2 | 3 | 4 | 5;
 
 type DayCellProps = {
-    /** ISO date, `YYYY-MM-DD`. */
-    date: string;
-    /** 0 = no entry; 1–5 climb the ramp. */
+    date: IsoDate;
     level: IntensityLevel;
     isToday?: boolean;
+    hasCheckin?: boolean;
     className?: string;
 };
 
-/**
- * One calendar cell. The ramp fills the cell; the day number lives in a neutral
- * bordered chip so it stays AA-legible at every intensity — its contrast is
- * decoupled from the swatch. SUI-6 assembles these into the month grid.
- *
- * Ramp classes are listed literally so Tailwind's JIT emits them.
- */
+/** Listed literally rather than interpolated, so Tailwind's JIT emits them. */
 const RAMP_BG: Record<IntensityLevel, string> = {
     0: 'bg-intensity-0',
     1: 'bg-intensity-1',
@@ -27,16 +22,31 @@ const RAMP_BG: Record<IntensityLevel, string> = {
     5: 'bg-intensity-5',
 };
 
-export function DayCell({ date, level, isToday = false, className }: DayCellProps) {
+/**
+ * One calendar cell. The day number sits in a neutral chip so its contrast is
+ * decoupled from the swatch and stays AA-legible at every step, and a logged day
+ * carries a marker dot because the ramp's lower steps are deliberately quiet.
+ * The background eases over `--dur-arrival` so a logged colour arrives rather
+ * than snapping (D20) — colour-only, so reduced-motion needs no special case.
+ */
+export function DayCell({
+    date,
+    level,
+    isToday = false,
+    hasCheckin = false,
+    className,
+}: DayCellProps) {
     const dayNumber = Number(date.slice(8, 10));
 
     return (
         <div
             data-level={level}
             data-today={isToday ? '' : undefined}
-            aria-label={`${date}, intensity ${level} of 5`}
+            data-checkin={hasCheckin ? '' : undefined}
+            aria-label={`${date}, intensity ${level} of 5${hasCheckin ? ', checked in' : ''}`}
             className={cn(
                 'relative flex min-h-11 min-w-11 rounded-md',
+                'transition-colors duration-[var(--dur-arrival)] ease-quiet',
                 RAMP_BG[level],
                 isToday && 'ring-2 ring-primary ring-inset',
                 className,
@@ -51,6 +61,13 @@ export function DayCell({ date, level, isToday = false, className }: DayCellProp
             >
                 {dayNumber}
             </span>
+
+            {hasCheckin && (
+                <span
+                    aria-hidden
+                    className="absolute inset-x-0 bottom-1.5 mx-auto size-1.5 rounded-full bg-primary"
+                />
+            )}
         </div>
     );
 }
