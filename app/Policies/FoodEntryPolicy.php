@@ -1,0 +1,45 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Policies;
+
+use App\Models\FoodEntry;
+use App\Models\User;
+use Illuminate\Auth\Access\Response;
+
+/**
+ * A food entry has no owner of its own — it inherits ownership from the meal
+ * it belongs to, which is the single source of truth for the check.
+ */
+class FoodEntryPolicy
+{
+    public function view(User $user, FoodEntry $foodEntry): Response
+    {
+        return $this->owns($user, $foodEntry);
+    }
+
+    public function create(User $user): Response
+    {
+        return Response::allow();
+    }
+
+    public function update(User $user, FoodEntry $foodEntry): Response
+    {
+        return $this->owns($user, $foodEntry);
+    }
+
+    public function delete(User $user, FoodEntry $foodEntry): Response
+    {
+        return $this->owns($user, $foodEntry);
+    }
+
+    private function owns(User $user, FoodEntry $foodEntry): Response
+    {
+        $foodEntry->loadMissing('meal');
+
+        return $foodEntry->meal->user_id === $user->id
+            ? Response::allow()
+            : Response::deny('You do not own this food entry.');
+    }
+}
