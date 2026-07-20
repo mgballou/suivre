@@ -35,6 +35,7 @@ use Laravel\Fortify\TwoFactorAuthenticatable;
  * @property CarbonImmutable|null $created_at
  * @property CarbonImmutable|null $updated_at
  * @property-read Collection<int, DailyCheckin> $dailyCheckins
+ * @property-read Collection<int, Meal> $meals
  */
 #[Fillable(['name', 'email', 'password', 'timezone'])]
 #[Hidden(['password', 'two_factor_secret', 'two_factor_recovery_codes', 'remember_token'])]
@@ -88,6 +89,14 @@ class User extends Authenticatable implements FilamentUser, PasskeyUser
     public function flareEvents(): HasMany
     {
         return $this->hasMany(FlareEvent::class);
+    }
+
+    /**
+     * @return HasMany<Meal, $this>
+     */
+    public function meals(): HasMany
+    {
+        return $this->hasMany(Meal::class);
     }
 
     /**
