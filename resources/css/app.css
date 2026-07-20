@@ -217,6 +217,45 @@
     }
 }
 
+@keyframes quiet-fade-out {
+    from {
+        opacity: 1;
+    }
+
+    to {
+        opacity: 0;
+    }
+}
+
+/*
+ * A day lifts up out of the calendar cell that was tapped, and lowers back
+ * home on the way out. Displacement is small and the scale barely reads: the
+ * motion names the direction of the move, it does not perform it.
+ */
+@keyframes lift-in {
+    from {
+        opacity: 0;
+        transform: translateY(8px) scale(0.98);
+    }
+
+    to {
+        opacity: 1;
+        transform: none;
+    }
+}
+
+@keyframes lower-out {
+    from {
+        opacity: 1;
+        transform: none;
+    }
+
+    to {
+        opacity: 0;
+        transform: translateY(8px) scale(0.98);
+    }
+}
+
 @layer components {
     .pan-forward {
         animation: pan-forward var(--dur-spatial) var(--ease-quiet) both;
@@ -225,12 +264,25 @@
     .pan-back {
         animation: pan-back var(--dur-spatial) var(--ease-quiet) both;
     }
+
+    .lift-in {
+        animation: lift-in var(--dur-spatial) var(--ease-quiet) both;
+    }
+
+    .lower-out {
+        animation: lower-out var(--dur-spatial) var(--ease-exit) both;
+    }
 }
 
 /* Reduced motion keeps the feedback, drops the displacement. */
 @media (prefers-reduced-motion: reduce) {
     .pan-forward,
-    .pan-back {
+    .pan-back,
+    .lift-in {
         animation: quiet-fade var(--dur-base) var(--ease-quiet) both;
+    }
+
+    .lower-out {
+        animation: quiet-fade-out var(--dur-base) var(--ease-quiet) both;
     }
 }
