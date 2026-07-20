@@ -28,6 +28,25 @@ describe('DayCell', () => {
         expect(cell).toHaveClass('min-h-11', 'min-w-11');
     });
 
+    it('marks a logged day and says so in its label', () => {
+        const { container } = render(
+            <DayCell date="2026-07-09" level={1} hasCheckin />,
+        );
+        const cell = container.firstElementChild;
+
+        expect(cell).toHaveAttribute('data-checkin');
+        expect(cell).toHaveAttribute(
+            'aria-label',
+            '2026-07-09, intensity 1 of 5, checked in',
+        );
+    });
+
+    it('leaves an unlogged day unmarked', () => {
+        const { container } = render(<DayCell date="2026-07-09" level={0} />);
+
+        expect(container.firstElementChild).not.toHaveAttribute('data-checkin');
+    });
+
     it('marks today with a static ring', () => {
         const { container } = render(
             <DayCell date="2026-07-09" level={3} isToday />,
