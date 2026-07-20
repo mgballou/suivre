@@ -4,42 +4,38 @@ import { useEffect, useRef } from 'react';
 import { DayCell, type IntensityLevel } from '@/components/suivre/day-cell';
 import { cn } from '@/lib/utils';
 import { calendar, day } from '@/routes';
+import type { IsoDate, IsoMonth } from '@/types';
 
 export type CalendarDay = {
-    /** ISO date, `YYYY-MM-DD`. */
-    date: string;
+    date: IsoDate;
     level: IntensityLevel;
     hasCheckin: boolean;
     isToday: boolean;
 };
 
 export type MonthGridProps = {
-    /** `YYYY-MM`. */
-    month: string;
-    /** Rendered month heading, e.g. `July 2026`. */
+    month: IsoMonth;
     label: string;
-    previousMonth: string;
-    nextMonth: string;
-    /** Empty cells before the 1st, so the grid lines up under Monday. */
+    previousMonth: IsoMonth;
+    nextMonth: IsoMonth;
     leadingBlanks: number;
     days: CalendarDay[];
 };
 
-/** ISO weeks — Monday first, matching the server's `leadingBlanks`. */
+/**
+ * ISO weeks — Monday first. The server computes `leadingBlanks` from the same
+ * convention, so the two must change together.
+ */
 const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
 const NAV_CLASSES =
     'inline-flex min-h-11 min-w-11 items-center justify-center rounded-md text-muted-foreground transition-colors duration-[var(--dur-micro)] ease-quiet hover:bg-accent hover:text-foreground';
 
 /**
- * The month calendar. Every date comes from the server — the client never
- * derives a day, because `new Date()` reads the device timezone rather than
- * the user's configured one.
- *
- * Navigation pans in the direction of time (D20): a later month enters from
- * the right, an earlier month from the left. Direction is read from the
- * previous render, since Inertia re-renders this component in place rather
- * than remounting it.
+ * The month calendar. Navigation pans in the direction of time (D20): a later
+ * month enters from the right, an earlier one from the left. The direction is
+ * read from the previous render because Inertia re-renders this component in
+ * place rather than remounting it.
  */
 export function MonthGrid({
     month,
