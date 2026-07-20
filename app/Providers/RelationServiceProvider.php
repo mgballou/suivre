@@ -8,6 +8,8 @@ use App\Models\Condition;
 use App\Models\ConditionLog;
 use App\Models\DailyCheckin;
 use App\Models\FlareEvent;
+use App\Models\FoodEntry;
+use App\Models\Meal;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\ServiceProvider;
@@ -25,6 +27,8 @@ class RelationServiceProvider extends ServiceProvider
         'conditions' => Condition::class,
         'condition_logs' => ConditionLog::class,
         'flare_events' => FlareEvent::class,
+        'meals' => Meal::class,
+        'food_entries' => FoodEntry::class,
     ];
 
     public function boot(): void
