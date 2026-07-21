@@ -14,10 +14,6 @@ class BuildIntensityTrend
 {
     private const DEFAULT_WINDOW_DAYS = 30;
 
-    public function __construct(
-        private readonly DailyIntensityRepository $dailyIntensity,
-    ) {}
-
     /**
      * Assemble a rolling window of daily intensity ending on the user's today.
      *
@@ -33,7 +29,7 @@ class BuildIntensityTrend
         $end = $today->startOfDay();
         $start = $end->subDays($windowDays - 1);
 
-        $ratings = $this->dailyIntensity->worstPerDay($user, $start, $end);
+        $ratings = app(DailyIntensityRepository::class)->worstPerDay($user, $start, $end);
 
         $points = [];
 

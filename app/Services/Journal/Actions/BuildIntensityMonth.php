@@ -13,10 +13,6 @@ use Carbon\CarbonImmutable;
 
 class BuildIntensityMonth
 {
-    public function __construct(
-        private readonly DailyIntensityRepository $dailyIntensity,
-    ) {}
-
     /**
      * Assemble one month of ramp steps for the calendar heatmap.
      *
@@ -28,7 +24,7 @@ class BuildIntensityMonth
         $start = $month->startOfMonth();
         $end = $start->endOfMonth();
 
-        $ratings = $this->dailyIntensity->worstPerDay($user, $start, $end);
+        $ratings = app(DailyIntensityRepository::class)->worstPerDay($user, $start, $end);
 
         $days = [];
 
