@@ -45,11 +45,17 @@
     --color-input: var(--input);
     --color-ring: var(--ring);
 
-    --color-chart-1: var(--chart-1);
-    --color-chart-2: var(--chart-2);
-    --color-chart-3: var(--chart-3);
-    --color-chart-4: var(--chart-4);
-    --color-chart-5: var(--chart-5);
+    /*
+     * Categorical series slots — identity, not magnitude. Assigned in fixed
+     * order and never cycled; a fifth series folds into "Other" rather than
+     * growing this list. Petrol is deliberately absent: at OKLCH chroma 0.064
+     * it sits under the 0.10 floor and reads as gray, so it cannot carry
+     * identity. It stays the sequential hue (--intensity-*) instead.
+     */
+    --color-series-1: var(--series-1);
+    --color-series-2: var(--series-2);
+    --color-series-3: var(--series-3);
+    --color-series-4: var(--series-4);
 
     --color-sidebar: var(--sidebar);
     --color-sidebar-foreground: var(--sidebar-foreground);
@@ -94,11 +100,10 @@
     --border: #e4e7e6;
     --input: #e4e7e6;
     --ring: #3f7d7b;
-    --chart-1: #3f7d7b;
-    --chart-2: #66a19f;
-    --chart-3: #92c0bf;
-    --chart-4: #bedbda;
-    --chart-5: #e2eeee;
+    --series-1: #2a78d6;
+    --series-2: #008300;
+    --series-3: #e87ba4;
+    --series-4: #eda100;
     --radius: 0.5rem;
     --sidebar: #f4f5f5;
     --sidebar-foreground: #16201f;
@@ -145,11 +150,11 @@
     --border: #2a2e2e;
     --input: #2a2e2e;
     --ring: #68a7a5;
-    --chart-1: #68a7a5;
-    --chart-2: #4e8483;
-    --chart-3: #3a6362;
-    --chart-4: #2a4646;
-    --chart-5: #1e2e2e;
+    /* Same four hues, re-stepped for the dark surface — never a lightness flip. */
+    --series-1: #3987e5;
+    --series-2: #008300;
+    --series-3: #d55181;
+    --series-4: #c98500;
     --sidebar: #17191a;
     --sidebar-foreground: #edeeee;
     --sidebar-primary: #68a7a5;
