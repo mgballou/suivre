@@ -36,6 +36,11 @@ class CategoryPolicy
         return Response::allow();
     }
 
+    public function deleteAny(User $user): Response
+    {
+        return Response::allow();
+    }
+
     public function delete(User $user, Category $category): Response
     {
         return Response::allow();

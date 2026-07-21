@@ -39,3 +39,11 @@ it('resolves ownership without the meal relation preloaded', function (): void {
 it('allows any user to create', function (): void {
     expect($this->policy->create($this->other)->allowed())->toBeTrue();
 });
+
+it('allows any authenticated operator a backstage oversight list and bulk delete', function (): void {
+    $user = User::factory()->createQuietly();
+    $policy = new FoodEntryPolicy();
+
+    expect($policy->viewAny($user)->allowed())->toBeTrue();
+    expect($policy->deleteAny($user)->allowed())->toBeTrue();
+});
