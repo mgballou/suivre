@@ -11,10 +11,6 @@ use Illuminate\Http\RedirectResponse;
 
 class DayCheckinController extends Controller
 {
-    public function __construct(
-        private readonly RecordDailyCheckin $recordDailyCheckin,
-    ) {}
-
     /**
      * Persist one day's check-in.
      *
@@ -30,7 +26,7 @@ class DayCheckinController extends Controller
         /** @var User $user */
         $user = $request->user();
 
-        ($this->recordDailyCheckin)(
+        app(RecordDailyCheckin::class)(
             user: $user,
             date: $request->checkinDate(),
             mood: $request->mood(),
