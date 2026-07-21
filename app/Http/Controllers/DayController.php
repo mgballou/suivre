@@ -14,11 +14,6 @@ use Inertia\Response;
 
 class DayController extends Controller
 {
-    public function __construct(
-        private readonly ResolveUserDay $resolveUserDay,
-        private readonly BuildDayView $buildDayView,
-    ) {}
-
     /**
      * Render one day's check-in surface.
      *
@@ -33,11 +28,11 @@ class DayController extends Controller
 
         abort_unless($this->isRealDate($date), 404);
 
-        $today = ($this->resolveUserDay)($user, CarbonImmutable::now());
+        $today = app(ResolveUserDay::class)($user, CarbonImmutable::now());
 
         return Inertia::render(
             'day',
-            ($this->buildDayView)($user, CarbonImmutable::parse($date), $today)->toArray(),
+            app(BuildDayView::class)($user, CarbonImmutable::parse($date), $today)->toArray(),
         );
     }
 
