@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Tests\Feature\Filament\Resources\Meals;
 
 use App\Enums\MealType;
-use App\Filament\Resources\Meals\Pages\EditMeal;
 use App\Filament\Resources\Meals\Pages\ListMeals;
 use App\Filament\Resources\Meals\Pages\ViewMeal;
 use App\Models\FoodEntry;
@@ -31,12 +30,12 @@ it('lists meals', function (): void {
         ->assertCanSeeTableRecords($meals);
 });
 
-it('exposes the row actions on the list page', function (): void {
+it('offers view but never edit — the backstage is read-only', function (): void {
     $meal = Meal::factory()->createQuietly(['user_id' => $this->operator->id]);
 
     Livewire::test(ListMeals::class)
         ->assertActionExists(TestAction::make(ViewAction::class)->table($meal))
-        ->assertActionExists(TestAction::make(EditAction::class)->table($meal));
+        ->assertActionDoesNotExist(TestAction::make(EditAction::class)->table($meal));
 });
 
 it('renders the derived local day, which needs the owner eager-loaded', function (): void {
@@ -68,21 +67,6 @@ it('filters the table down to meals with no food entries', function (): void {
         ->filterTable('empty')
         ->assertCanSeeTableRecords([$empty])
         ->assertCanNotSeeTableRecords([$filled]);
-});
-
-it('updates a meal', function (): void {
-    $meal = Meal::factory()->ofType(MealType::Snack)->createQuietly(['user_id' => $this->operator->id]);
-
-    Livewire::test(EditMeal::class, ['record' => $meal->getRouteKey()])
-        ->fillForm(['meal_type' => MealType::Dinner->value])
-        ->call('save')
-        ->assertNotified()
-        ->assertHasNoFormErrors();
-
-    $this->assertDatabaseHas('meals', [
-        'id' => $meal->id,
-        'meal_type' => MealType::Dinner->value,
-    ]);
 });
 
 it('renders a meal and its entries in the infolist', function (): void {

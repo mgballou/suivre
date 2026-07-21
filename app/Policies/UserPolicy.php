@@ -8,11 +8,12 @@ use App\Models\User;
 use Illuminate\Auth\Access\Response;
 
 /**
- * Accounts are inspected and corrected from the backstage, never created or
- * destroyed there: registration owns creation, and deleting a user cascades
- * away every meal, check-in and flare they ever logged. While the MVP is
- * single-user every authenticated user is the operator; the seam for the
- * operator-role check is here for when Suivre goes multi-user.
+ * Accounts are inspected from the backstage, never created, edited or destroyed
+ * there: registration owns creation, the user maintains their own profile, and
+ * deleting a user would cascade away every meal, check-in and flare they ever
+ * logged. While the MVP is single-user every authenticated user is the
+ * operator; the seam for the operator-role check is here for when Suivre goes
+ * multi-user.
  */
 class UserPolicy
 {
@@ -33,7 +34,7 @@ class UserPolicy
 
     public function update(User $user, User $subject): Response
     {
-        return Response::allow();
+        return Response::deny('Accounts are maintained by their owner, not the backstage.');
     }
 
     public function delete(User $user, User $subject): Response

@@ -4,11 +4,9 @@ declare(strict_types=1);
 
 namespace App\Filament\Resources\FoodEntries;
 
-use App\Filament\Resources\FoodEntries\Pages\EditFoodEntry;
 use App\Filament\Resources\FoodEntries\Pages\ListFoodEntries;
 use App\Filament\Resources\FoodEntries\Pages\ViewFoodEntry;
 use App\Filament\Resources\FoodEntries\Schemas\FoodEntriesTable;
-use App\Filament\Resources\FoodEntries\Schemas\FoodEntryForm;
 use App\Filament\Resources\FoodEntries\Schemas\FoodEntryInfolist;
 use App\Models\FoodEntry;
 use BackedEnum;
@@ -51,11 +49,6 @@ class FoodEntryResource extends Resource
         return parent::getEloquentQuery()->with('meal.user');
     }
 
-    public static function form(Schema $schema): Schema
-    {
-        return FoodEntryForm::configure($schema);
-    }
-
     public static function infolist(Schema $schema): Schema
     {
         return FoodEntryInfolist::configure($schema);
@@ -82,7 +75,6 @@ class FoodEntryResource extends Resource
         return [
             'index' => ListFoodEntries::route('/'),
             'view' => ViewFoodEntry::route('/{record}'),
-            'edit' => EditFoodEntry::route('/{record}/edit'),
         ];
     }
 }

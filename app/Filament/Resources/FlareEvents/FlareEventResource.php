@@ -4,10 +4,8 @@ declare(strict_types=1);
 
 namespace App\Filament\Resources\FlareEvents;
 
-use App\Filament\Resources\FlareEvents\Pages\EditFlareEvent;
 use App\Filament\Resources\FlareEvents\Pages\ListFlareEvents;
 use App\Filament\Resources\FlareEvents\Pages\ViewFlareEvent;
-use App\Filament\Resources\FlareEvents\Schemas\FlareEventForm;
 use App\Filament\Resources\FlareEvents\Schemas\FlareEventInfolist;
 use App\Filament\Resources\FlareEvents\Schemas\FlareEventsTable;
 use App\Models\FlareEvent;
@@ -23,7 +21,8 @@ use UnitEnum;
 /**
  * Backstage oversight of acute flare-ups — the event half of the hybrid
  * conditions model, and the outcome variable the correlation engine reads. It
- * is logged in the user app; the backstage corrects and removes.
+ * is user-generated, logged in the user app; the backstage has read-only
+ * visibility only, never create/edit/delete.
  *
  * @extends resource<FlareEvent>
  */
@@ -41,11 +40,6 @@ class FlareEventResource extends Resource
     public static function getEloquentQuery(): Builder
     {
         return parent::getEloquentQuery()->with(['user', 'condition']);
-    }
-
-    public static function form(Schema $schema): Schema
-    {
-        return FlareEventForm::configure($schema);
     }
 
     public static function infolist(Schema $schema): Schema
@@ -74,7 +68,6 @@ class FlareEventResource extends Resource
         return [
             'index' => ListFlareEvents::route('/'),
             'view' => ViewFlareEvent::route('/{record}'),
-            'edit' => EditFlareEvent::route('/{record}/edit'),
         ];
     }
 }
