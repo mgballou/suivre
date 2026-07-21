@@ -26,7 +26,7 @@ return new class extends Migration
              */
             $table->string('normalized_name');
 
-            $table->string('kind')->default('item');
+            $table->string('type')->default('item');
 
             /**
              * Provenance of an imported row (D10): `source` names the dataset
@@ -38,7 +38,7 @@ return new class extends Migration
 
             $table->timestamps();
 
-            $table->index('kind');
+            $table->index('type');
             $table->index('normalized_name');
 
             /**

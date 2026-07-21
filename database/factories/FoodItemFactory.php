@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Database\Factories;
 
-use App\Enums\FoodItemKind;
+use App\Enums\FoodItemType;
 use App\Models\Category;
 use App\Models\FoodItem;
 use Illuminate\Database\Eloquent\Factories\Factory;
@@ -27,7 +27,7 @@ class FoodItemFactory extends Factory
     {
         return [
             'name' => ucfirst(fake()->unique()->word()),
-            'kind' => FoodItemKind::Item,
+            'type' => FoodItemType::Item,
             'source' => null,
             'source_ref' => null,
         ];
@@ -49,7 +49,7 @@ class FoodItemFactory extends Factory
     public function dish(): static
     {
         return $this->state(fn (array $attributes) => [
-            'kind' => FoodItemKind::Dish,
+            'type' => FoodItemType::Dish,
         ]);
     }
 
