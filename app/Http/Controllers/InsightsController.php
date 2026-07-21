@@ -15,12 +15,6 @@ use Inertia\Response;
 
 class InsightsController extends Controller
 {
-    public function __construct(
-        private readonly ResolveUserDay $resolveUserDay,
-        private readonly BuildIntensityTrend $buildIntensityTrend,
-        private readonly BuildIntensityMonth $buildIntensityMonth,
-    ) {}
-
     /**
      * Render the charting reference surface.
      *
@@ -33,11 +27,11 @@ class InsightsController extends Controller
         /** @var User $user */
         $user = $request->user();
 
-        $today = ($this->resolveUserDay)($user, CarbonImmutable::now());
+        $today = app(ResolveUserDay::class)($user, CarbonImmutable::now());
 
         return Inertia::render('insights', [
-            'trend' => ($this->buildIntensityTrend)($user, $today)->toArray(),
-            'month' => ($this->buildIntensityMonth)($user, $today)->toArray(),
+            'trend' => app(BuildIntensityTrend::class)($user, $today)->toArray(),
+            'month' => app(BuildIntensityMonth::class)($user, $today)->toArray(),
         ]);
     }
 }
