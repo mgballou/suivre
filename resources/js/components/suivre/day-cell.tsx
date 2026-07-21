@@ -1,8 +1,8 @@
+import { INTENSITY_BG } from '@/lib/intensity';
 import { cn } from '@/lib/utils';
-import type { IsoDate } from '@/types';
+import type { IntensityLevel, IsoDate } from '@/types';
 
-/** Step 0 is an unlogged day; 1–5 climb the ramp. */
-export type IntensityLevel = 0 | 1 | 2 | 3 | 4 | 5;
+export type { IntensityLevel };
 
 type DayCellProps = {
     date: IsoDate;
@@ -47,7 +47,7 @@ export function DayCell({
             className={cn(
                 'relative flex min-h-11 min-w-11 rounded-md',
                 'transition-colors duration-[var(--dur-arrival)] ease-quiet',
-                RAMP_BG[level],
+                INTENSITY_BG[level],
                 isToday && 'ring-2 ring-primary ring-inset',
                 className,
             )}
