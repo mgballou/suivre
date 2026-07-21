@@ -18,9 +18,9 @@ use Filament\Support\Contracts\HasLabel;
  * imports arrive in, whose categories come from its own allergen/ingredient
  * data. A Dish is a composite the dataset cannot describe (curry, carbonara);
  * its categories are curated and it inherits further signal from the components
- * linked to it, so it is the only kind that carries a composition.
+ * linked to it, so it is the only type that carries a composition.
  */
-enum FoodItemKind: string implements HasColor, HasDescription, HasIcon, HasLabel
+enum FoodItemType: string implements HasColor, HasDescription, HasIcon, HasLabel
 {
     use HasOrderedCases;
 
@@ -70,7 +70,7 @@ enum FoodItemKind: string implements HasColor, HasDescription, HasIcon, HasLabel
     }
 
     /**
-     * Whether this kind may carry a curated component list (D9).
+     * Whether this type may carry a curated component list (D9).
      */
     public function isComposite(): bool
     {
@@ -78,7 +78,7 @@ enum FoodItemKind: string implements HasColor, HasDescription, HasIcon, HasLabel
     }
 
     /**
-     * Whether a dataset import may create this kind on its own (D10).
+     * Whether a dataset import may create this type on its own (D10).
      */
     public function isImportable(): bool
     {
@@ -86,7 +86,7 @@ enum FoodItemKind: string implements HasColor, HasDescription, HasIcon, HasLabel
     }
 
     /**
-     * Kinds whose categories are assembled from a curated composition rather
+     * Types whose categories are assembled from a curated composition rather
      * than from the imported dataset alone (D9).
      *
      * @return array<int, self>
@@ -99,7 +99,7 @@ enum FoodItemKind: string implements HasColor, HasDescription, HasIcon, HasLabel
     }
 
     /**
-     * Kinds a dataset import can create directly from structured product data
+     * Types a dataset import can create directly from structured product data
      * (D10). The import never invents a composite dish.
      *
      * @return array<int, self>

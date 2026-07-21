@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models;
 
-use App\Enums\FoodItemKind;
+use App\Enums\FoodItemType;
 use Carbon\CarbonImmutable;
 use Database\Factories\FoodItemFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -28,7 +28,7 @@ use Illuminate\Support\Str;
  * @property int $id
  * @property string $name
  * @property string $normalized_name
- * @property FoodItemKind $kind
+ * @property FoodItemType $type
  * @property string|null $source
  * @property string|null $source_ref
  * @property CarbonImmutable|null $created_at
@@ -38,7 +38,7 @@ use Illuminate\Support\Str;
  * @property-read Collection<int, FoodItem> $components
  * @property-read Collection<int, FoodItem> $dishes
  */
-#[Fillable(['name', 'kind', 'source', 'source_ref'])]
+#[Fillable(['name', 'type', 'source', 'source_ref'])]
 class FoodItem extends Model
 {
     /** @use HasFactory<FoodItemFactory> */
@@ -132,7 +132,7 @@ class FoodItem extends Model
     protected function casts(): array
     {
         return [
-            'kind' => FoodItemKind::class,
+            'type' => FoodItemType::class,
         ];
     }
 
