@@ -15,13 +15,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ->where('month', '[0-9]{4}-[0-9]{2}')
         ->name('calendar');
 
-    Route::get('day/{date}', DayController::class)
-        ->where('date', '[0-9]{4}-[0-9]{2}-[0-9]{2}')
-        ->name('day');
-
-    Route::post('day/{date}/checkin', DayCheckinController::class)
-        ->where('date', '[0-9]{4}-[0-9]{2}-[0-9]{2}')
-        ->name('day.checkin');
+    Route::prefix('day/{date}')
+        ->where(['date' => '[0-9]{4}-[0-9]{2}-[0-9]{2}'])
+        ->group(function () {
+            Route::get('/', DayController::class)->name('day');
+            Route::post('checkin', DayCheckinController::class)->name('day.checkin');
+        });
 
     Route::inertia('insights', 'insights')->name('insights');
 });
