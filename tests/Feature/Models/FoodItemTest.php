@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Models;
 
-use App\Enums\FoodItemKind;
+use App\Enums\FoodItemType;
 use App\Models\Category;
 use App\Models\FoodItem;
 use Illuminate\Database\Eloquent\MassAssignmentException;
@@ -25,14 +25,14 @@ it('is global — the table carries no owning user', function (): void {
     expect(Schema::hasColumn('food_items', 'user_id'))->toBeFalse();
 });
 
-it('casts kind to the FoodItemKind enum', function (): void {
+it('casts type to the FoodItemType enum', function (): void {
     $foodItem = FoodItem::factory()->dish()->createQuietly();
 
-    expect($foodItem->fresh()->kind)->toBe(FoodItemKind::Dish);
+    expect($foodItem->fresh()->type)->toBe(FoodItemType::Dish);
 });
 
 it('defaults to an atomic item', function (): void {
-    expect(FoodItem::factory()->createQuietly()->kind)->toBe(FoodItemKind::Item);
+    expect(FoodItem::factory()->createQuietly()->type)->toBe(FoodItemType::Item);
 });
 
 it('resolves its morph alias from the enforced morph map', function (): void {
@@ -132,7 +132,7 @@ it('builds a composite dish from catalog components', function (): void {
 
     $korma = FoodItem::factory()->named('Chicken korma')->composedOf([$rice, $cream])->createQuietly();
 
-    expect($korma->kind->isComposite())->toBeTrue();
+    expect($korma->type->isComposite())->toBeTrue();
     expect($korma->load('components')->components->pluck('id')->all())
         ->toEqualCanonicalizing([$rice->id, $cream->id]);
     expect($cream->load('dishes')->dishes->pluck('id')->all())->toBe([$korma->id]);
