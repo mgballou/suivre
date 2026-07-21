@@ -39,15 +39,6 @@ class MealPolicy
         return $this->owns($user, $meal);
     }
 
-    /**
-     * Bulk deletion is checked once rather than per record, so it stays a
-     * whole-collection decision — the seam for the operator-role check.
-     */
-    public function deleteAny(User $user): Response
-    {
-        return Response::allow();
-    }
-
     private function owns(User $user, Meal $meal): Response
     {
         return $meal->user_id === $user->id

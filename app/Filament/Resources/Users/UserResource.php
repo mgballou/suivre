@@ -4,10 +4,8 @@ declare(strict_types=1);
 
 namespace App\Filament\Resources\Users;
 
-use App\Filament\Resources\Users\Pages\EditUser;
 use App\Filament\Resources\Users\Pages\ListUsers;
 use App\Filament\Resources\Users\Pages\ViewUser;
-use App\Filament\Resources\Users\Schemas\UserForm;
 use App\Filament\Resources\Users\Schemas\UserInfolist;
 use App\Filament\Resources\Users\Schemas\UsersTable;
 use App\Models\User;
@@ -21,9 +19,10 @@ use Illuminate\Database\Eloquent\Builder;
 use UnitEnum;
 
 /**
- * Backstage oversight of accounts. Read-mostly: registration owns creation and
- * deletion cascades away an entire journal, so neither is offered here — only
- * the corrections an operator genuinely needs (name, email, timezone).
+ * Backstage oversight of accounts. Account data is user-owned; the backstage
+ * has read-only visibility only, never create/edit/delete — registration owns
+ * creation, the user maintains their own profile, and deletion would cascade
+ * away an entire journal.
  *
  * @extends resource<User>
  */
@@ -47,11 +46,6 @@ class UserResource extends Resource
     {
         return parent::getEloquentQuery()
             ->withCount(['meals', 'dailyCheckins', 'conditions', 'flareEvents']);
-    }
-
-    public static function form(Schema $schema): Schema
-    {
-        return UserForm::configure($schema);
     }
 
     public static function infolist(Schema $schema): Schema
@@ -80,7 +74,6 @@ class UserResource extends Resource
         return [
             'index' => ListUsers::route('/'),
             'view' => ViewUser::route('/{record}'),
-            'edit' => EditUser::route('/{record}/edit'),
         ];
     }
 }

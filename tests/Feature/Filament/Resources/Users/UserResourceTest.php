@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Filament\Resources\Users;
 
-use App\Filament\Resources\Users\Pages\EditUser;
 use App\Filament\Resources\Users\Pages\ListUsers;
 use App\Filament\Resources\Users\Pages\ViewUser;
 use App\Models\Meal;
@@ -28,10 +27,10 @@ it('lists users', function (): void {
         ->assertCanSeeTableRecords($users->push($this->operator));
 });
 
-it('exposes the row actions on the list page', function (): void {
+it('offers view but never edit — the backstage is read-only', function (): void {
     Livewire::test(ListUsers::class)
         ->assertActionExists(TestAction::make(ViewAction::class)->table($this->operator))
-        ->assertActionExists(TestAction::make(EditAction::class)->table($this->operator));
+        ->assertActionDoesNotExist(TestAction::make(EditAction::class)->table($this->operator));
 });
 
 it('filters the table by email verification', function (): void {
@@ -41,23 +40,6 @@ it('filters the table by email verification', function (): void {
         ->filterTable('email_verified_at', false)
         ->assertCanSeeTableRecords([$unverified])
         ->assertCanNotSeeTableRecords([$this->operator]);
-});
-
-it('updates a user', function (): void {
-    Livewire::test(EditUser::class, ['record' => $this->operator->getRouteKey()])
-        ->fillForm([
-            'name' => 'Corrected Name',
-            'timezone' => 'Europe/London',
-        ])
-        ->call('save')
-        ->assertNotified()
-        ->assertHasNoFormErrors();
-
-    $this->assertDatabaseHas('users', [
-        'id' => $this->operator->id,
-        'name' => 'Corrected Name',
-        'timezone' => 'Europe/London',
-    ]);
 });
 
 it('renders a user in the infolist', function (): void {

@@ -23,14 +23,14 @@ it('returns a Response rather than a bool from every ability', function (): void
     expect($this->policy->deleteAny($this->operator))->toBeInstanceOf(Response::class);
 });
 
-it('allows listing, viewing and correcting an account', function (): void {
+it('allows listing and viewing an account', function (): void {
     expect($this->policy->viewAny($this->operator)->allowed())->toBeTrue();
     expect($this->policy->view($this->operator, $this->subject)->allowed())->toBeTrue();
-    expect($this->policy->update($this->operator, $this->subject)->allowed())->toBeTrue();
 });
 
-it('forbids creating or deleting an account from the backstage', function (): void {
+it('forbids creating, editing or deleting an account from the backstage', function (): void {
     expect($this->policy->create($this->operator)->denied())->toBeTrue();
+    expect($this->policy->update($this->operator, $this->subject)->denied())->toBeTrue();
     expect($this->policy->delete($this->operator, $this->subject)->denied())->toBeTrue();
     expect($this->policy->deleteAny($this->operator)->denied())->toBeTrue();
 });
