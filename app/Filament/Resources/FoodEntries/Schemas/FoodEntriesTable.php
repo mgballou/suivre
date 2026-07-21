@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Filament\Resources\FoodEntries\Schemas;
 
 use App\Enums\MealType;
+use App\Models\FoodEntry;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
@@ -34,12 +35,10 @@ class FoodEntriesTable
                     ->placeholder('—'),
                 IconColumn::make('food_item_id')
                     ->label('Classified')
-                    ->boolean(),
-                TextColumn::make('food_item_id')
-                    ->label('Catalog item')
-                    ->numeric()
-                    ->placeholder('—')
-                    ->toggleable(isToggledHiddenByDefault: true),
+                    ->boolean()
+                    ->tooltip(fn (FoodEntry $record): string => $record->food_item_id === null
+                        ? 'Pending classification'
+                        : "Catalog item #{$record->food_item_id}"),
                 TextColumn::make('meal.meal_type')
                     ->label('Meal')
                     ->badge()
