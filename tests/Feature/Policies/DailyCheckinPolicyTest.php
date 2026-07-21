@@ -35,3 +35,11 @@ it('allows any user to create a check-in', function (): void {
 
     expect($policy->create($user)->allowed())->toBeTrue();
 });
+
+it('allows any authenticated operator a backstage oversight list and bulk delete', function (): void {
+    $user = User::factory()->createQuietly();
+    $policy = new DailyCheckinPolicy();
+
+    expect($policy->viewAny($user)->allowed())->toBeTrue();
+    expect($policy->deleteAny($user)->allowed())->toBeTrue();
+});
