@@ -4,10 +4,8 @@ declare(strict_types=1);
 
 namespace App\Filament\Resources\Meals;
 
-use App\Filament\Resources\Meals\Pages\EditMeal;
 use App\Filament\Resources\Meals\Pages\ListMeals;
 use App\Filament\Resources\Meals\Pages\ViewMeal;
-use App\Filament\Resources\Meals\Schemas\MealForm;
 use App\Filament\Resources\Meals\Schemas\MealInfolist;
 use App\Filament\Resources\Meals\Schemas\MealsTable;
 use App\Models\Meal;
@@ -21,8 +19,9 @@ use Illuminate\Database\Eloquent\Builder;
 use UnitEnum;
 
 /**
- * Backstage oversight of eating occasions. Meals are authored in the user app;
- * the backstage corrects a mistyped instant or slot and removes bad rows.
+ * Backstage oversight of eating occasions. Meals are user-generated, authored
+ * in the user app; the backstage has read-only visibility only, never
+ * create/edit/delete.
  *
  * `user` is eager-loaded because `Meal::$date` resolves the user's local day
  * through their timezone and yields null unless the relation is loaded —
@@ -46,11 +45,6 @@ class MealResource extends Resource
         return parent::getEloquentQuery()
             ->with('user')
             ->withCount('entries');
-    }
-
-    public static function form(Schema $schema): Schema
-    {
-        return MealForm::configure($schema);
     }
 
     public static function infolist(Schema $schema): Schema
@@ -79,7 +73,6 @@ class MealResource extends Resource
         return [
             'index' => ListMeals::route('/'),
             'view' => ViewMeal::route('/{record}'),
-            'edit' => EditMeal::route('/{record}/edit'),
         ];
     }
 }

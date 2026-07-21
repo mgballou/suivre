@@ -4,10 +4,8 @@ declare(strict_types=1);
 
 namespace App\Filament\Resources\ConditionLogs;
 
-use App\Filament\Resources\ConditionLogs\Pages\EditConditionLog;
 use App\Filament\Resources\ConditionLogs\Pages\ListConditionLogs;
 use App\Filament\Resources\ConditionLogs\Pages\ViewConditionLog;
-use App\Filament\Resources\ConditionLogs\Schemas\ConditionLogForm;
 use App\Filament\Resources\ConditionLogs\Schemas\ConditionLogInfolist;
 use App\Filament\Resources\ConditionLogs\Schemas\ConditionLogsTable;
 use App\Models\ConditionLog;
@@ -21,9 +19,9 @@ use Illuminate\Database\Eloquent\Builder;
 use UnitEnum;
 
 /**
- * Backstage oversight of the daily 0–10 condition ratings. The
- * `(user_id, condition_id, date)` triple is unique at the database level, so
- * the backstage corrects an intensity but never re-parents or creates a rating.
+ * Backstage oversight of the daily 0–10 condition ratings. Ratings are
+ * user-generated, authored in the user app; the backstage has read-only
+ * visibility only, never create/edit/delete.
  *
  * @extends resource<ConditionLog>
  */
@@ -45,11 +43,6 @@ class ConditionLogResource extends Resource
     public static function getEloquentQuery(): Builder
     {
         return parent::getEloquentQuery()->with(['user', 'condition']);
-    }
-
-    public static function form(Schema $schema): Schema
-    {
-        return ConditionLogForm::configure($schema);
     }
 
     public static function infolist(Schema $schema): Schema
@@ -78,7 +71,6 @@ class ConditionLogResource extends Resource
         return [
             'index' => ListConditionLogs::route('/'),
             'view' => ViewConditionLog::route('/{record}'),
-            'edit' => EditConditionLog::route('/{record}/edit'),
         ];
     }
 }

@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Filament\Resources\ConditionLogs;
 
-use App\Filament\Resources\ConditionLogs\Pages\EditConditionLog;
 use App\Filament\Resources\ConditionLogs\Pages\ListConditionLogs;
 use App\Filament\Resources\ConditionLogs\Pages\ViewConditionLog;
 use App\Models\Condition;
@@ -31,12 +30,12 @@ it('lists condition ratings', function (): void {
         ->assertCanSeeTableRecords($logs);
 });
 
-it('exposes the row actions on the list page', function (): void {
+it('offers view but never edit — the backstage is read-only', function (): void {
     $log = ConditionLog::factory()->forCondition($this->condition)->createQuietly();
 
     Livewire::test(ListConditionLogs::class)
         ->assertActionExists(TestAction::make(ViewAction::class)->table($log))
-        ->assertActionExists(TestAction::make(EditAction::class)->table($log));
+        ->assertActionDoesNotExist(TestAction::make(EditAction::class)->table($log));
 });
 
 it('filters the table by condition', function (): void {
@@ -64,30 +63,6 @@ it('filters the table by date range', function (): void {
         ->filterTable('date', ['from' => '2026-07-01'])
         ->assertCanSeeTableRecords([$recent])
         ->assertCanNotSeeTableRecords([$old]);
-});
-
-it('updates a rating', function (): void {
-    $log = ConditionLog::factory()->forCondition($this->condition)->createQuietly(['intensity' => 3]);
-
-    Livewire::test(EditConditionLog::class, ['record' => $log->getRouteKey()])
-        ->fillForm(['intensity' => 8])
-        ->call('save')
-        ->assertNotified()
-        ->assertHasNoFormErrors();
-
-    $this->assertDatabaseHas('condition_logs', [
-        'id' => $log->id,
-        'intensity' => 8,
-    ]);
-});
-
-it('rejects an intensity outside the 0-10 scale', function (): void {
-    $log = ConditionLog::factory()->forCondition($this->condition)->createQuietly();
-
-    Livewire::test(EditConditionLog::class, ['record' => $log->getRouteKey()])
-        ->fillForm(['intensity' => 11])
-        ->call('save')
-        ->assertHasFormErrors(['intensity']);
 });
 
 it('renders a rating in the infolist', function (): void {

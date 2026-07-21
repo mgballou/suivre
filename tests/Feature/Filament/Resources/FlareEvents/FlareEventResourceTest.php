@@ -5,13 +5,11 @@ declare(strict_types=1);
 namespace Tests\Feature\Filament\Resources\FlareEvents;
 
 use App\Enums\FlareIntensity;
-use App\Filament\Resources\FlareEvents\Pages\EditFlareEvent;
 use App\Filament\Resources\FlareEvents\Pages\ListFlareEvents;
 use App\Filament\Resources\FlareEvents\Pages\ViewFlareEvent;
 use App\Models\Condition;
 use App\Models\FlareEvent;
 use App\Models\User;
-use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Actions\Testing\TestAction;
 use Filament\Actions\ViewAction;
@@ -32,12 +30,12 @@ it('lists flare events', function (): void {
         ->assertCanSeeTableRecords($flares);
 });
 
-it('exposes the row actions on the list page', function (): void {
+it('offers view but never edit — the backstage is read-only', function (): void {
     $flare = FlareEvent::factory()->forCondition($this->condition)->createQuietly();
 
     Livewire::test(ListFlareEvents::class)
         ->assertActionExists(TestAction::make(ViewAction::class)->table($flare))
-        ->assertActionExists(TestAction::make(EditAction::class)->table($flare));
+        ->assertActionDoesNotExist(TestAction::make(EditAction::class)->table($flare));
 });
 
 it('filters the table by intensity', function (): void {
@@ -58,38 +56,6 @@ it('filters the table down to clinically significant flares', function (): void 
         ->filterTable('significant')
         ->assertCanSeeTableRecords([$moderate])
         ->assertCanNotSeeTableRecords([$mild]);
-});
-
-it('bulk deletes flare events from the list page', function (): void {
-    $flares = FlareEvent::factory()->count(2)->forCondition($this->condition)->createQuietly();
-
-    Livewire::test(ListFlareEvents::class)
-        ->selectTableRecords($flares->modelKeys())
-        ->callAction(TestAction::make(DeleteBulkAction::class)->table()->bulk())
-        ->assertNotified();
-
-    foreach ($flares as $flare) {
-        $this->assertDatabaseMissing('flare_events', ['id' => $flare->id]);
-    }
-});
-
-it('updates a flare event', function (): void {
-    $flare = FlareEvent::factory()->forCondition($this->condition)->createQuietly(['intensity' => FlareIntensity::Mild]);
-
-    Livewire::test(EditFlareEvent::class, ['record' => $flare->getRouteKey()])
-        ->fillForm([
-            'intensity' => FlareIntensity::Severe->value,
-            'duration_minutes' => 90,
-        ])
-        ->call('save')
-        ->assertNotified()
-        ->assertHasNoFormErrors();
-
-    $this->assertDatabaseHas('flare_events', [
-        'id' => $flare->id,
-        'intensity' => FlareIntensity::Severe->value,
-        'duration_minutes' => 90,
-    ]);
 });
 
 it('renders a flare event in the infolist', function (): void {

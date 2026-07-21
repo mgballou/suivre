@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Tests\Feature\Filament\Resources\FoodEntries;
 
 use App\Enums\MealType;
-use App\Filament\Resources\FoodEntries\Pages\EditFoodEntry;
 use App\Filament\Resources\FoodEntries\Pages\ListFoodEntries;
 use App\Filament\Resources\FoodEntries\Pages\ViewFoodEntry;
 use App\Models\FoodEntry;
@@ -31,12 +30,12 @@ it('lists food entries', function (): void {
         ->assertCanSeeTableRecords($entries);
 });
 
-it('exposes the row actions on the list page', function (): void {
+it('offers view but never edit — the backstage is read-only', function (): void {
     $entry = FoodEntry::factory()->forMeal($this->meal)->createQuietly();
 
     Livewire::test(ListFoodEntries::class)
         ->assertActionExists(TestAction::make(ViewAction::class)->table($entry))
-        ->assertActionExists(TestAction::make(EditAction::class)->table($entry));
+        ->assertActionDoesNotExist(TestAction::make(EditAction::class)->table($entry));
 });
 
 it('renders the inherited eaten-at, which needs the parent meal eager-loaded', function (): void {
@@ -66,30 +65,6 @@ it('filters the table by the parent meal type', function (): void {
         ->filterTable('meal_type', [MealType::Breakfast->value])
         ->assertCanSeeTableRecords([$breakfastEntry])
         ->assertCanNotSeeTableRecords([$dinnerEntry]);
-});
-
-it('updates a food entry', function (): void {
-    $entry = FoodEntry::factory()->forMeal($this->meal)->createQuietly(['text' => 'tomatoe']);
-
-    Livewire::test(EditFoodEntry::class, ['record' => $entry->getRouteKey()])
-        ->fillForm(['text' => 'tomato'])
-        ->call('save')
-        ->assertNotified()
-        ->assertHasNoFormErrors();
-
-    $this->assertDatabaseHas('food_entries', [
-        'id' => $entry->id,
-        'text' => 'tomato',
-    ]);
-});
-
-it('requires either raw text or a catalog item', function (): void {
-    $entry = FoodEntry::factory()->forMeal($this->meal)->createQuietly();
-
-    Livewire::test(EditFoodEntry::class, ['record' => $entry->getRouteKey()])
-        ->fillForm(['text' => null, 'food_item_id' => null])
-        ->call('save')
-        ->assertHasFormErrors(['text']);
 });
 
 it('renders a food entry in the infolist', function (): void {

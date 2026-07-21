@@ -39,15 +39,6 @@ class DailyCheckinPolicy
         return $this->owns($user, $checkin);
     }
 
-    /**
-     * Bulk deletion is checked once rather than per record, so it stays a
-     * whole-collection decision — the seam for the operator-role check.
-     */
-    public function deleteAny(User $user): Response
-    {
-        return Response::allow();
-    }
-
     private function owns(User $user, DailyCheckin $checkin): Response
     {
         return $user->id === $checkin->user_id
