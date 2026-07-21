@@ -7,9 +7,10 @@ description: "Use when review feedback needs picking up on an existing pull requ
 
 ## Overview
 
-Pick up review comments on an open PR, work each one to a resolution, and reply in-thread saying what
-happened. Feedback on an unmerged branch is **pre-deployment**: edit the original migration/file in
-place, no follow-up migration, no compatibility shims (see the root `CLAUDE.md`).
+Pick up review comments on an open PR, work each one to a resolution, and acknowledge each — a 👍
+reaction plus the push for anything you simply implemented, a written reply only where you carry
+something the diff cannot. Feedback on an unmerged branch is **pre-deployment**: edit the original
+migration/file in place, no follow-up migration, no compatibility shims (see the root `CLAUDE.md`).
 
 **Not every comment is a change request.** A question wants an answer. A suggestion may warrant a
 reasoned decline. Only defects want a diff. Deciding which is the work.
@@ -86,16 +87,44 @@ experiment, run it — change the code, run the gate, then revert and confirm `g
 
 ### 5. Verify
 
-`herd composer check` (Pint + PHPStan level 9 + Pest) must be green before you reply. Quote the real
-counts. If nothing changed, say so.
+`herd composer check` (Pint + PHPStan level 9 + Pest) must be green before you reply or push. Verify
+for yourself — do **not** narrate the counts into a thread.
 
-### 6. Reply in each thread
+### 6. Acknowledge — react, don't narrate
+
+The pushed commit is the acknowledgment; the diff already shows what you changed. For a thread you
+simply implemented, react and move on — a 👍 plus the push is the complete reply, and your agreement
+is implicit in the diff:
 
 ```bash
-gh api repos/OWNER/REPO/pulls/N/comments/COMMENT_ID/replies -f body="..."
+gh api --method POST repos/OWNER/REPO/pulls/comments/COMMENT_ID/reactions -f content=+1
 ```
 
-State what you did, the evidence, and — when nothing changed — say `No code change.` and why.
+Write a reply **only** when you carry something the diff cannot:
+
+| Situation | Reply |
+|---|---|
+| You decline / won't take a step | The reason, briefly. |
+| A genuine question | The answer — often **no code change**. |
+| An oversight or new discovery | Surface it. |
+| You filed a ticket | One line: `Noticed X while here — filed SUI-XX (link).` |
+
+A reply to `repos/OWNER/REPO/pulls/N/comments/COMMENT_ID/replies -f body="..."` still exists for these
+cases — but it is the exception, not the close-out of every thread.
+
+**Never** post performative agreement (`Agreed`, `You were right`, `Good catch`, `Fixed it`), a
+summary of what you changed, quality-gate counts, or before/after tables. If a reply would only tell
+the reviewer what the diff already shows, delete it and react instead.
+
+**The one exception to the no-summary rule** — a substantive written reply earns its place when it
+carries a correctness argument the diff cannot show on its own: an invariant that must hold across
+call sites not all present in this diff (e.g. a compare-and-swap guard that belongs in several
+places), or the state-space / failure-mode reasoning behind the change (e.g. the outcomes a
+finite-state machine can now reach). Rare, and high-value when genuine. The test is not *"is this
+complex?"* but *"could the reviewer reconstruct it from the diff?"* — if yes, it is a summary; react
+instead. Even here: no performative agreement, no gate counts.
+
+**No top-level conversation comment.** The push closes the loop; per-thread reactions mark the rest.
 
 **Do not resolve threads.** The reviewer resolves their own.
 
@@ -115,7 +144,8 @@ outcome — not a failure to be papered over with a cosmetic edit.
 | Inline comments (flat) | `gh api repos/O/R/pulls/N/comments` |
 | Review summaries | `gh api repos/O/R/pulls/N/reviews` |
 | Conversation comments | `gh api repos/O/R/issues/N/comments` |
-| Reply in thread | `gh api repos/O/R/pulls/N/comments/ID/replies -f body=...` |
+| React 👍 (default acknowledgment) | `gh api --method POST repos/O/R/pulls/comments/ID/reactions -f content=+1` |
+| Reply in thread (exceptions only) | `gh api repos/O/R/pulls/N/comments/ID/replies -f body=...` |
 | Find the worktree | `bin/worktree-list` |
 | Quality gate | `herd composer check` |
 
@@ -129,6 +159,12 @@ outcome — not a failure to be papered over with a cosmetic edit.
   information and wastes review cycles.
 - **Reading bot noise as feedback.** Linear's linkback comment and empty `COMMENTED` review stubs are
   not review comments.
+- **Narrating the work into a thread.** The diff shows what changed; a reply that restates it —
+  summaries, before/after tables, `herd composer check` counts — is noise. React 👍 instead. The
+  narrow exception is a correctness argument the diff can't show (see step 6), not a recap of it.
+- **Performative agreement.** `Agreed`, `You were right`, `Good catch`, `Fixed it` — post nothing; the
+  push is the agreement.
+- **Replying where a reaction suffices.** A thread you simply implemented wants a 👍, not a paragraph.
 - **Adding a follow-up migration.** The branch is unmerged; edit the original migration in place.
 - **Editing the main checkout** when the branch lives in a worktree.
 - **Resolving the thread yourself**, or replying before the gate is green.
