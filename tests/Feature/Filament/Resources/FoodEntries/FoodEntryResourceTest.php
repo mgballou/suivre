@@ -8,6 +8,7 @@ use App\Enums\MealType;
 use App\Filament\Resources\FoodEntries\Pages\ListFoodEntries;
 use App\Filament\Resources\FoodEntries\Pages\ViewFoodEntry;
 use App\Models\FoodEntry;
+use App\Models\FoodItem;
 use App\Models\Meal;
 use App\Models\User;
 use Filament\Actions\EditAction;
@@ -55,7 +56,9 @@ it('renders the inherited eaten-at, which needs the parent meal eager-loaded', f
 
 it('filters the table down to entries pending classification', function (): void {
     $pending = FoodEntry::factory()->forMeal($this->meal)->pendingClassification()->createQuietly();
-    $classified = FoodEntry::factory()->forMeal($this->meal)->resolvedToFoodItem(42, 'oat milk')->createQuietly();
+    $classified = FoodEntry::factory()->forMeal($this->meal)
+        ->resolvedToFoodItem(FoodItem::factory()->createQuietly(), 'oat milk')
+        ->createQuietly();
 
     Livewire::test(ListFoodEntries::class)
         ->filterTable('food_item_id', false)
