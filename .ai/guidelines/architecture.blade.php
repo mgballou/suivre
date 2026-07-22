@@ -48,8 +48,13 @@ class LogMeal
 - **Imperative `{Verb}{Noun}` names**: `LogMeal`, `ClassifyFoodEntry`, `CheckUserHasActiveFlare`.
   If you can't name it `{Verb}{Noun}` without contortion, it isn't an Action.
 - **Named parameters at every non-trivial call site.**
-- **Resolve via the container, not `new`** — `app(CheckSomething::class)($x)`; type-hint on
-  `handle()` in Jobs/Listeners; type-hint as a callback param in Filament.
+- **Resolve via the container, not `new`, and not constructor injection** — call
+  `app(CheckSomething::class)($x)` at the point of use; type-hint on `handle()` in Jobs/Listeners;
+  type-hint as a callback param in Filament. **In controllers, resolve inline with
+  `app(SomeAction::class)(...)` rather than injecting the Action into `__construct`.** A
+  constructor-injected `($this->someAction)(...)` reads like a method on `$this` but is not one —
+  keeping the `app(...)` call at the call site makes it unmistakable that control is handed to a
+  separate Action, and keeps where logic lives visible from where it is invoked.
 - **Return `void`, a model, a primitive, or a `readonly` DTO — never an array.**
 - **Throw typed domain exceptions** via `throw_if(condition: ..., exception: SomeException::make($x))`.
 - **Not** an Action: a trivial query (belongs on the model), a pure transformation (a Factory
