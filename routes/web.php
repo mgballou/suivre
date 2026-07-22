@@ -6,6 +6,7 @@ use App\Http\Controllers\CalendarController;
 use App\Http\Controllers\DayCheckinController;
 use App\Http\Controllers\DayController;
 use App\Http\Controllers\HomeController;
+use App\Http\Controllers\InsightsController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', HomeController::class)->name('home');
@@ -22,7 +23,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::post('checkin', DayCheckinController::class)->name('day.checkin');
         });
 
-    Route::inertia('insights', 'insights')->name('insights');
+    Route::get('insights', InsightsController::class)->name('insights');
 });
 
 require __DIR__ . '/settings.php';
