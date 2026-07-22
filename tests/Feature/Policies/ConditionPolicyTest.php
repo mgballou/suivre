@@ -30,3 +30,10 @@ it('denies another user from viewing, updating and deleting', function (): void 
 it('allows any user to create', function (): void {
     expect($this->policy->create($this->other)->allowed())->toBeTrue();
 });
+
+it('allows any authenticated operator a backstage oversight list', function (): void {
+    $user = User::factory()->createQuietly();
+    $policy = new ConditionPolicy();
+
+    expect($policy->viewAny($user)->allowed())->toBeTrue();
+});
