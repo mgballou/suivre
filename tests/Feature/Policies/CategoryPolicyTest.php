@@ -21,20 +21,25 @@ it('returns a Response rather than a bool from every ability', function (): void
     expect($policy->delete($user, $category))->toBeInstanceOf(Response::class);
 });
 
-it('allows any authenticated operator to curate the global taxonomy', function (): void {
-    $user = User::factory()->createQuietly();
+it('lets everyone read the taxonomy but only administrators curate it', function (): void {
+    $admin = User::factory()->admin()->createQuietly();
+    $member = User::factory()->createQuietly();
     $category = Category::factory()->createQuietly();
 
-    expect($user->can('viewAny', Category::class))->toBeTrue();
-    expect($user->can('view', $category))->toBeTrue();
-    expect($user->can('create', Category::class))->toBeTrue();
-    expect($user->can('update', $category))->toBeTrue();
-    expect($user->can('delete', $category))->toBeTrue();
+    expect($member->can('viewAny', Category::class))->toBeTrue();
+    expect($member->can('view', $category))->toBeTrue();
+    expect($member->can('create', Category::class))->toBeFalse();
+    expect($member->can('update', $category))->toBeFalse();
+    expect($member->can('delete', $category))->toBeFalse();
+
+    expect($admin->can('create', Category::class))->toBeTrue();
+    expect($admin->can('update', $category))->toBeTrue();
+    expect($admin->can('delete', $category))->toBeTrue();
 });
 
-it('is not scoped to the user who created it', function (): void {
+it('lets an administrator curate a category regardless of who created it', function (): void {
     $category = Category::factory()->createQuietly();
-    $otherUser = User::factory()->createQuietly();
+    $admin = User::factory()->admin()->createQuietly();
 
-    expect($otherUser->can('update', $category))->toBeTrue();
+    expect($admin->can('update', $category))->toBeTrue();
 });

@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Spatie\Permission\PermissionRegistrar;
 use Tests\TestCase;
 
 /*
@@ -18,6 +19,12 @@ use Tests\TestCase;
 
 pest()->extend(TestCase::class)
     ->use(RefreshDatabase::class)
+    ->beforeEach(function (): void {
+        // RefreshDatabase wipes the roles/permissions tables, but the array cache
+        // store used in testing outlives a single test — flush it so a role
+        // resolved in one test is never a stale hit in the next.
+        app(PermissionRegistrar::class)->forgetCachedPermissions();
+    })
     ->in('Feature', 'Browser');
 
 /*
