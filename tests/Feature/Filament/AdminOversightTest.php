@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Filament;
 
+use App\Enums\UserRole;
 use App\Filament\Resources\Conditions\Pages\ViewCondition;
 use App\Filament\Resources\DailyCheckins\Pages\ViewDailyCheckin;
 use App\Filament\Resources\FlareEvents\Pages\ViewFlareEvent;
@@ -19,7 +20,15 @@ beforeEach(function (): void {
     $this->member = User::factory()->createQuietly();
 });
 
-it('denies the backstage to an ordinary app user', function (): void {
+it('gives every account exactly one, mutually exclusive role', function (): void {
+    expect($this->admin->hasRole(UserRole::Admin))->toBeTrue();
+    expect($this->admin->hasRole(UserRole::Member))->toBeFalse();
+
+    expect($this->member->hasRole(UserRole::Member))->toBeTrue();
+    expect($this->member->hasRole(UserRole::Admin))->toBeFalse();
+});
+
+it('denies the backstage to an ordinary member', function (): void {
     expect($this->member->canAccessPanel(Filament::getPanel('admin')))->toBeFalse();
 });
 
