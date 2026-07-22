@@ -11,20 +11,23 @@ use Illuminate\Auth\Access\Response;
  * Accounts are inspected from the backstage, never created, edited or destroyed
  * there: registration owns creation, the user maintains their own profile, and
  * deleting a user would cascade away every meal, check-in and flare they ever
- * logged. While the MVP is single-user every authenticated user is the
- * operator; the seam for the operator-role check is here for when Suivre goes
- * multi-user.
+ * logged. Listing every account is administrator-only oversight; a user may only
+ * ever see their own account.
  */
 class UserPolicy
 {
     public function viewAny(User $user): Response
     {
-        return Response::allow();
+        return $user->isAdmin()
+            ? Response::allow()
+            : Response::deny('Only administrators can list accounts.');
     }
 
     public function view(User $user, User $subject): Response
     {
-        return Response::allow();
+        return $user->isAdmin() || $user->id === $subject->id
+            ? Response::allow()
+            : Response::deny('You may only view your own account.');
     }
 
     public function create(User $user): Response
