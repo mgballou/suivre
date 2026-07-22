@@ -8,8 +8,10 @@ use App\Enums\CategoryGroup;
 use Carbon\CarbonImmutable;
 use Database\Factories\CategoryFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 /**
  * A curated trigger category — the authoritative, global tag vocabulary that
@@ -25,12 +27,23 @@ use Illuminate\Database\Eloquent\Model;
  * @property string|null $research_source
  * @property CarbonImmutable|null $created_at
  * @property CarbonImmutable|null $updated_at
+ * @property-read Collection<int, FoodItem> $foodItems
  */
 #[Fillable(['name', 'slug', 'group', 'description', 'research_source'])]
 class Category extends Model
 {
     /** @use HasFactory<CategoryFactory> */
     use HasFactory;
+
+    /**
+     * The catalog foods carrying this trigger category (D9).
+     *
+     * @return BelongsToMany<FoodItem, $this>
+     */
+    public function foodItems(): BelongsToMany
+    {
+        return $this->belongsToMany(FoodItem::class)->withTimestamps();
+    }
 
     /**
      * Get the attributes that should be cast.
