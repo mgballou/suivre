@@ -18,9 +18,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * has resolved it against the curated catalog (D9). A database check
  * constraint guarantees at least one of the two is present.
  *
- * `food_item_id` is deliberately unconstrained by a foreign key: the
- * `food_items` catalog it points at arrives with SUI-14.
- *
  * @property int $id
  * @property int $meal_id
  * @property int|null $food_item_id
@@ -28,6 +25,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property CarbonImmutable|null $created_at
  * @property CarbonImmutable|null $updated_at
  * @property-read Meal $meal
+ * @property-read FoodItem|null $foodItem
  * @property-read CarbonImmutable|null $eaten_at
  */
 #[Fillable(['meal_id', 'food_item_id', 'text'])]
@@ -42,6 +40,17 @@ class FoodEntry extends Model
     public function meal(): BelongsTo
     {
         return $this->belongsTo(Meal::class);
+    }
+
+    /**
+     * The catalog entry the classifier resolved this line to, and with it the
+     * trigger categories the correlation engine reads (D9).
+     *
+     * @return BelongsTo<FoodItem, $this>
+     */
+    public function foodItem(): BelongsTo
+    {
+        return $this->belongsTo(FoodItem::class);
     }
 
     /**

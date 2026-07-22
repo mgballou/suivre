@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Database\Factories;
 
 use App\Models\FoodEntry;
+use App\Models\FoodItem;
 use App\Models\Meal;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
@@ -50,14 +51,11 @@ class FoodEntryFactory extends Factory
 
     /**
      * Link the entry to a catalog food item, as the classifier leaves it.
-     *
-     * Takes a raw key rather than a FoodItem model because the `food_items`
-     * catalog arrives with SUI-14; swap the signature for the model then.
      */
-    public function resolvedToFoodItem(int $foodItemId, ?string $text = null): static
+    public function resolvedToFoodItem(FoodItem $foodItem, ?string $text = null): static
     {
         return $this->state(fn (array $attributes) => [
-            'food_item_id' => $foodItemId,
+            'food_item_id' => $foodItem->id,
             'text' => $text,
         ]);
     }
