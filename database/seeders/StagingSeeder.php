@@ -8,12 +8,13 @@ use App\Enums\UserRole;
 use App\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
+use Spatie\Permission\Models\Role;
 
 class StagingSeeder extends Seeder
 {
     /**
      * Idempotent staging accounts: an admin (Filament backstage oversight) and a
-     * throwaway user for real-world app use with no backstage access. Passwords
+     * throwaway member for real-world app use with no backstage access. Passwords
      * are staging-only.
      *
      * `email_verified_at` is set as a property, not mass-assigned — it is
@@ -21,11 +22,11 @@ class StagingSeeder extends Seeder
      */
     public function run(): void
     {
-        $this->upsertUser('admin@suivre.staging', 'Staging Admin', admin: true);
-        $this->upsertUser('user@suivre.staging', 'Throwaway User', admin: false);
+        $this->upsertUser('admin@suivre.staging', 'Staging Admin', UserRole::Admin);
+        $this->upsertUser('user@suivre.staging', 'Throwaway User', UserRole::Member);
     }
 
-    private function upsertUser(string $email, string $name, bool $admin): void
+    private function upsertUser(string $email, string $name, UserRole $role): void
     {
         $user = User::query()->firstOrNew(['email' => $email]);
 
@@ -36,8 +37,8 @@ class StagingSeeder extends Seeder
         $user->email_verified_at = now();
         $user->save();
 
-        // syncRoles keeps the seeder idempotent: re-running never stacks or
-        // strands roles, and the throwaway user is explicitly held to none.
-        $user->syncRoles($admin ? [UserRole::Admin->value] : []);
+        // syncRoles keeps the seeder idempotent: re-running never stacks roles and
+        // holds each account to exactly its one role.
+        $user->syncRoles([Role::findOrCreate($role->value)]);
     }
 }

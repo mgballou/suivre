@@ -42,12 +42,25 @@ class UserFactory extends Factory
     }
 
     /**
-     * Give the user the platform admin role, granting Filament backstage access.
+     * Every account carries exactly one role; this default makes each created user
+     * a member. The admin() state replaces it — syncRoles keeps the two exclusive
+     * regardless of callback order.
+     */
+    public function configure(): static
+    {
+        return $this->afterCreating(function (User $user): void {
+            $user->syncRoles([Role::findOrCreate(UserRole::Member->value)]);
+        });
+    }
+
+    /**
+     * Give the user the platform admin role, granting Filament backstage access
+     * (replacing the default member role).
      */
     public function admin(): static
     {
         return $this->afterCreating(function (User $user): void {
-            $user->assignRole(Role::findOrCreate(UserRole::Admin->value));
+            $user->syncRoles([Role::findOrCreate(UserRole::Admin->value)]);
         });
     }
 
