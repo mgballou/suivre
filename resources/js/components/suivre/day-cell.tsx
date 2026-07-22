@@ -13,7 +13,7 @@ type DayCellProps = {
 };
 
 /** Listed literally rather than interpolated, so Tailwind's JIT emits them. */
-const RAMP_BG: Record<IntensityLevel, string> = {
+export const RAMP_BG: Record<IntensityLevel, string> = {
     0: 'bg-intensity-0',
     1: 'bg-intensity-1',
     2: 'bg-intensity-2',
