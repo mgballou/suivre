@@ -39,7 +39,7 @@ The smallest real slice: open the PWA and log a two-tap daily check-in on a cale
 ## E4 — Correlation & insights
 
 - Lag-lift ranking Action (`trigger tag × condition`, baseline vs days 0–N after, sample sizes).
-- Insights UI: ranked "suspects" + timeline/heatmap. Hypothesis-generating framing.
+- Insights UI: ranked "suspects" + timeline/heatmap. Hypothesis-generating framing. Co-occurring tags fall back to **coarse pattern-level** attribution, never a single accused tag (D24); user-driven disambiguation is post-MVP.
 
 **Depends on:** E2 + E3 (needs logged data to correlate).
 
