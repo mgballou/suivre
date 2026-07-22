@@ -11,8 +11,8 @@ use Illuminate\Auth\Access\Response;
 class MealPolicy
 {
     /**
-     * Listing is a backstage oversight read across every record; per-record
-     * ownership is still enforced by `view`.
+     * Listing is a backstage oversight read across every record; per-record,
+     * `view` lets an administrator open any user's record and an owner their own.
      */
     public function viewAny(User $user): Response
     {
@@ -21,7 +21,9 @@ class MealPolicy
 
     public function view(User $user, Meal $meal): Response
     {
-        return $this->owns($user, $meal);
+        return $user->isAdmin()
+            ? Response::allow()
+            : $this->owns($user, $meal);
     }
 
     public function create(User $user): Response

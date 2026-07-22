@@ -15,11 +15,18 @@ use Filament\Actions\Testing\TestAction;
 use Filament\Actions\ViewAction;
 use Illuminate\Support\Facades\DB;
 use Livewire\Livewire;
+use Spatie\Permission\PermissionRegistrar;
 
 beforeEach(function (): void {
     $this->operator = User::factory()->createQuietly();
     $this->condition = Condition::factory()->createQuietly(['user_id' => $this->operator->id]);
     $this->actingAs($this->operator);
+
+    // Warm spatie's caches — the process-global permission cache and the acting
+    // user's roles relation — so the per-row authorization check doesn't prime
+    // them mid-measurement and skew the N+1 query count.
+    app(PermissionRegistrar::class)->getPermissions();
+    $this->operator->loadMissing('roles');
 });
 
 it('lists flare events', function (): void {
