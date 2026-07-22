@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Auth;
 
+use App\Enums\UserRole;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Inertia\Testing\AssertableInertia as Assert;
 use Laravel\Fortify\Features;
@@ -40,5 +42,20 @@ class RegistrationTest extends TestCase
             ->assertRedirect(route('calendar', absolute: false));
 
         $this->assertAuthenticated();
+    }
+
+    public function test_registration_mints_a_member_never_an_admin(): void
+    {
+        $this->post(route('register.store'), [
+            'name' => 'John Doe',
+            'email' => 'member@example.com',
+            'password' => 'password',
+            'password_confirmation' => 'password',
+        ]);
+
+        $user = User::query()->where('email', 'member@example.com')->sole();
+
+        $this->assertTrue($user->hasRole(UserRole::Member));
+        $this->assertFalse($user->isAdmin());
     }
 }

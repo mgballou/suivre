@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
+use App\Enums\UserRole;
 use Carbon\CarbonImmutable;
 use Database\Factories\UserFactory;
 use Filament\Models\Contracts\FilamentUser;
@@ -20,6 +21,8 @@ use Illuminate\Support\Str;
 use Laravel\Fortify\Contracts\PasskeyUser;
 use Laravel\Fortify\PasskeyAuthenticatable;
 use Laravel\Fortify\TwoFactorAuthenticatable;
+use Spatie\Permission\Models\Role;
+use Spatie\Permission\Traits\HasRoles;
 
 /**
  * @property int $id
@@ -36,6 +39,7 @@ use Laravel\Fortify\TwoFactorAuthenticatable;
  * @property CarbonImmutable|null $updated_at
  * @property-read Collection<int, DailyCheckin> $dailyCheckins
  * @property-read Collection<int, Meal> $meals
+ * @property-read Collection<int, Role> $roles
  */
 #[Fillable(['name', 'email', 'password', 'timezone'])]
 #[Hidden(['password', 'two_factor_secret', 'two_factor_recovery_codes', 'remember_token'])]
@@ -44,19 +48,28 @@ class User extends Authenticatable implements FilamentUser, PasskeyUser
     /** @use HasFactory<UserFactory> */
     use HasFactory;
 
+    use HasRoles;
     use Notifiable;
     use PasskeyAuthenticatable;
     use TwoFactorAuthenticatable;
 
     /**
-     * Filament's Authenticate middleware 403s any non-local environment unless
-     * the user implements FilamentUser. MVP is single-user, so every account is
-     * the operator — role-gating the backstage is deferred until Suivre goes
-     * multi-user (see decision-log D16).
+     * The Filament backstage is admin-only oversight: an administrator can read
+     * every user's journal here, while an ordinary app user has no access to the
+     * panel at all. Gated on the platform admin role — never on ownership, since
+     * oversight is precisely the cross-user read.
      */
     public function canAccessPanel(Panel $panel): bool
     {
-        return true;
+        return $this->isAdmin();
+    }
+
+    /**
+     * Whether this user holds the platform admin role.
+     */
+    public function isAdmin(): bool
+    {
+        return $this->hasRole(UserRole::Admin);
     }
 
     /**

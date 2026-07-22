@@ -13,6 +13,7 @@ use App\Models\FoodEntry;
 use App\Models\FoodItem;
 use App\Models\FoodItemAlias;
 use App\Models\Meal;
+use App\Models\User;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\ServiceProvider;
@@ -35,6 +36,8 @@ class RelationServiceProvider extends ServiceProvider
         'food_entries' => FoodEntry::class,
         'food_items' => FoodItem::class,
         'food_item_aliases' => FoodItemAlias::class,
+        // User participates in a morph relation via spatie's model_has_roles pivot.
+        'users' => User::class,
     ];
 
     public function boot(): void

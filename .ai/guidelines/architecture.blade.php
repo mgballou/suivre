@@ -113,9 +113,14 @@ Events decouple cross-domain reactions to a state change.
 - **Policies return `Response`, never `bool`** — the deny message reaches the UI. Domain
   preconditions (e.g. state checks) belong in the policy, the single source of truth; the UI never
   re-implements them.
-- MVP is **single-user**: keep policies simple. The team's wildcard/scoped per-record permission
-  machinery (`posts.*.update`, `canOrElse`, `SyncScopedPermissions...`) is **deferred until Suivre
-  goes multi-user** — don't build it now, but still return `Response` so the seam exists.
+- **Roles** come from **spatie/laravel-permission** (D23). Every account holds **exactly one**,
+  mutually exclusive: `admin` reaches the Filament backstage (`User::canAccessPanel()` gates on it)
+  and reads every user's records; `member` is an ordinary app user with no backstage access.
+  Registration mints a member; the base factory state does too; `admin()` replaces it. `view`
+  policies allow an admin any record, owners only their own; admins never mutate user-generated data.
+  Keep policies at this level — the wildcard/scoped **per-record** machinery (`posts.*.update`,
+  `canOrElse`, `SyncScopedPermissions...`) is still **deferred**; don't build it now, but always
+  return `Response` so the seam exists.
 
 ## User-facing layer (Inertia + React + shadcn/ui + PWA)
 

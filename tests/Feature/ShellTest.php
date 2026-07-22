@@ -62,13 +62,13 @@ class ShellTest extends TestCase
 
     public function test_the_admin_panel_is_mounted_and_independent_of_the_app_shell(): void
     {
-        // Filament owns /admin and is untouched by the app-shell routing. MVP is
-        // single-user, so every authenticated account is the operator and reaches
-        // the panel (decision-log D16). Filament — not our Inertia shell — answers:
-        // the panel HTML carries no `data-page` root (that marks an Inertia page).
+        // Filament owns /admin and is untouched by the app-shell routing. The panel
+        // is administrator-only, so an admin reaches it. Filament — not our Inertia
+        // shell — answers: the panel HTML carries no `data-page` root (that marks an
+        // Inertia page).
         $this->get('/admin/login')->assertOk();
 
-        $this->actingAs(User::factory()->create())
+        $this->actingAs(User::factory()->admin()->create())
             ->get('/admin')
             ->assertOk()
             ->assertDontSee('data-page', escape: false);

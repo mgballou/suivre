@@ -6,9 +6,11 @@ namespace App\Actions\Fortify;
 
 use App\Concerns\PasswordValidationRules;
 use App\Concerns\ProfileValidationRules;
+use App\Enums\UserRole;
 use App\Models\User;
 use Illuminate\Support\Facades\Validator;
 use Laravel\Fortify\Contracts\CreatesNewUsers;
+use Spatie\Permission\Models\Role;
 
 class CreateNewUser implements CreatesNewUsers
 {
@@ -16,7 +18,8 @@ class CreateNewUser implements CreatesNewUsers
     use ProfileValidationRules;
 
     /**
-     * Validate and create a newly registered user.
+     * Validate and create a newly registered user. Registration always mints a
+     * member — the backstage admin role is never self-assignable here.
      *
      * @param  array<string, string>  $input
      */
@@ -27,10 +30,14 @@ class CreateNewUser implements CreatesNewUsers
             'password' => $this->passwordRules(),
         ])->validate();
 
-        return User::create([
+        $user = User::create([
             'name' => $input['name'],
             'email' => $input['email'],
             'password' => $input['password'],
         ]);
+
+        $user->assignRole(Role::findOrCreate(UserRole::Member->value));
+
+        return $user;
     }
 }
