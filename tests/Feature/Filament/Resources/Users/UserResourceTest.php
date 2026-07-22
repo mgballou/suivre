@@ -13,10 +13,18 @@ use Filament\Actions\Testing\TestAction;
 use Filament\Actions\ViewAction;
 use Illuminate\Support\Facades\DB;
 use Livewire\Livewire;
+use Spatie\Permission\PermissionRegistrar;
 
 beforeEach(function (): void {
-    $this->operator = User::factory()->createQuietly();
+    // The backstage is administrator-only, so the acting user holds the admin role.
+    $this->operator = User::factory()->admin()->createQuietly();
     $this->actingAs($this->operator);
+
+    // Warm spatie's caches — the process-global permission cache and the acting
+    // user's roles relation — so the per-row authorization check doesn't prime
+    // them mid-measurement and skew the N+1 query count.
+    app(PermissionRegistrar::class)->getPermissions();
+    $this->operator->loadMissing('roles');
 });
 
 it('lists users', function (): void {

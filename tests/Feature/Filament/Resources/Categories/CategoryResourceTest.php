@@ -19,7 +19,8 @@ use Filament\Actions\ViewAction;
 use Livewire\Livewire;
 
 beforeEach(function (): void {
-    $this->actingAs(User::factory()->createQuietly());
+    // Curating the taxonomy is an administrator surface, so the acting user is one.
+    $this->actingAs(User::factory()->admin()->createQuietly());
 });
 
 it('lists categories', function (): void {
