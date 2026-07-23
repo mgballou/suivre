@@ -14,7 +14,7 @@ use App\Models\User;
  */
 
 beforeEach(function (): void {
-    $this->user = User::factory()->create();
+    $this->user = User::factory()->tracking()->create();
     $this->actingAs($this->user);
 });
 

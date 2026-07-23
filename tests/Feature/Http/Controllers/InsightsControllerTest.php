@@ -20,7 +20,7 @@ class InsightsControllerTest extends TestCase
     {
         $this->travelTo(CarbonImmutable::parse('2026-07-30 09:00:00', 'UTC'));
 
-        $user = User::factory()->create();
+        $user = User::factory()->tracking()->create();
         $condition = Condition::factory()->for($user)->createQuietly();
 
         ConditionLog::factory()
@@ -47,7 +47,7 @@ class InsightsControllerTest extends TestCase
     {
         $this->travelTo(CarbonImmutable::parse('2026-07-30 09:00:00', 'UTC'));
 
-        $this->actingAs(User::factory()->create())
+        $this->actingAs(User::factory()->tracking()->create())
             ->get('/insights')
             ->assertOk()
             ->assertInertia(fn (Assert $page) => $page

@@ -74,6 +74,19 @@
     --color-intensity-4: var(--intensity-4);
     --color-intensity-5: var(--intensity-5);
 
+    /*
+     * The foreground each ramp step can legibly carry. Every ramp is built to
+     * one luminance profile per step, so the ink that clears WCAG AA belongs to
+     * the step rather than to the hue — mirrored in PHP by RampStep::ink() and
+     * proven against these values by ConditionHueTest.
+     */
+    --color-ramp-ink-0: var(--ramp-ink-0);
+    --color-ramp-ink-1: var(--ramp-ink-1);
+    --color-ramp-ink-2: var(--ramp-ink-2);
+    --color-ramp-ink-3: var(--ramp-ink-3);
+    --color-ramp-ink-4: var(--ramp-ink-4);
+    --color-ramp-ink-5: var(--ramp-ink-5);
+
     /* Motion — the only two curves; ease-in-out is banned. */
     --ease-quiet: cubic-bezier(0.32, 0.72, 0, 1);
     --ease-exit: cubic-bezier(0.4, 0, 1, 1);
@@ -122,6 +135,14 @@
     --intensity-4: #66a19f;
     --intensity-5: #3f7d7b;
 
+    /* Ink per ramp step (light): dark ink through step 4, white only at 5. */
+    --ramp-ink-0: #16201f;
+    --ramp-ink-1: #16201f;
+    --ramp-ink-2: #16201f;
+    --ramp-ink-3: #16201f;
+    --ramp-ink-4: #16201f;
+    --ramp-ink-5: #ffffff;
+
     /* Motion durations. */
     --dur-micro: 120ms;
     --dur-base: 220ms;
@@ -164,13 +185,194 @@
     --sidebar-border: #2a2e2e;
     --sidebar-ring: #68a7a5;
 
-    /* Intensity ramp (dark) — defined independently, not a lightness flip. */
+    /*
+     * Intensity ramp (dark) — defined independently, not a lightness flip.
+     *
+     * Step 4 was #4E8483, D20's known dead zone: white gave 4.24:1 and dark ink
+     * 3.91:1, so neither foreground cleared AA. Lifted to #558C8A, which puts
+     * dark ink at 4.69:1 and moves the scheme's ink threshold to step 4.
+     */
     --intensity-0: #1b1f1f;
     --intensity-1: #1e2e2e;
     --intensity-2: #2a4646;
     --intensity-3: #3a6362;
-    --intensity-4: #4e8483;
+    --intensity-4: #558c8a;
     --intensity-5: #68a7a5;
+
+    /* Ink per ramp step (dark): light ink through step 3, dark ink at 4 and 5. */
+    --ramp-ink-0: #edeeee;
+    --ramp-ink-1: #edeeee;
+    --ramp-ink-2: #edeeee;
+    --ramp-ink-3: #edeeee;
+    --ramp-ink-4: #101917;
+    --ramp-ink-5: #101917;
+}
+
+/*
+ * The seven curated condition hues (D20). Each is authored twice — light
+ * climbing by getting darker, dark by getting lighter — and every step is
+ * generated to petrol's relative luminance at that step, so one ink rule
+ * (--ramp-ink-*) serves the whole set. Petrol is not among them: it is the
+ * application's own hue.
+ */
+[data-hue='clay'] {
+    --condition-0: #f2f0ef;
+    --condition-1: #f3eae4;
+    --condition-2: #e5d2c2;
+    --condition-3: #d0b29a;
+    --condition-4: #b49071;
+    --condition-5: #906c4c;
+}
+
+[data-hue='ochre'] {
+    --condition-0: #f1f0ef;
+    --condition-1: #eeebe2;
+    --condition-2: #dbd6bf;
+    --condition-3: #c1b795;
+    --condition-4: #a2966b;
+    --condition-5: #7e7346;
+}
+
+[data-hue='moss'] {
+    --condition-0: #f0f1ef;
+    --condition-1: #e7ede5;
+    --condition-2: #cadac6;
+    --condition-3: #a6bea1;
+    --condition-4: #819e7b;
+    --condition-5: #5d7a57;
+}
+
+[data-hue='marine'] {
+    --condition-0: #eff1f1;
+    --condition-1: #e4edf3;
+    --condition-2: #c1d9e5;
+    --condition-3: #97bdd0;
+    --condition-4: #6e9eb5;
+    --condition-5: #487a91;
+}
+
+[data-hue='indigo'] {
+    --condition-0: #f0f1f2;
+    --condition-1: #e8ebf5;
+    --condition-2: #cdd5eb;
+    --condition-3: #aab7d8;
+    --condition-4: #8796be;
+    --condition-5: #63739a;
+}
+
+[data-hue='violet'] {
+    --condition-0: #f1f1f2;
+    --condition-1: #edeaf3;
+    --condition-2: #dbd1e7;
+    --condition-3: #c0b1d2;
+    --condition-4: #a18fb8;
+    --condition-5: #7e6b94;
+}
+
+[data-hue='plum'] {
+    --condition-0: #f2f1f1;
+    --condition-1: #f3e9ef;
+    --condition-2: #e6cfdd;
+    --condition-3: #cfaec3;
+    --condition-4: #b48aa5;
+    --condition-5: #906781;
+}
+
+.dark [data-hue='clay'] {
+    --condition-0: #201d1b;
+    --condition-1: #342921;
+    --condition-2: #4f3e2f;
+    --condition-3: #705842;
+    --condition-4: #9d7c60;
+    --condition-5: #bb9474;
+}
+
+.dark [data-hue='ochre'] {
+    --condition-0: #1f1e1b;
+    --condition-1: #2e2b1f;
+    --condition-2: #47412d;
+    --condition-3: #645c3e;
+    --condition-4: #8d825b;
+    --condition-5: #a89c6e;
+}
+
+.dark [data-hue='moss'] {
+    --condition-0: #1c1e1c;
+    --condition-1: #252e23;
+    --condition-2: #374534;
+    --condition-3: #4d6249;
+    --condition-4: #6f8969;
+    --condition-5: #85a47e;
+}
+
+.dark [data-hue='marine'] {
+    --condition-0: #1b1e20;
+    --condition-1: #202d34;
+    --condition-2: #2e4550;
+    --condition-3: #406171;
+    --condition-4: #5d899e;
+    --condition-5: #71a3bc;
+}
+
+.dark [data-hue='indigo'] {
+    --condition-0: #1d1f21;
+    --condition-1: #272b37;
+    --condition-2: #3a4154;
+    --condition-3: #515c77;
+    --condition-4: #7483a7;
+    --condition-5: #8b9bc6;
+}
+
+.dark [data-hue='violet'] {
+    --condition-0: #1f1e20;
+    --condition-1: #2e2a35;
+    --condition-2: #463e51;
+    --condition-3: #635773;
+    --condition-4: #8c7ba0;
+    --condition-5: #a894bf;
+}
+
+.dark [data-hue='plum'] {
+    --condition-0: #211e1f;
+    --condition-1: #33282f;
+    --condition-2: #4f3c48;
+    --condition-3: #705366;
+    --condition-4: #9d7890;
+    --condition-5: #bb8fac;
+}
+
+/*
+ * The condition ramp cannot be a @theme colour. A theme token's own var() is
+ * substituted where the token is declared — on :root — and `--condition-*` is
+ * declared further down, on the `[data-hue]` element. The petrol ramp gets away
+ * with the same shape only because `.dark` also lands on <html>. Declaring the
+ * utilities directly defers the lookup to the element that uses them, which is
+ * what lets one set of classes serve all seven hues.
+ */
+@layer utilities {
+    .bg-condition-0 {
+        background-color: var(--condition-0);
+    }
+
+    .bg-condition-1 {
+        background-color: var(--condition-1);
+    }
+
+    .bg-condition-2 {
+        background-color: var(--condition-2);
+    }
+
+    .bg-condition-3 {
+        background-color: var(--condition-3);
+    }
+
+    .bg-condition-4 {
+        background-color: var(--condition-4);
+    }
+
+    .bg-condition-5 {
+        background-color: var(--condition-5);
+    }
 }
 
 @layer base {

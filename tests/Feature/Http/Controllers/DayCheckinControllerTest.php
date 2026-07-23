@@ -20,7 +20,7 @@ class DayCheckinControllerTest extends TestCase
 
     public function test_a_single_tap_persists_a_check_in(): void
     {
-        $user = User::factory()->create();
+        $user = User::factory()->tracking()->create();
 
         $this->actingAs($user)
             ->post('/day/2026-07-15/checkin', ['mood' => MoodLevel::Good->value])
@@ -37,7 +37,7 @@ class DayCheckinControllerTest extends TestCase
 
     public function test_revisiting_the_day_shows_the_saved_state(): void
     {
-        $user = User::factory()->create();
+        $user = User::factory()->tracking()->create();
 
         $this->actingAs($user)->post('/day/2026-07-15/checkin', [
             'mood' => MoodLevel::Good->value,
@@ -61,7 +61,7 @@ class DayCheckinControllerTest extends TestCase
 
     public function test_a_second_tap_edits_the_same_row_rather_than_adding_one(): void
     {
-        $user = User::factory()->create();
+        $user = User::factory()->tracking()->create();
 
         $this->actingAs($user)->post('/day/2026-07-15/checkin', ['mood' => MoodLevel::Low->value]);
         $this->actingAs($user)->post('/day/2026-07-15/checkin', [
@@ -79,7 +79,7 @@ class DayCheckinControllerTest extends TestCase
 
     public function test_each_user_gets_their_own_row_for_the_same_day(): void
     {
-        $mine = User::factory()->create();
+        $mine = User::factory()->tracking()->create();
         $theirs = User::factory()->create();
 
         DailyCheckin::factory()
@@ -98,7 +98,7 @@ class DayCheckinControllerTest extends TestCase
 
     public function test_a_blank_note_is_stored_as_null(): void
     {
-        $user = User::factory()->create();
+        $user = User::factory()->tracking()->create();
 
         $this->actingAs($user)->post('/day/2026-07-15/checkin', [
             'mood' => MoodLevel::Good->value,
@@ -110,7 +110,7 @@ class DayCheckinControllerTest extends TestCase
 
     public function test_it_rejects_a_value_outside_the_scale(): void
     {
-        $this->actingAs(User::factory()->create())
+        $this->actingAs(User::factory()->tracking()->create())
             ->post('/day/2026-07-15/checkin', ['mood' => 99])
             ->assertSessionHasErrors('mood');
 
@@ -119,7 +119,7 @@ class DayCheckinControllerTest extends TestCase
 
     public function test_it_rejects_a_date_that_matches_the_pattern_but_does_not_exist(): void
     {
-        $this->actingAs(User::factory()->create())
+        $this->actingAs(User::factory()->tracking()->create())
             ->post('/day/2026-02-31/checkin', ['mood' => MoodLevel::Good->value])
             ->assertSessionHasErrors('date');
 

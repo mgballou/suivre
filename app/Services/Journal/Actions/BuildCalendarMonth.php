@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace App\Services\Journal\Actions;
 
+use App\Enums\RampStep;
 use App\Models\DailyCheckin;
 use App\Models\User;
+use App\Services\Journal\DailyIntensityRepository;
 use App\Services\Journal\Data\CalendarDay;
 use App\Services\Journal\Data\CalendarMonth;
 use Carbon\CarbonImmutable;
@@ -15,8 +17,9 @@ class BuildCalendarMonth
     /**
      * Assemble the month grid for one user.
      *
-     * Check-ins are read in a single range query scoped to the user, so the
-     * grid costs one query no matter how many days it renders.
+     * Check-ins and the day's worst condition rating are each read in a single
+     * range query scoped to the user, so the grid costs two queries no matter
+     * how many days it renders or how many conditions the user tracks.
      *
      * `$today` is the user's local day (ResolveUserDay), never the server's.
      */
@@ -26,6 +29,7 @@ class BuildCalendarMonth
         $end = $start->endOfMonth();
 
         $loggedDates = $this->loggedDates($user, $start, $end);
+        $ratings = app(DailyIntensityRepository::class)->worstPerDay($user, $start, $end);
         $todayDate = $today->toDateString();
 
         $days = [];
@@ -33,10 +37,13 @@ class BuildCalendarMonth
         for ($cursor = $start; $cursor->lessThanOrEqualTo($end); $cursor = $cursor->addDay()) {
             $date = $cursor->toDateString();
             $hasCheckin = isset($loggedDates[$date]);
+            $step = RampStep::fromRating($ratings[$date] ?? null);
 
             $days[] = new CalendarDay(
                 date: $date,
-                level: $hasCheckin ? 1 : 0,
+                level: $step->isLogged() || ! $hasCheckin
+                    ? $step->value
+                    : RampStep::Barely->value,
                 hasCheckin: $hasCheckin,
                 isToday: $date === $todayDate,
             );
