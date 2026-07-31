@@ -383,6 +383,16 @@
     body {
         @apply bg-background text-foreground;
     }
+
+    /*
+     * Installed on iOS the app has no browser chrome to absorb an overscroll,
+     * so the rubber-band drag exposes the page behind the shell and reads as a
+     * broken app rather than a web page. Containing it costs nothing in a
+     * browser tab, where the gesture has somewhere legitimate to go.
+     */
+    html {
+        overscroll-behavior-y: none;
+    }
 }
 
 /*

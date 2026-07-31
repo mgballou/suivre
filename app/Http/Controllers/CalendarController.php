@@ -14,11 +14,6 @@ use Inertia\Response;
 
 class CalendarController extends Controller
 {
-    public function __construct(
-        private readonly ResolveUserDay $resolveUserDay,
-        private readonly BuildCalendarMonth $buildCalendarMonth,
-    ) {}
-
     /**
      * Render the month grid — the app's front door.
      *
@@ -31,7 +26,7 @@ class CalendarController extends Controller
         /** @var User $user */
         $user = $request->user();
 
-        $today = ($this->resolveUserDay)($user, CarbonImmutable::now());
+        $today = app(ResolveUserDay::class)($user, CarbonImmutable::now());
 
         if ($month !== null && ! $this->isValidMonth($month)) {
             abort(404);
@@ -43,7 +38,7 @@ class CalendarController extends Controller
 
         return Inertia::render(
             'calendar',
-            ($this->buildCalendarMonth)($user, $requested, $today)->toArray(),
+            app(BuildCalendarMonth::class)($user, $requested, $today)->toArray(),
         );
     }
 

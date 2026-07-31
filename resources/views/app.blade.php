@@ -2,7 +2,9 @@
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}" @class(['dark' => ($appearance ?? 'system') == 'dark'])>
     <head>
         <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1">
+        {{-- viewport-fit=cover exposes the notch/home-indicator insets to the
+             safe-area-inset-* variables the bottom tab bar pads itself with. --}}
+        <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 
         {{-- Inline script to detect system dark mode preference and apply it immediately --}}
         <script>
@@ -33,6 +35,22 @@
         <link rel="icon" href="/favicon.ico" sizes="any">
         <link rel="icon" href="/favicon.svg" type="image/svg+xml">
         <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+
+        <link rel="manifest" href="/manifest.webmanifest">
+
+        {{-- The manifest carries a single theme_color; these two let the browser
+             chrome follow the scheme the way the app itself does. Values track
+             --background in app.css. --}}
+        <meta name="theme-color" media="(prefers-color-scheme: light)" content="#fbfbfa">
+        <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#131314">
+
+        {{-- iOS ignores the manifest for add-to-home-screen and reads these.
+             `black-translucent` runs the app under the status bar, which is why
+             the viewport opts into the safe-area insets above. --}}
+        <meta name="mobile-web-app-capable" content="yes">
+        <meta name="apple-mobile-web-app-capable" content="yes">
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+        <meta name="apple-mobile-web-app-title" content="Suivre">
 
         @fonts
 
