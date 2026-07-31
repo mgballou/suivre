@@ -128,6 +128,42 @@ class InsightsControllerTest extends TestCase
             )->etc());
     }
 
+    public function test_it_renders_the_exposure_timeline_over_the_default_range(): void
+    {
+        $this->travelTo(CarbonImmutable::parse('2026-07-30 09:00:00', 'UTC'));
+
+        $this->actingAs(User::factory()->tracking()->create())
+            ->get('/insights')
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('timeline.rangeDays', 30)
+                ->has('timeline.days', 30)
+                ->where('timeline.days.29.date', '2026-07-30')
+                ->where('timelineRanges', [30, 90])
+                ->etc()
+            );
+    }
+
+    public function test_it_widens_the_timeline_on_request(): void
+    {
+        $this->actingAs(User::factory()->tracking()->create())
+            ->get('/insights?range=90')
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('timeline.rangeDays', 90)
+                ->has('timeline.days', 90)
+                ->etc()
+            );
+    }
+
+    public function test_it_ignores_a_range_it_does_not_offer(): void
+    {
+        $this->actingAs(User::factory()->tracking()->create())
+            ->get('/insights?range=9999')
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page->where('timeline.rangeDays', 30)->etc());
+    }
+
     public function test_guests_cannot_reach_insights(): void
     {
         $this->get('/insights')->assertRedirect(route('login'));

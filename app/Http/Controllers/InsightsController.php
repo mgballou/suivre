@@ -6,6 +6,7 @@ namespace App\Http\Controllers;
 
 use App\Models\User;
 use App\Services\Insights\Actions\BuildConditionInsights;
+use App\Services\Insights\Actions\BuildExposureTimeline;
 use App\Services\Insights\Actions\BuildJournalSummary;
 use App\Services\Insights\Data\ConditionInsight;
 use App\Services\Journal\Actions\BuildIntensityMonth;
@@ -38,6 +39,14 @@ class InsightsController extends Controller
             'trend' => app(BuildIntensityTrend::class)($user, $today)->toArray(),
             'month' => app(BuildIntensityMonth::class)($user, $today)->toArray(),
             'summary' => app(BuildJournalSummary::class)($user, $today)->toArray(),
+
+            'timeline' => app(BuildExposureTimeline::class)(
+                $user,
+                $today,
+                (int) $request->query('range', (string) BuildExposureTimeline::RANGES[0]),
+            )->toArray(),
+
+            'timelineRanges' => BuildExposureTimeline::RANGES,
 
             /*
              * Deferred because ranking is the expensive part of this page: the
