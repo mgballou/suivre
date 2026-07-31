@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace App\Http\Controllers;
 
 use App\Models\User;
+use App\Services\Insights\Actions\BuildConditionInsights;
 use App\Services\Insights\Actions\BuildJournalSummary;
+use App\Services\Insights\Data\ConditionInsight;
 use App\Services\Journal\Actions\BuildIntensityMonth;
 use App\Services\Journal\Actions\BuildIntensityTrend;
 use App\Services\Journal\Actions\ResolveUserDay;
@@ -36,6 +38,17 @@ class InsightsController extends Controller
             'trend' => app(BuildIntensityTrend::class)($user, $today)->toArray(),
             'month' => app(BuildIntensityMonth::class)($user, $today)->toArray(),
             'summary' => app(BuildJournalSummary::class)($user, $today)->toArray(),
+
+            /*
+             * Deferred because ranking is the expensive part of this page: the
+             * engine walks the user's whole history and shuffles each tag's
+             * occurrences up to sixty times to estimate its noise band. The
+             * descriptive summary above is complete on its own and paints
+             * immediately; the ranking arrives on a second request.
+             */
+            'insights' => Inertia::defer(fn (): array => app(BuildConditionInsights::class)($user)
+                ->map(fn (ConditionInsight $insight): array => $insight->toArray())
+                ->all()),
         ]);
     }
 }
