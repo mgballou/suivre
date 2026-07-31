@@ -35,6 +35,22 @@ trait ProfileValidationRules
     }
 
     /**
+     * The same rules at registration, where the value is guessed by the browser
+     * rather than chosen.
+     *
+     * Optional because it must be: the field is filled by JavaScript reading
+     * `Intl.DateTimeFormat`, and a client that cannot supply it has to be able
+     * to register anyway. Missing falls back to the column default, which the
+     * profile screen can then correct.
+     *
+     * @return array<int, ValidationRule|array<mixed>|string>
+     */
+    protected function registrationTimezoneRules(): array
+    {
+        return ['nullable', 'string', 'timezone:all'];
+    }
+
+    /**
      * Get the validation rules used to validate user names.
      *
      * @return array<int, ValidationRule|array<mixed>|string>

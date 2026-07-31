@@ -28,13 +28,28 @@ class CreateNewUser implements CreatesNewUsers
         Validator::make($input, [
             ...$this->profileRules(),
             'password' => $this->passwordRules(),
+            'timezone' => $this->registrationTimezoneRules(),
         ])->validate();
 
-        $user = User::create([
+        $attributes = [
             'name' => $input['name'],
             'email' => $input['email'],
             'password' => $input['password'],
-        ]);
+        ];
+
+        /*
+         * The whole journal is keyed on the user's local day (D5), so a wrong
+         * timezone silently files meals and ratings against the wrong date —
+         * for someone thirteen hours from UTC, most of an evening. Nobody would
+         * think to go and correct a setting they never saw, so registration
+         * takes the browser's own answer and the profile screen stays the
+         * override rather than the only source.
+         */
+        if (! empty($input['timezone'])) {
+            $attributes['timezone'] = $input['timezone'];
+        }
+
+        $user = User::create($attributes);
 
         $user->assignRole(Role::findOrCreate(UserRole::Member->value));
 

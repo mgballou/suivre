@@ -52,6 +52,21 @@
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
         <meta name="apple-mobile-web-app-title" content="Suivre">
 
+        {{-- Launch images. Without them iOS shows a white flash on every cold
+             start of the installed app, which is the single thing that makes a
+             home-screen PWA read as a bookmark rather than an app.
+
+             Safari matches these on CSS pixels and pixel ratio, so each device
+             needs its own exact triple — there is no fallback and a near miss
+             matches nothing. The filename is derived from the same numbers as
+             the query, so the two cannot drift apart. --}}
+        @foreach ([[375, 667, 2], [414, 896, 2], [375, 812, 3], [414, 896, 3], [390, 844, 3], [428, 926, 3], [393, 852, 3], [430, 932, 3], [402, 874, 3], [440, 956, 3]] as [$width, $height, $ratio])
+            @php($file = ($width * $ratio) . 'x' . ($height * $ratio))
+            @php($media = "(device-width: {$width}px) and (device-height: {$height}px) and (-webkit-device-pixel-ratio: {$ratio}) and (orientation: portrait)")
+            <link rel="apple-touch-startup-image" media="{{ $media }} and (prefers-color-scheme: light)" href="/splash/splash-{{ $file }}.png">
+            <link rel="apple-touch-startup-image" media="{{ $media }} and (prefers-color-scheme: dark)" href="/splash/splash-{{ $file }}-dark.png">
+        @endforeach
+
         @fonts
 
         @viteReactRefresh
