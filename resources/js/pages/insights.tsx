@@ -3,6 +3,11 @@ import {
     CalendarHeatmap,
     type CalendarHeatmapProps,
 } from '@/components/suivre/calendar-heatmap';
+import {
+    InsightReadiness,
+    type ConditionReadiness,
+} from '@/components/suivre/insight-readiness';
+import { LoggedTags, type LoggedTag } from '@/components/suivre/logged-tags';
 import { TrendChart, type TrendPoint } from '@/components/suivre/trend-chart';
 import {
     Card,
@@ -16,16 +21,29 @@ type InsightsProps = {
     trend: {
         points: TrendPoint[];
         loggedDays: number;
+        windowDays: number;
     };
     month: Omit<CalendarHeatmapProps, 'className'>;
+    summary: {
+        conditions: ConditionReadiness[];
+        tags: LoggedTag[];
+    };
 };
 
 /** The scale a daily condition rating is recorded on. */
 const INTENSITY_DOMAIN: [number, number] = [0, 10];
 
-const TREND_WINDOW_DAYS = 30;
-
-export default function Insights({ trend, month }: InsightsProps) {
+/**
+ * The insights surface, which is descriptive for the first three months and
+ * stays descriptive afterwards.
+ *
+ * The SUI-36 spike put the earliest honest ranking at around ninety days of
+ * ratings. Rather than leave that stretch empty — the likeliest moment for
+ * someone to give up — the page reads the user their own record: how the
+ * condition moved, which days carry data, what they ate most. When the ranked
+ * suspects arrive (SUI-22) they stack above this; nothing here is taken away.
+ */
+export default function Insights({ trend, month, summary }: InsightsProps) {
     const latest = trend.points.findLast(
         (point) => point.values.intensity !== null,
     );
@@ -40,17 +58,18 @@ export default function Insights({ trend, month }: InsightsProps) {
                         Insights
                     </h1>
                     <p className="text-sm text-muted-foreground">
-                        Lag-aware correlations arrive in E4. Suggestive, never
-                        proof.
+                        What you have logged, and what it can honestly say.
                     </p>
                 </div>
+
+                <InsightReadiness conditions={summary.conditions} />
 
                 <Card>
                     <CardHeader>
                         <CardTitle>Condition intensity</CardTitle>
                         <CardDescription>
                             Your worst rating each day. {trend.loggedDays} of{' '}
-                            {TREND_WINDOW_DAYS} days logged.
+                            {trend.windowDays} days logged.
                         </CardDescription>
                     </CardHeader>
                     <CardContent className="flex flex-col gap-4">
@@ -89,6 +108,22 @@ export default function Insights({ trend, month }: InsightsProps) {
                     </CardHeader>
                     <CardContent>
                         <CalendarHeatmap {...month} className="max-w-xs" />
+                    </CardContent>
+                </Card>
+
+                <Card>
+                    <CardHeader>
+                        <CardTitle>What you ate most</CardTitle>
+                        <CardDescription>
+                            Counts over the last {trend.windowDays} days. A
+                            description of your diet, not a verdict on it.
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <LoggedTags
+                            tags={summary.tags}
+                            windowDays={trend.windowDays}
+                        />
                     </CardContent>
                 </Card>
             </div>

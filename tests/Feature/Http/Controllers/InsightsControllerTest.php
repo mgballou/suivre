@@ -7,6 +7,7 @@ namespace Tests\Feature\Http\Controllers;
 use App\Models\Condition;
 use App\Models\ConditionLog;
 use App\Models\User;
+use App\Services\Insights\CorrelationThresholds;
 use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Inertia\Testing\AssertableInertia as Assert;
@@ -54,6 +55,42 @@ class InsightsControllerTest extends TestCase
                 ->where('trend.loggedDays', 0)
                 ->where('trend.points.0.values.intensity', null)
                 ->where('month.days.0.level', 0)
+                ->etc()
+            );
+    }
+
+    public function test_it_renders_readiness_for_each_tracked_condition(): void
+    {
+        $this->travelTo(CarbonImmutable::parse('2026-07-30 09:00:00', 'UTC'));
+
+        $user = User::factory()->tracking()->create();
+        $condition = Condition::factory()->for($user)->createQuietly(['name' => 'Eczema']);
+
+        ConditionLog::factory()
+            ->forCondition($condition)
+            ->on(CarbonImmutable::parse('2026-07-30'))
+            ->createQuietly(['intensity' => 7]);
+
+        $this->actingAs($user)
+            ->get('/insights')
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('summary.conditions.0.name', 'Eczema')
+                ->where('summary.conditions.0.loggedDays', 1)
+                ->where('summary.conditions.0.requiredDays', CorrelationThresholds::MINIMUM_LOGGED_DAYS)
+                ->where('summary.conditions.0.isReady', false)
+                ->etc()
+            );
+    }
+
+    public function test_it_sends_the_trend_window_rather_than_letting_the_page_assume_it(): void
+    {
+        $this->actingAs(User::factory()->tracking()->create())
+            ->get('/insights')
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('trend.windowDays', 30)
+                ->has('summary.tags')
                 ->etc()
             );
     }

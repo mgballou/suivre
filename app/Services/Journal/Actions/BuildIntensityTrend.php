@@ -12,7 +12,12 @@ use Carbon\CarbonImmutable;
 
 class BuildIntensityTrend
 {
-    private const DEFAULT_WINDOW_DAYS = 30;
+    /**
+     * Public because the descriptive summary counts its tags over the same
+     * window this chart draws, and the two sitting side by side on one screen
+     * must not be able to disagree about how long "recently" is.
+     */
+    public const DEFAULT_WINDOW_DAYS = 30;
 
     /**
      * Assemble a rolling window of daily intensity ending on the user's today.
@@ -46,6 +51,7 @@ class BuildIntensityTrend
         return new IntensityTrend(
             points: $points,
             loggedDays: count($ratings),
+            windowDays: $windowDays,
         );
     }
 }
