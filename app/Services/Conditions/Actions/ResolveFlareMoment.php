@@ -23,8 +23,18 @@ class ResolveFlareMoment
     {
         $today = app(ResolveUserDay::class)($user, $now);
 
-        return $date->toDateString() === $today->toDateString()
-            ? $now->setTimezone($user->timezone)
+        $moment = $date->toDateString() === $today->toDateString()
+            ? $now
             : CarbonImmutable::parse($date->toDateString(), $user->timezone)->addHours(12);
+
+        /*
+         * Returned in UTC, and that is load-bearing. Eloquent's datetime cast
+         * writes a Carbon's wall-clock reading and then reads it back as the
+         * app timezone, so handing it 21:00+12:00 stores the instant 21:00 UTC
+         * — the flare silently jumps twelve hours and can land on the wrong
+         * day. The user's timezone decides *which* instant; it is not part of
+         * it, and the day screen converts back for display.
+         */
+        return $moment->utc();
     }
 }

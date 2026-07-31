@@ -51,6 +51,20 @@ it('bounds a day whose local midnight is skipped by a dst transition', function 
     expect($bounds->endsAt->utc()->toIso8601ZuluString())->toBe('2026-09-07T03:00:00Z');
 });
 
+it('hands the bounds back in utc, because they are used as query bindings', function (): void {
+    // Laravel formats a Carbon binding in the Carbon's own timezone without
+    // converting it, so a local-zone bound compares a wall-clock string against
+    // UTC timestamp columns and selects the wrong window by the user's offset.
+    // Every other assertion in this file calls ->utc() first, which is why this
+    // one has to exist.
+    $user = User::factory()->inTimezone('Pacific/Auckland')->createQuietly();
+
+    $bounds = app(ResolveDayBounds::class)($user, CarbonImmutable::parse('2026-07-06'));
+
+    expect($bounds->startsAt->timezone->getName())->toBe('UTC');
+    expect($bounds->endsAt->timezone->getName())->toBe('UTC');
+});
+
 it('leaves no gap between one day and the next', function (): void {
     $user = User::factory()->inTimezone('America/New_York')->createQuietly();
     $resolve = app(ResolveDayBounds::class);

@@ -28,6 +28,8 @@ readonly class DayView implements Arrayable
      * @param  array<int, DayCondition>  $conditions
      * @param  array<int, DayFlare>  $flares
      * @param  array<int, ScaleOption>  $flareIntensities
+     * @param  array<int, DayMeal>  $meals
+     * @param  array<int, MealTypeOption>  $mealTypes
      */
     public function __construct(
         public string $date,
@@ -43,6 +45,8 @@ readonly class DayView implements Arrayable
         public array $conditions,
         public array $flares,
         public array $flareIntensities,
+        public array $meals,
+        public array $mealTypes,
     ) {}
 
     /**
@@ -57,6 +61,8 @@ readonly class DayView implements Arrayable
      *     conditions: array<int, array{id: int, name: string, hue: string, intensity: int|null, level: int}>,
      *     flares: array<int, array{id: int, conditionName: string, hue: string, intensity: string, time: string, duration: string|null, note: string|null}>,
      *     flareIntensities: array<int, array{value: int, label: string}>,
+     *     meals: array<int, array{id: int, type: string, time: string, entries: array<int, array{id: int, label: string, tags: array<int, string>, matched: bool}>}>,
+     *     mealTypes: array<int, array{value: string, label: string}>,
      * }
      */
     public function toArray(): array
@@ -91,6 +97,14 @@ readonly class DayView implements Arrayable
             'flareIntensities' => array_map(
                 static fn (ScaleOption $option): array => $option->toArray(),
                 $this->flareIntensities,
+            ),
+            'meals' => array_map(
+                static fn (DayMeal $meal): array => $meal->toArray(),
+                $this->meals,
+            ),
+            'mealTypes' => array_map(
+                static fn (MealTypeOption $option): array => $option->toArray(),
+                $this->mealTypes,
             ),
         ];
     }

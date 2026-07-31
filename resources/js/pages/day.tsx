@@ -12,6 +12,11 @@ import {
 } from '@/components/suivre/condition-ratings';
 import { RAMP_BG, type IntensityLevel } from '@/components/suivre/day-cell';
 import { FlareLogger, type DayFlare } from '@/components/suivre/flare-logger';
+import {
+    MealLogger,
+    type DayMeal,
+    type MealTypeOption,
+} from '@/components/suivre/meal-logger';
 import type { ScaleOption } from '@/components/suivre/scale-picker';
 import { Separator } from '@/components/ui/separator';
 import { cn } from '@/lib/utils';
@@ -29,6 +34,8 @@ type DayProps = {
     conditions: DayCondition[];
     flares: DayFlare[];
     flareIntensities: ScaleOption[];
+    meals: DayMeal[];
+    mealTypes: MealTypeOption[];
 };
 
 /**
@@ -48,6 +55,8 @@ export default function Day({
     conditions,
     flares,
     flareIntensities,
+    meals,
+    mealTypes,
 }: DayProps) {
     const [leaving, setLeaving] = useState(false);
 
@@ -114,6 +123,15 @@ export default function Day({
                             key={`conditions-${date}`}
                             date={date}
                             conditions={conditions}
+                        />
+
+                        <Separator />
+
+                        <MealLogger
+                            key={`meals-${date}`}
+                            date={date}
+                            meals={meals}
+                            mealTypes={mealTypes}
                         />
 
                         <Separator />

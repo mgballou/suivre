@@ -9,8 +9,10 @@ use App\Http\Controllers\DayCheckinController;
 use App\Http\Controllers\DayConditionController;
 use App\Http\Controllers\DayController;
 use App\Http\Controllers\DayFlareController;
+use App\Http\Controllers\DayMealController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\InsightsController;
+use App\Http\Controllers\MealClassificationController;
 use App\Http\Controllers\OnboardingController;
 use App\Http\Middleware\RequireTrackedCondition;
 use Illuminate\Support\Facades\Route;
@@ -41,7 +43,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
                 Route::post('checkin', DayCheckinController::class)->name('day.checkin');
                 Route::post('conditions/{condition}', DayConditionController::class)->name('day.conditions.rate');
                 Route::post('conditions/{condition}/flares', DayFlareController::class)->name('day.conditions.flare');
+                Route::post('meals', DayMealController::class)->name('day.meals.store');
             });
+
+        // Not under a day: classifying a draft reads the global catalog and
+        // saves nothing, so it needs no date to answer.
+        Route::post('meals/classify', MealClassificationController::class)->name('meals.classify');
 
         Route::get('insights', InsightsController::class)->name('insights');
     });
