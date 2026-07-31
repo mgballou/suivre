@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Database\Factories;
 
 use App\Enums\UserRole;
+use App\Models\Condition;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Facades\Hash;
@@ -61,6 +62,20 @@ class UserFactory extends Factory
     {
         return $this->afterCreating(function (User $user): void {
             $user->syncRoles([Role::findOrCreate(UserRole::Admin->value)]);
+        });
+    }
+
+    /**
+     * A user who is already past first-run onboarding.
+     *
+     * RequireTrackedCondition redirects anyone with no condition on file away
+     * from the journal, so any test that exercises the calendar, a day or
+     * insights needs this state rather than a bare user.
+     */
+    public function tracking(string $name = 'Joint pain'): static
+    {
+        return $this->afterCreating(function (User $user) use ($name): void {
+            Condition::factory()->for($user)->createQuietly(['name' => $name]);
         });
     }
 

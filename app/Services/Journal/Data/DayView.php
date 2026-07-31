@@ -7,12 +7,14 @@ namespace App\Services\Journal\Data;
 use Illuminate\Contracts\Support\Arrayable;
 
 /**
- * One day's check-in surface: the saved values, the scales they were chosen
- * from, and the ramp step the day currently reads at.
+ * One day's journal surface: the saved check-in, the conditions tracked that
+ * day with their ratings, the flares logged against it, and the scales each was
+ * chosen from.
  *
- * `level` follows the same convention as CalendarDay — 0 means "no entry",
- * 1–5 climb the petrol ramp (D20). Until SUI-8 surfaces condition intensity a
- * logged day sits at step 1, so this is the value the day's colour arrives on.
+ * `level` follows the same convention as CalendarDay — 0 means "no entry", 1–5
+ * climb the petrol ramp (D20). It reads the day's *worst* condition rating, so
+ * a calm condition can never mask a severe one; a day with a check-in but no
+ * rating still sits at step 1, which is what makes the colour arrive at all.
  *
  * `month` is carried so the return link lands on the month the day belongs to
  * rather than the user's current month.
@@ -23,6 +25,9 @@ readonly class DayView implements Arrayable
 {
     /**
      * @param  array<string, array<int, ScaleOption>>  $scales
+     * @param  array<int, DayCondition>  $conditions
+     * @param  array<int, DayFlare>  $flares
+     * @param  array<int, ScaleOption>  $flareIntensities
      */
     public function __construct(
         public string $date,
@@ -35,6 +40,9 @@ readonly class DayView implements Arrayable
         public ?int $stress,
         public ?string $note,
         public array $scales,
+        public array $conditions,
+        public array $flares,
+        public array $flareIntensities,
     ) {}
 
     /**
@@ -46,6 +54,9 @@ readonly class DayView implements Arrayable
      *     isToday: bool,
      *     checkin: array{mood: int|null, sleep: int|null, stress: int|null, note: string|null},
      *     scales: array<string, array<int, array{value: int, label: string}>>,
+     *     conditions: array<int, array{id: int, name: string, hue: string, intensity: int|null, level: int}>,
+     *     flares: array<int, array{id: int, conditionName: string, hue: string, intensity: string, time: string, duration: string|null, note: string|null}>,
+     *     flareIntensities: array<int, array{value: int, label: string}>,
      * }
      */
     public function toArray(): array
@@ -68,6 +79,18 @@ readonly class DayView implements Arrayable
                     $options,
                 ),
                 $this->scales,
+            ),
+            'conditions' => array_map(
+                static fn (DayCondition $condition): array => $condition->toArray(),
+                $this->conditions,
+            ),
+            'flares' => array_map(
+                static fn (DayFlare $flare): array => $flare->toArray(),
+                $this->flares,
+            ),
+            'flareIntensities' => array_map(
+                static fn (ScaleOption $option): array => $option->toArray(),
+                $this->flareIntensities,
             ),
         ];
     }

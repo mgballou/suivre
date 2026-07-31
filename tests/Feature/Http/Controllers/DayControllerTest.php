@@ -20,7 +20,7 @@ class DayControllerTest extends TestCase
 
     public function test_it_renders_an_unlogged_day_as_an_empty_check_in(): void
     {
-        $this->actingAs(User::factory()->create())
+        $this->actingAs(User::factory()->tracking()->create())
             ->get('/day/2026-07-15')
             ->assertOk()
             ->assertInertia(fn (Assert $page) => $page
@@ -39,7 +39,7 @@ class DayControllerTest extends TestCase
 
     public function test_it_renders_a_saved_check_in(): void
     {
-        $user = User::factory()->create();
+        $user = User::factory()->tracking()->create();
 
         DailyCheckin::factory()
             ->for($user)
@@ -66,7 +66,7 @@ class DayControllerTest extends TestCase
 
     public function test_it_offers_each_scales_cases_in_their_declared_order(): void
     {
-        $this->actingAs(User::factory()->create())
+        $this->actingAs(User::factory()->tracking()->create())
             ->get('/day/2026-07-15')
             ->assertOk()
             ->assertInertia(fn (Assert $page) => $page
@@ -88,7 +88,7 @@ class DayControllerTest extends TestCase
             ->on(CarbonImmutable::parse('2026-07-15'))
             ->createQuietly(['mood' => MoodLevel::Good]);
 
-        $this->actingAs(User::factory()->create())
+        $this->actingAs(User::factory()->tracking()->create())
             ->get('/day/2026-07-15')
             ->assertOk()
             ->assertInertia(fn (Assert $page) => $page
@@ -103,7 +103,7 @@ class DayControllerTest extends TestCase
         // 23:30 UTC on the 15th is already the 16th in Auckland (UTC+12 in July).
         $this->travelTo(CarbonImmutable::parse('2026-07-15 23:30:00', 'UTC'));
 
-        $user = User::factory()->inTimezone('Pacific/Auckland')->create();
+        $user = User::factory()->tracking()->inTimezone('Pacific/Auckland')->create();
 
         $this->actingAs($user)
             ->get('/day/2026-07-16')
@@ -118,7 +118,7 @@ class DayControllerTest extends TestCase
 
     public function test_it_rejects_a_date_that_matches_the_pattern_but_does_not_exist(): void
     {
-        $this->actingAs(User::factory()->create())
+        $this->actingAs(User::factory()->tracking()->create())
             ->get('/day/2026-02-31')
             ->assertNotFound();
     }

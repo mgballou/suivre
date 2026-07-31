@@ -41,6 +41,26 @@ class ConditionPolicy
         return $this->owns($user, $condition);
     }
 
+    /**
+     * Whether a daily rating or a flare may be recorded against this condition.
+     *
+     * Deactivating retires a condition without touching a single rating, so the
+     * precondition is "still tracked", not "still exists" — and it lives here
+     * rather than being re-derived by the day screen that renders the pickers.
+     */
+    public function record(User $user, Condition $condition): Response
+    {
+        $owns = $this->owns($user, $condition);
+
+        if ($owns->denied()) {
+            return $owns;
+        }
+
+        return $condition->is_active
+            ? Response::allow()
+            : Response::deny('You are no longer tracking this condition.');
+    }
+
     private function owns(User $user, Condition $condition): Response
     {
         return $condition->user_id === $user->id

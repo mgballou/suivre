@@ -145,7 +145,7 @@ modes, never pure grey, never the same value as level 1.
 | 5 | `#3F7D7B` | `#FFFFFF` | 4.79:1 |
 
 **Starting values (dark, on `#131314`):** `#1B1F1F` (empty), `#1E2E2E`, `#2A4646`, `#3A6362`,
-`#4E8483`, `#68A7A5`.
+`#4E8483`, `#68A7A5`. Level 4 was **retuned in SUI-9** — see below.
 
 ### Two known defects — resolved in Ticket B (SUI-31)
 
@@ -171,6 +171,31 @@ no threshold switch. This lets **both ramps keep their smooth, even topography**
 Implemented as `resources/js/components/suivre/day-cell.tsx`; ramp tokens live in
 `resources/css/app.css` as `--intensity-0…5`, defined twice (light/dark), never inverted.
 
+### Final ramp values — closed in SUI-9
+
+SUI-31's chip decoupled legibility on the **calendar cell**, but the `IntensityPicker` puts the
+rating digit **on the swatch itself**, so the dead zone had to be closed rather than routed around.
+D20's carry-forward is resolved here, measured rather than eyeballed:
+
+- **Dark level 4: `#4E8483` → `#558C8A`.** The old value was a genuine dead zone (white 4.24:1,
+  dark ink 3.91:1 — both fail AA). Lifting its relative luminance to 0.225 puts dark ink at
+  **4.69:1** and moves the dark scheme's ink threshold to step 4.
+- **Light ramp: unchanged.** The published values were already correct; only the mockup was wrong.
+  The rule stands — dark ink `#16201F` through level 4 (L4 = 5.68:1), white at level 5 (4.74:1).
+
+**The ink rule is a property of the step, not of the hue.** Every ramp in the app is built to one
+relative-luminance profile per step, so one rule serves petrol and all seven condition hues. It
+lives in PHP as `RampStep::ink(ColorScheme)` and in CSS as `--ramp-ink-0…5`:
+
+| Scheme | Steps 0–3 | Step 4 | Step 5 |
+|---|---|---|---|
+| Light | `#16201F` | `#16201F` | `#FFFFFF` |
+| Dark | `#EDEEEE` | `#101917` | `#101917` |
+
+`tests/Feature/Enums/ConditionHueTest.php` computes WCAG contrast for every step of every ramp in
+both schemes and fails below AA (4.5:1), and separately asserts that `app.css` declares exactly the
+values the PHP enums do — so the two homes of a hex cannot drift.
+
 ### Type
 
 Inter, served via Bunny (already the project's font provider). `font-variant-numeric: tabular-nums`
@@ -183,6 +208,30 @@ SUI-8 gives each `Condition` a user-set `color`. A free colour picker kills the 
 picks neon magenta, the ramp construction breaks, dark-mode contrast fails. Users choose from a
 **curated set of six to eight hues**, each shipping a pre-built five-step ramp built exactly as
 petrol's is. Petrol is reserved for the application itself and is not offered as a condition hue.
+
+**Shipped in SUI-9: seven hues** — `App\Enums\ConditionHue`, mirrored client-side as a literal
+union in `resources/js/types/conditions.ts` and as CSS `[data-hue='…']` blocks in `app.css`.
+
+Each ramp is **generated, not picked**: for every step, the hue's OKLCH angle is held fixed at
+petrol's chroma for that step and its lightness solved so the swatch lands on **petrol's relative
+luminance**. Contrast is a pure function of luminance, so every hue inherits petrol's contrast
+behaviour exactly and the one ink rule above covers all of them. Worst measured contrast across the
+whole set: **4.70:1 light, 4.65:1 dark** (AA is 4.5:1).
+
+| Hue | OKLCH angle | Light 0–5 | Dark 0–5 |
+|---|---|---|---|
+| Clay | 62° | `#F2F0EF #F3EAE4 #E5D2C2 #D0B29A #B49071 #906C4C` | `#201D1B #342921 #4F3E2F #705842 #9D7C60 #BB9474` |
+| Ochre | 95° | `#F1F0EF #EEEBE2 #DBD6BF #C1B795 #A2966B #7E7346` | `#1F1E1B #2E2B1F #47412D #645C3E #8D825B #A89C6E` |
+| Moss | 140° | `#F0F1EF #E7EDE5 #CADAC6 #A6BEA1 #819E7B #5D7A57` | `#1C1E1C #252E23 #374534 #4D6249 #6F8969 #85A47E` |
+| Marine | 230° | `#EFF1F1 #E4EDF3 #C1D9E5 #97BDD0 #6E9EB5 #487A91` | `#1B1E20 #202D34 #2E4550 #406171 #5D899E #71A3BC` |
+| Indigo | 268° | `#F0F1F2 #E8EBF5 #CDD5EB #AAB7D8 #8796BE #63739A` | `#1D1F21 #272B37 #3A4154 #515C77 #7483A7 #8B9BC6` |
+| Violet | 305° | `#F1F1F2 #EDEAF3 #DBD1E7 #C0B1D2 #A18FB8 #7E6B94` | `#1F1E20 #2E2A35 #463E51 #635773 #8C7BA0 #A894BF` |
+| Plum | 340° | `#F2F1F1 #F3E9EF #E6CFDD #CFAEC3 #B48AA5 #906781` | `#211E1F #33282F #4F3C48 #705366 #9D7890 #BB8FAC` |
+
+Three constraints the test enforces, not the eye: **no hue in the red band** (12°–50°, D20's "no
+red, ever"), **every hue ≥30° from petrol** (~193°) so a condition never reads as the app itself,
+and **each ramp monotonic** in its scheme's direction. Step 0 is deliberately near-neutral in every
+hue — an unrated condition reads as quiet, not as a faint version of itself.
 
 ---
 
