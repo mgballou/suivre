@@ -1,4 +1,4 @@
-import { Head } from '@inertiajs/react';
+import { Deferred, Head } from '@inertiajs/react';
 import {
     CalendarHeatmap,
     type CalendarHeatmapProps,
@@ -8,6 +8,10 @@ import {
     type ConditionReadiness,
 } from '@/components/suivre/insight-readiness';
 import { LoggedTags, type LoggedTag } from '@/components/suivre/logged-tags';
+import {
+    SuspectList,
+    type ConditionInsight,
+} from '@/components/suivre/suspect-list';
 import { TrendChart, type TrendPoint } from '@/components/suivre/trend-chart';
 import {
     Card,
@@ -16,6 +20,7 @@ import {
     CardHeader,
     CardTitle,
 } from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
 
 type InsightsProps = {
     trend: {
@@ -28,6 +33,8 @@ type InsightsProps = {
         conditions: ConditionReadiness[];
         tags: LoggedTag[];
     };
+    /** Deferred: absent on the first render, present on the follow-up request. */
+    insights?: ConditionInsight[];
 };
 
 /** The scale a daily condition rating is recorded on. */
@@ -43,7 +50,12 @@ const INTENSITY_DOMAIN: [number, number] = [0, 10];
  * condition moved, which days carry data, what they ate most. When the ranked
  * suspects arrive (SUI-22) they stack above this; nothing here is taken away.
  */
-export default function Insights({ trend, month, summary }: InsightsProps) {
+export default function Insights({
+    trend,
+    month,
+    summary,
+    insights,
+}: InsightsProps) {
     const latest = trend.points.findLast(
         (point) => point.values.intensity !== null,
     );
@@ -61,6 +73,18 @@ export default function Insights({ trend, month, summary }: InsightsProps) {
                         What you have logged, and what it can honestly say.
                     </p>
                 </div>
+
+                <Deferred
+                    data="insights"
+                    fallback={
+                        <div className="flex flex-col gap-2">
+                            <Skeleton className="h-4 w-32" />
+                            <Skeleton className="h-14 w-full" />
+                        </div>
+                    }
+                >
+                    <SuspectList insights={insights ?? []} />
+                </Deferred>
 
                 <InsightReadiness conditions={summary.conditions} />
 
