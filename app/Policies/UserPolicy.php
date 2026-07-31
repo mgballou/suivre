@@ -40,6 +40,25 @@ class UserPolicy
         return Response::deny('Accounts are maintained by their owner, not the backstage.');
     }
 
+    /**
+     * The single, deliberately narrow exception to `update`.
+     *
+     * A password is a credential, not journal data, and the rule this policy
+     * enforces is that the backstage never edits what a user recorded. Account
+     * recovery is a different thing: without a mail transport wired up, an
+     * administrator setting a password is the only way back in for someone who
+     * has forgotten theirs. It touches nothing they logged.
+     *
+     * Kept as its own ability rather than relaxing `update`, so the general
+     * prohibition stays intact and this exception has to be asked for by name.
+     */
+    public function resetPassword(User $user, User $subject): Response
+    {
+        return $user->isAdmin()
+            ? Response::allow()
+            : Response::deny('Only administrators can reset another account\'s password.');
+    }
+
     public function delete(User $user, User $subject): Response
     {
         return Response::deny('Deleting an account would cascade away its entire journal.');

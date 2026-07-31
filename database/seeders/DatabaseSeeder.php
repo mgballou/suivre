@@ -22,6 +22,8 @@ class DatabaseSeeder extends Seeder
             'email' => 'test@example.com',
         ]);
 
+        // Order matters: the foods resolve their trigger categories by slug.
         $this->call(CategoryTaxonomySeeder::class);
+        $this->call(CommonFoodsSeeder::class);
     }
 }

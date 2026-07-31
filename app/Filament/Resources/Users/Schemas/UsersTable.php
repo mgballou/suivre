@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Filament\Resources\Users\Schemas;
 
+use App\Filament\Resources\Users\Actions\ResetUserPasswordAction;
 use Filament\Actions\ViewAction;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
@@ -67,6 +68,7 @@ class UsersTable
             ])
             ->recordActions([
                 ViewAction::make(),
+                ResetUserPasswordAction::make(),
             ]);
     }
 }
