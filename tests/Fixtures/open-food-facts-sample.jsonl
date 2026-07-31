@@ -1,0 +1,18 @@
+{"code":"3017620422003","product_name":"Whole milk","allergens_tags":["en:milk"],"ingredients_tags":["en:milk"],"countries_tags":["en:united-kingdom"],"categories_tags":["en:dairies","en:milks"],"nutriments":{"energy-kj_100g":268},"image_url":"https://images.openfoodfacts.org/whole-milk.jpg","last_modified_t":1710000000}
+{"code":"5000000000001","product_name":"Whole Milk!","allergens_tags":["en:milk"],"ingredients_tags":["en:milk","en:sugar"],"countries_tags":["en:france"],"categories_tags":["en:dairies"]}
+{"code":"5000000000002","product_name":"Sliced wholemeal bread","allergens_tags":["en:gluten"],"ingredients_tags":["en:wheat-flour","en:water","en:yeast"],"countries_tags":["en:united-kingdom"],"categories_tags":["en:breads"]}
+{"code":"5000000000003","product_name":"Crunchy peanut butter","allergens_tags":["en:peanuts"],"ingredients_tags":["en:peanuts","en:sugar","en:palm-oil"],"countries_tags":["en:united-kingdom"],"categories_tags":["en:spreads"]}
+{"code":"5000000000004","product_name":"Firm tofu","allergens_tags":["en:soybeans"],"ingredients_tags":["en:soybeans","en:water"],"countries_tags":["en:united-kingdom"],"categories_tags":["en:plant-based-foods"]}
+{"code":"5000000000005","product_name":"Mayonnaise","allergens_tags":["en:eggs"],"ingredients_tags":["en:egg-yolk","en:rapeseed-oil"],"additives_tags":["en:e330"],"countries_tags":["en:united-kingdom"],"categories_tags":["en:sauces"]}
+{"code":"5000000000006","product_name":"Ground coffee","allergens_tags":[],"ingredients_tags":["en:coffee"],"countries_tags":["en:united-kingdom"],"categories_tags":["en:coffees","en:beverages"]}
+{"code":"5000000000007","product_name":"Cola","allergens_tags":[],"ingredients_tags":["en:water","en:sugar","en:caffeine"],"additives_tags":["en:e150d","en:e338"],"countries_tags":["en:united-kingdom"],"categories_tags":["en:colas","en:beverages"]}
+{"code":"5000000000008","product_name":"Pale ale","allergens_tags":["en:gluten"],"ingredients_tags":["en:water","en:barley-malt","en:hops"],"countries_tags":["en:united-kingdom"],"categories_tags":["en:alcoholic-beverages","en:beers"]}
+{"code":"5000000000009","product_name":"","allergens_tags":["en:milk"],"countries_tags":["en:united-kingdom"]}
+{"code":"5000000000010","product_name":"Sea salt flakes","allergens_tags":[],"ingredients_tags":["en:sea-salt"],"countries_tags":["en:united-kingdom"],"categories_tags":["en:salts"]}
+{"code":"5000000000011","product_name":"Chorizo","allergens_tags":[],"ingredients_tags":["en:pork","en:paprika"],"countries_tags":["en:spain"],"categories_tags":["en:meats"]}
+{"code":"5000000000012","product_name":"Tomato passata","allergens_tags":[],"ingredients_tags":["en:tomatoes"],"countries_tags":["en:united-kingdom"],"categories_tags":["en:sauces"]}
+{"code":"5000000000013","product_name":"Fruit and oat bar","allergens_tags":[],"traces_tags":["en:nuts","en:milk"],"ingredients_tags":["en:oats","en:raisins"],"countries_tags":["en:united-kingdom"],"categories_tags":["en:snacks"]}
+{"code":"5000000000014","product_name_en":"Rice cakes","allergens_tags":[],"ingredients_tags":["en:rice"],"countries_tags":["en:united-kingdom"],"categories_tags":["en:snacks"]}
+{"code":"","product_name":"Orphan record with no barcode","allergens_tags":["en:milk"],"countries_tags":["en:united-kingdom"]}
+{"code":"5000000000015","product_name":"---","allergens_tags":["en:milk"],"countries_tags":["en:united-kingdom"]}
+{"code":"5000000000016", this line is not valid json at all
