@@ -11,7 +11,8 @@ use Illuminate\Contracts\Support\Arrayable;
  *
  * `loggedDays` is carried alongside the points because every figure Suivre
  * shows states its own sample size (D11): a trend drawn from four days is not
- * the same claim as one drawn from thirty.
+ * the same claim as one drawn from thirty. `windowDays` travels with it so the
+ * denominator is the server's, not a number the page happens to also know.
  *
  * @implements Arrayable<string, mixed>
  */
@@ -23,12 +24,14 @@ readonly class IntensityTrend implements Arrayable
     public function __construct(
         public array $points,
         public int $loggedDays,
+        public int $windowDays,
     ) {}
 
     /**
      * @return array{
      *     points: array<int, array{date: string, label: string, values: array{intensity: int|null}}>,
      *     loggedDays: int,
+     *     windowDays: int,
      * }
      */
     public function toArray(): array
@@ -39,6 +42,7 @@ readonly class IntensityTrend implements Arrayable
                 $this->points,
             ),
             'loggedDays' => $this->loggedDays,
+            'windowDays' => $this->windowDays,
         ];
     }
 }

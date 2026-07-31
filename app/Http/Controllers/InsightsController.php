@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers;
 
 use App\Models\User;
+use App\Services\Insights\Actions\BuildJournalSummary;
 use App\Services\Journal\Actions\BuildIntensityMonth;
 use App\Services\Journal\Actions\BuildIntensityTrend;
 use App\Services\Journal\Actions\ResolveUserDay;
@@ -16,11 +17,13 @@ use Inertia\Response;
 class InsightsController extends Controller
 {
     /**
-     * Render the charting reference surface.
+     * Render the insights surface.
      *
-     * Lag-aware correlations arrive with the insights UI; what this page proves
-     * now is that a chart and a heatmap declared against the shared tokens
-     * render as one system in both modes.
+     * Descriptive throughout: what the user logged, and how far each condition
+     * is from the volume the correlation engine needs. The ranked suspects
+     * (SUI-22) will be added above this, not in place of it — a user who has
+     * read their own month for three months does not stop wanting it the day a
+     * ranking appears.
      */
     public function __invoke(Request $request): Response
     {
@@ -32,6 +35,7 @@ class InsightsController extends Controller
         return Inertia::render('insights', [
             'trend' => app(BuildIntensityTrend::class)($user, $today)->toArray(),
             'month' => app(BuildIntensityMonth::class)($user, $today)->toArray(),
+            'summary' => app(BuildJournalSummary::class)($user, $today)->toArray(),
         ]);
     }
 }
