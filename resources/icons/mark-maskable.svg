@@ -1,5 +1,10 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" role="img" aria-label="Suivre">
-    <rect width="512" height="512" rx="114" fill="#3f7d7b"/>
+    <!--
+        Maskable: the background bleeds to the edge because the platform, not
+        this file, decides the silhouette. Every bar sits inside the 80% safe
+        circle (radius 204.8 from centre) so no mask can clip the ramp.
+    -->
+    <rect width="512" height="512" fill="#3f7d7b"/>
     <g fill="#fbfbfa">
         <rect x="128" y="288" width="44" height="80" rx="22"/>
         <rect x="199" y="238" width="44" height="130" rx="22"/>
