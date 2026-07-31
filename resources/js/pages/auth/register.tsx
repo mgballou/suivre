@@ -25,6 +25,24 @@ export default function Register({ passwordRules }: Props) {
             >
                 {({ processing, errors }) => (
                     <>
+                        {/*
+                         * The journal is keyed on the user's local day, so the
+                         * account needs a timezone from the first meal logged —
+                         * not from a settings screen nobody visits. This is the
+                         * one date value the client is allowed to produce, and
+                         * only because the browser is the only thing that knows
+                         * it; the server validates it and the profile screen
+                         * remains the correction.
+                         */}
+                        <input
+                            type="hidden"
+                            name="timezone"
+                            defaultValue={
+                                Intl.DateTimeFormat().resolvedOptions()
+                                    .timeZone ?? ''
+                            }
+                        />
+
                         <div className="grid gap-6">
                             <div className="grid gap-2">
                                 <Label htmlFor="name">Name</Label>
