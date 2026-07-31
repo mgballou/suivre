@@ -1,8 +1,12 @@
-import { Deferred, Head } from '@inertiajs/react';
+import { Deferred, Head, router } from '@inertiajs/react';
 import {
     CalendarHeatmap,
     type CalendarHeatmapProps,
 } from '@/components/suivre/calendar-heatmap';
+import {
+    ExposureTimeline,
+    type ExposureTimelineData,
+} from '@/components/suivre/exposure-timeline';
 import {
     InsightReadiness,
     type ConditionReadiness,
@@ -33,6 +37,8 @@ type InsightsProps = {
         conditions: ConditionReadiness[];
         tags: LoggedTag[];
     };
+    timeline: ExposureTimelineData;
+    timelineRanges: number[];
     /** Deferred: absent on the first render, present on the follow-up request. */
     insights?: ConditionInsight[];
 };
@@ -54,6 +60,8 @@ export default function Insights({
     trend,
     month,
     summary,
+    timeline,
+    timelineRanges,
     insights,
 }: InsightsProps) {
     const latest = trend.points.findLast(
@@ -132,6 +140,29 @@ export default function Insights({
                     </CardHeader>
                     <CardContent>
                         <CalendarHeatmap {...month} className="max-w-xs" />
+                    </CardContent>
+                </Card>
+
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Foods against days</CardTitle>
+                        <CardDescription>
+                            The same days on every row. Tags that mark the same
+                            columns travel together — which is why a ranking
+                            cannot tell them apart.
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <ExposureTimeline
+                            {...timeline}
+                            ranges={timelineRanges}
+                            onRangeChange={(range) =>
+                                router.reload({
+                                    only: ['timeline'],
+                                    data: { range },
+                                })
+                            }
+                        />
                     </CardContent>
                 </Card>
 
