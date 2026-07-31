@@ -5,6 +5,7 @@ import { initializeTheme } from '@/hooks/use-appearance';
 import AppLayout from '@/layouts/app-layout';
 import AuthLayout from '@/layouts/auth-layout';
 import SettingsLayout from '@/layouts/settings/layout';
+import { registerServiceWorker } from '@/lib/service-worker';
 
 const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
 
@@ -39,3 +40,5 @@ createInertiaApp({
 
 // This will set light / dark mode on load...
 initializeTheme();
+
+registerServiceWorker();
