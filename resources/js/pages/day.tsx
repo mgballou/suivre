@@ -6,7 +6,14 @@ import {
     type CheckinScales,
     type CheckinValues,
 } from '@/components/suivre/checkin-form';
+import {
+    ConditionRatings,
+    type DayCondition,
+} from '@/components/suivre/condition-ratings';
 import { RAMP_BG, type IntensityLevel } from '@/components/suivre/day-cell';
+import { FlareLogger, type DayFlare } from '@/components/suivre/flare-logger';
+import type { ScaleOption } from '@/components/suivre/scale-picker';
+import { Separator } from '@/components/ui/separator';
 import { cn } from '@/lib/utils';
 import { calendar } from '@/routes';
 import type { IsoDate, IsoMonth } from '@/types';
@@ -19,12 +26,16 @@ type DayProps = {
     isToday: boolean;
     checkin: CheckinValues;
     scales: CheckinScales;
+    conditions: DayCondition[];
+    flares: DayFlare[];
+    flareIntensities: ScaleOption[];
 };
 
 /**
- * One day's check-in. The view lifts out of the tapped calendar cell on entry
- * and lowers back on the way home (D20); the exit plays while Inertia's request
- * is already in flight, so the motion costs nothing in perceived latency.
+ * One day's journal: the check-in, a rating per tracked condition, and acute
+ * flare entry. The view lifts out of the tapped calendar cell on entry and
+ * lowers back on the way home (D20); the exit plays while Inertia's request is
+ * already in flight, so the motion costs nothing in perceived latency.
  */
 export default function Day({
     date,
@@ -34,6 +45,9 @@ export default function Day({
     isToday,
     checkin,
     scales,
+    conditions,
+    flares,
+    flareIntensities,
 }: DayProps) {
     const [leaving, setLeaving] = useState(false);
 
@@ -86,12 +100,32 @@ export default function Day({
                         />
                     </header>
 
-                    <CheckinForm
-                        key={date}
-                        date={date}
-                        values={checkin}
-                        scales={scales}
-                    />
+                    <div className="flex flex-col gap-8">
+                        <CheckinForm
+                            key={date}
+                            date={date}
+                            values={checkin}
+                            scales={scales}
+                        />
+
+                        <Separator />
+
+                        <ConditionRatings
+                            key={`conditions-${date}`}
+                            date={date}
+                            conditions={conditions}
+                        />
+
+                        <Separator />
+
+                        <FlareLogger
+                            key={`flares-${date}`}
+                            date={date}
+                            conditions={conditions}
+                            intensities={flareIntensities}
+                            flares={flares}
+                        />
+                    </div>
                 </div>
             </div>
         </>

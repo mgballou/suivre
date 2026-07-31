@@ -37,3 +37,17 @@ it('allows any authenticated operator a backstage oversight list', function (): 
 
     expect($policy->viewAny($user)->allowed())->toBeTrue();
 });
+
+it('allows the owner to record against a condition they still track', function (): void {
+    expect($this->policy->record($this->owner, $this->condition)->allowed())->toBeTrue();
+});
+
+it('denies recording against a condition the owner has stopped', function (): void {
+    $stopped = Condition::factory()->for($this->owner)->inactive()->createQuietly();
+
+    expect($this->policy->record($this->owner, $stopped)->denied())->toBeTrue();
+});
+
+it('denies recording against another users condition', function (): void {
+    expect($this->policy->record($this->other, $this->condition)->denied())->toBeTrue();
+});
