@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Services\Journal\Actions;
 
 use App\Enums\FlareIntensity;
+use App\Enums\MealType;
 use App\Enums\MoodLevel;
 use App\Enums\RampStep;
 use App\Enums\SleepQuality;
@@ -13,11 +14,14 @@ use App\Models\Condition;
 use App\Models\ConditionLog;
 use App\Models\DailyCheckin;
 use App\Models\FlareEvent;
+use App\Models\Meal;
 use App\Models\Scopes\ActiveScope;
 use App\Models\User;
 use App\Services\Journal\Data\DayCondition;
 use App\Services\Journal\Data\DayFlare;
+use App\Services\Journal\Data\DayMeal;
 use App\Services\Journal\Data\DayView;
+use App\Services\Journal\Data\MealTypeOption;
 use App\Services\Journal\Data\ScaleOption;
 use Carbon\CarbonImmutable;
 
@@ -58,6 +62,42 @@ class BuildDayView
             conditions: $conditions,
             flares: $this->flares($user, $date),
             flareIntensities: $this->options(FlareIntensity::ordered()),
+            meals: $this->meals($user, $date),
+            mealTypes: $this->mealTypeOptions(),
+        );
+    }
+
+    /**
+     * The day's meals, ordered as they were eaten.
+     *
+     * Day membership is resolved through the same bounds the correlation
+     * engine uses, so a meal eaten at 00:30 belongs to the day the user was
+     * living rather than the UTC one (D5).
+     *
+     * @return array<int, DayMeal>
+     */
+    private function meals(User $user, CarbonImmutable $date): array
+    {
+        $bounds = app(ResolveDayBounds::class)($user, $date);
+
+        return $user->meals()
+            ->with('entries.foodItem.categories')
+            ->where('eaten_at', '>=', $bounds->startsAt)
+            ->where('eaten_at', '<', $bounds->endsAt)
+            ->orderBy('eaten_at')
+            ->get()
+            ->map(static fn (Meal $meal): DayMeal => DayMeal::fromMeal($meal, $user->timezone))
+            ->all();
+    }
+
+    /**
+     * @return array<int, MealTypeOption>
+     */
+    private function mealTypeOptions(): array
+    {
+        return array_map(
+            static fn (MealType $type): MealTypeOption => MealTypeOption::fromMealType($type),
+            MealType::cases(),
         );
     }
 
