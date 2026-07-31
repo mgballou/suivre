@@ -19,7 +19,7 @@ class ShellTest extends TestCase
         // 23:30 UTC on the 9th is already the 10th in Auckland (UTC+12 in July).
         $this->travelTo(CarbonImmutable::parse('2026-07-09 23:30:00', 'UTC'));
 
-        $user = User::factory()->inTimezone('Pacific/Auckland')->create();
+        $user = User::factory()->tracking()->inTimezone('Pacific/Auckland')->create();
 
         $this->actingAs($user)
             ->get('/calendar')
@@ -44,14 +44,14 @@ class ShellTest extends TestCase
 
     public function test_authenticated_users_on_root_are_redirected_to_the_calendar(): void
     {
-        $this->actingAs(User::factory()->create())
+        $this->actingAs(User::factory()->tracking()->create())
             ->get('/')
             ->assertRedirect(route('calendar'));
     }
 
     public function test_authenticated_users_land_on_the_calendar_shell(): void
     {
-        $this->actingAs(User::factory()->create())
+        $this->actingAs(User::factory()->tracking()->create())
             ->get('/calendar')
             ->assertOk()
             ->assertInertia(fn (Assert $page) => $page
@@ -68,7 +68,7 @@ class ShellTest extends TestCase
         // Inertia page).
         $this->get('/admin/login')->assertOk();
 
-        $this->actingAs(User::factory()->admin()->create())
+        $this->actingAs(User::factory()->tracking()->admin()->create())
             ->get('/admin')
             ->assertOk()
             ->assertDontSee('data-page', escape: false);
@@ -76,14 +76,14 @@ class ShellTest extends TestCase
 
     public function test_a_semantically_invalid_month_is_rejected(): void
     {
-        $this->actingAs(User::factory()->create())
+        $this->actingAs(User::factory()->tracking()->create())
             ->get('/calendar/2026-13')
             ->assertNotFound();
     }
 
     public function test_a_valid_month_renders_the_calendar(): void
     {
-        $this->actingAs(User::factory()->create())
+        $this->actingAs(User::factory()->tracking()->create())
             ->get('/calendar/2026-07')
             ->assertOk()
             ->assertInertia(fn (Assert $page) => $page

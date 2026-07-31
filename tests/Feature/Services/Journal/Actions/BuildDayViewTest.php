@@ -4,10 +4,16 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Services\Journal\Actions;
 
+use App\Enums\ConditionHue;
+use App\Enums\FlareIntensity;
 use App\Enums\MoodLevel;
+use App\Enums\RampStep;
 use App\Enums\SleepQuality;
 use App\Enums\StressLevel;
+use App\Models\Condition;
+use App\Models\ConditionLog;
 use App\Models\DailyCheckin;
+use App\Models\FlareEvent;
 use App\Models\User;
 use App\Services\Journal\Actions\BuildDayView;
 use Carbon\CarbonImmutable;
@@ -94,4 +100,125 @@ it('ignores another users check-in for the same day', function (): void {
 
     expect($view->level)->toBe(0);
     expect($view->mood)->toBeNull();
+});
+
+it('lists the active conditions in name order with their rating for the day', function (): void {
+    $user = User::factory()->createQuietly();
+
+    $headache = Condition::factory()->for($user)->hue(ConditionHue::Moss)->createQuietly(['name' => 'Headache']);
+    Condition::factory()->for($user)->createQuietly(['name' => 'Bloating']);
+
+    ConditionLog::factory()
+        ->for($user)
+        ->for($headache)
+        ->createQuietly(['date' => CarbonImmutable::parse('2026-07-15'), 'intensity' => 7]);
+
+    $view = app(BuildDayView::class)(
+        $user,
+        CarbonImmutable::parse('2026-07-15'),
+        CarbonImmutable::parse('2026-07-15'),
+    );
+
+    expect($view->conditions)->toHaveCount(2);
+    expect($view->conditions[0]->name)->toBe('Bloating');
+    expect($view->conditions[0]->intensity)->toBeNull();
+    expect($view->conditions[0]->level)->toBe(RampStep::None->value);
+    expect($view->conditions[1]->name)->toBe('Headache');
+    expect($view->conditions[1]->hue)->toBe(ConditionHue::Moss->value);
+    expect($view->conditions[1]->intensity)->toBe(7);
+    expect($view->conditions[1]->level)->toBe(RampStep::Strong->value);
+});
+
+it('leaves a stopped condition out while keeping its ratings on file', function (): void {
+    $user = User::factory()->createQuietly();
+    $stopped = Condition::factory()->for($user)->inactive()->createQuietly();
+
+    ConditionLog::factory()
+        ->for($user)
+        ->for($stopped)
+        ->createQuietly(['date' => CarbonImmutable::parse('2026-07-15'), 'intensity' => 9]);
+
+    $view = app(BuildDayView::class)(
+        $user,
+        CarbonImmutable::parse('2026-07-15'),
+        CarbonImmutable::parse('2026-07-15'),
+    );
+
+    expect($view->conditions)->toBeEmpty();
+    expect($view->level)->toBe(RampStep::None->value);
+    expect(ConditionLog::query()->count())->toBe(1);
+});
+
+it('reads the day at its worst rating, so a calm condition cannot mask a severe one', function (): void {
+    $user = User::factory()->createQuietly();
+    $mild = Condition::factory()->for($user)->createQuietly(['name' => 'Bloating']);
+    $severe = Condition::factory()->for($user)->createQuietly(['name' => 'Headache']);
+
+    ConditionLog::factory()->for($user)->for($mild)
+        ->createQuietly(['date' => CarbonImmutable::parse('2026-07-15'), 'intensity' => 1]);
+    ConditionLog::factory()->for($user)->for($severe)
+        ->createQuietly(['date' => CarbonImmutable::parse('2026-07-15'), 'intensity' => 10]);
+
+    $view = app(BuildDayView::class)(
+        $user,
+        CarbonImmutable::parse('2026-07-15'),
+        CarbonImmutable::parse('2026-07-15'),
+    );
+
+    expect($view->level)->toBe(RampStep::Severe->value);
+});
+
+it('ignores another users rating of their own condition', function (): void {
+    $theirs = User::factory()->createQuietly();
+
+    ConditionLog::factory()
+        ->for($theirs)
+        ->for(Condition::factory()->for($theirs))
+        ->createQuietly(['date' => CarbonImmutable::parse('2026-07-15'), 'intensity' => 9]);
+
+    $view = app(BuildDayView::class)(
+        User::factory()->createQuietly(),
+        CarbonImmutable::parse('2026-07-15'),
+        CarbonImmutable::parse('2026-07-15'),
+    );
+
+    expect($view->conditions)->toBeEmpty();
+    expect($view->level)->toBe(RampStep::None->value);
+});
+
+it('offers the flare intensities from the domain enum', function (): void {
+    $view = app(BuildDayView::class)(
+        User::factory()->createQuietly(),
+        CarbonImmutable::parse('2026-07-15'),
+        CarbonImmutable::parse('2026-07-15'),
+    );
+
+    expect($view->flareIntensities)->toHaveCount(count(FlareIntensity::cases()));
+    expect($view->flareIntensities[0]->value)->toBe(FlareIntensity::Mild->value);
+    expect($view->flareIntensities[0]->label)->toBe(FlareIntensity::Mild->getLabel());
+});
+
+it('lists the days flares in the order they happened', function (): void {
+    $user = User::factory()->createQuietly();
+    $condition = Condition::factory()->for($user)->createQuietly(['name' => 'Headache']);
+
+    foreach (['2026-07-15 18:05:00', '2026-07-15 09:20:00'] as $at) {
+        FlareEvent::factory()->for($user)->for($condition)->createQuietly([
+            'occurred_at' => CarbonImmutable::parse($at),
+            'intensity' => FlareIntensity::Moderate,
+            'duration_minutes' => 45,
+        ]);
+    }
+
+    $view = app(BuildDayView::class)(
+        $user,
+        CarbonImmutable::parse('2026-07-15'),
+        CarbonImmutable::parse('2026-07-15'),
+    );
+
+    expect($view->flares)->toHaveCount(2);
+    expect($view->flares[0]->time)->toBe('09:20');
+    expect($view->flares[1]->time)->toBe('18:05');
+    expect($view->flares[0]->duration)->toBe('45 min');
+    expect($view->flares[0]->conditionName)->toBe('Headache');
 });

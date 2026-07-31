@@ -546,6 +546,25 @@ configured one, so every date, month and label arrives as a server prop already 
 no client-side date maths in the user-facing app; if a view needs a new date, the controller or
 Action computes it.
 
+## Colour ramps come from the server too
+
+Condition colour is **chosen from the curated `ConditionHue` set** (D20/D25), never picked freely,
+and the closed set is mirrored client-side as a literal union in `resources/js/types/conditions.ts`
+— not `string`. Adding a hue means adding a case in `App\Enums\ConditionHue`, the union, and an
+`[data-hue='…']` block in `app.css`; `ConditionHueTest` fails if those drift or if a step misses
+WCAG AA.
+
+Two mechanics that will bite if rediscovered by trial and error:
+
+- `bg-condition-0…5` are authored directly in `@layer utilities`, **not** as `@theme` colours. A
+  theme token's own `var()` resolves where the token is declared — on `:root` — and `--condition-*`
+  is declared further down, on the `[data-hue]` element, so a theme token would resolve to nothing.
+  The petrol ramp (`bg-intensity-*`) gets away with the theme shape only because `.dark` also lands
+  on `<html>`.
+- **The client never derives a ramp step.** `RampStep::fromRating()` owns the 0–10 → 0–5 bucketing,
+  so a component takes the saved `level` as a prop and lets the colour arrive on the round trip
+  rather than computing a bucket that would be a second, drifting copy of the scale.
+
 === .ai/spatie-data rules ===
 
 # Spatie Data Objects
@@ -903,7 +922,7 @@ This project has domain-specific skills available in `**/skills/**`. You MUST ac
 - Always use curly braces for control structures, even for single-line bodies.
 - Use PHP 8 constructor property promotion: `public function __construct(public GitHub $github) { }`. Do not leave empty zero-parameter `__construct()` methods unless the constructor is private.
 - Use explicit return type declarations and type hints for all method parameters: `function isAccessible(User $user, ?string $path = null): bool`
-- Use TitleCase for Enum keys: `FavoritePerson`, `BestLake`, `Monthly`.
+- Follow existing application Enum naming conventions.
 - Prefer PHPDoc blocks over inline comments. Only add inline comments for exceptionally complex logic.
 - Use array shape type definitions in PHPDoc blocks.
 

@@ -19,7 +19,7 @@ The smallest real slice: open the PWA and log a two-tap daily check-in on a cale
 
 ## E2 — Conditions & flares
 
-- User-defined `Condition` (name, color, icon, active).
+- User-defined `Condition` (name, colour from the curated `ConditionHue` set, active).
 - `ConditionLog` — daily 0–10 intensity per condition.
 - `FlareEvent` — acute flare (condition, occurred_at, intensity, note).
 - UI to define conditions (onboarding) and rate/log them per day.

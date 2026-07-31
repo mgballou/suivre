@@ -21,7 +21,7 @@ class CalendarControllerTest extends TestCase
     {
         $this->travelTo(CarbonImmutable::parse('2026-07-15 09:00:00', 'UTC'));
 
-        $this->actingAs(User::factory()->create())
+        $this->actingAs(User::factory()->tracking()->create())
             ->get('/calendar')
             ->assertOk()
             ->assertInertia(fn (Assert $page) => $page
@@ -43,7 +43,7 @@ class CalendarControllerTest extends TestCase
         // 23:30 UTC on 31 July is already 1 August in Auckland (UTC+12).
         $this->travelTo(CarbonImmutable::parse('2026-07-31 23:30:00', 'UTC'));
 
-        $this->actingAs(User::factory()->inTimezone('Pacific/Auckland')->create())
+        $this->actingAs(User::factory()->tracking()->inTimezone('Pacific/Auckland')->create())
             ->get('/calendar')
             ->assertOk()
             ->assertInertia(fn (Assert $page) => $page
@@ -55,7 +55,7 @@ class CalendarControllerTest extends TestCase
 
     public function test_it_marks_days_that_have_a_check_in(): void
     {
-        $user = User::factory()->create();
+        $user = User::factory()->tracking()->create();
 
         DailyCheckin::factory()
             ->for($user)
@@ -77,7 +77,7 @@ class CalendarControllerTest extends TestCase
 
     public function test_it_does_not_mark_another_users_check_ins(): void
     {
-        $user = User::factory()->create();
+        $user = User::factory()->tracking()->create();
 
         DailyCheckin::factory()
             ->for(User::factory()->create())
@@ -95,7 +95,7 @@ class CalendarControllerTest extends TestCase
 
     public function test_it_reads_the_months_check_ins_in_a_single_query(): void
     {
-        $user = User::factory()->create();
+        $user = User::factory()->tracking()->create();
 
         foreach (range(1, 10) as $dayOfMonth) {
             DailyCheckin::factory()
@@ -118,7 +118,7 @@ class CalendarControllerTest extends TestCase
 
     public function test_it_excludes_check_ins_outside_the_requested_month(): void
     {
-        $user = User::factory()->create();
+        $user = User::factory()->tracking()->create();
 
         DailyCheckin::factory()
             ->for($user)
@@ -142,7 +142,7 @@ class CalendarControllerTest extends TestCase
 
     public function test_it_offers_the_neighbouring_months_across_a_year_boundary(): void
     {
-        $this->actingAs(User::factory()->create())
+        $this->actingAs(User::factory()->tracking()->create())
             ->get('/calendar/2026-01')
             ->assertOk()
             ->assertInertia(fn (Assert $page) => $page
@@ -154,7 +154,7 @@ class CalendarControllerTest extends TestCase
 
     public function test_it_rejects_a_semantically_invalid_month(): void
     {
-        $this->actingAs(User::factory()->create())
+        $this->actingAs(User::factory()->tracking()->create())
             ->get('/calendar/2026-13')
             ->assertNotFound();
     }

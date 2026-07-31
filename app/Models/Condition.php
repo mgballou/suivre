@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Enums\ConditionHue;
 use Carbon\CarbonImmutable;
 use Database\Factories\ConditionFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -20,7 +21,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property int $id
  * @property int $user_id
  * @property string $name
- * @property string $color
+ * @property ConditionHue $color
  * @property string $icon
  * @property bool $is_active
  * @property CarbonImmutable|null $created_at
@@ -28,6 +29,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property-read User $user
  * @property-read Collection<int, ConditionLog> $conditionLogs
  * @property-read Collection<int, FlareEvent> $flareEvents
+ * @property-read int|null $condition_logs_count
+ * @property-read int|null $flare_events_count
  */
 #[Fillable(['user_id', 'name', 'color', 'icon', 'is_active'])]
 class Condition extends Model
@@ -67,6 +70,7 @@ class Condition extends Model
     protected function casts(): array
     {
         return [
+            'color' => ConditionHue::class,
             'is_active' => 'boolean',
         ];
     }

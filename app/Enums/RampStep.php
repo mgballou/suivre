@@ -27,6 +27,45 @@ enum RampStep: int
         return $this !== self::None;
     }
 
+    /**
+     * The app's own petrol swatch at this step (D20). Petrol is reserved for
+     * Suivre itself and is never offered as a condition hue — ConditionHue
+     * carries those.
+     */
+    public function petrol(ColorScheme $scheme): string
+    {
+        $ramp = $scheme->isLight()
+            ? ['#eff1f1', '#e2eeee', '#bedbda', '#92c0bf', '#66a19f', '#3f7d7b']
+            : ['#1b1f1f', '#1e2e2e', '#2a4646', '#3a6362', '#558c8a', '#68a7a5'];
+
+        return $ramp[$this->value];
+    }
+
+    /**
+     * The foreground a step's swatch can legibly carry.
+     *
+     * Every ramp in the app — petrol and all seven condition hues — is built to
+     * one luminance profile per step, so the ink that clears WCAG AA is a
+     * property of the *step*, not the hue. The threshold sits one step later in
+     * light than in dark because the two ramps are authored independently: the
+     * light ramp reaches ink-defeating darkness later than the dark ramp reaches
+     * white-defeating lightness.
+     */
+    public function ink(ColorScheme $scheme): string
+    {
+        if ($scheme->isLight()) {
+            return match ($this) {
+                self::Severe => '#ffffff',
+                default => '#16201f',
+            };
+        }
+
+        return match ($this) {
+            self::Strong, self::Severe => '#101917',
+            default => '#edeeee',
+        };
+    }
+
     public function isSignificant(): bool
     {
         return in_array($this, self::significant(), strict: true);
