@@ -95,6 +95,39 @@ class InsightsControllerTest extends TestCase
             );
     }
 
+    public function test_it_defers_the_ranking_so_the_summary_paints_first(): void
+    {
+        $this->actingAs(User::factory()->tracking()->create())
+            ->get('/insights')
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->has('summary')
+                ->missing('insights')
+                ->etc()
+            );
+    }
+
+    public function test_it_ranks_nothing_for_a_condition_short_of_the_threshold(): void
+    {
+        $user = User::factory()->tracking()->create();
+        $condition = Condition::factory()->for($user)->createQuietly();
+
+        foreach (range(0, 9) as $offset) {
+            ConditionLog::factory()
+                ->forCondition($condition)
+                ->on(CarbonImmutable::parse('2026-01-01')->addDays($offset))
+                ->createQuietly(['intensity' => 5]);
+        }
+
+        $this->actingAs($user)
+            ->get('/insights')
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page->loadDeferredProps(
+                'default',
+                fn (Assert $loaded) => $loaded->where('insights', [])->etc(),
+            )->etc());
+    }
+
     public function test_guests_cannot_reach_insights(): void
     {
         $this->get('/insights')->assertRedirect(route('login'));
