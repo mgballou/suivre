@@ -12,6 +12,7 @@ use Filament\Models\Contracts\FilamentUser;
 use Filament\Panel;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -37,6 +38,7 @@ use Spatie\Permission\Traits\HasRoles;
  * @property string|null $remember_token
  * @property CarbonImmutable|null $created_at
  * @property CarbonImmutable|null $updated_at
+ * @property-read UserRole|null $role
  * @property-read Collection<int, DailyCheckin> $dailyCheckins
  * @property-read Collection<int, Meal> $meals
  * @property-read Collection<int, Role> $roles
@@ -122,6 +124,24 @@ class User extends Authenticatable implements FilamentUser, PasskeyUser
         return Str::length($initials) > 1
             ? Str::substr($initials, 0, 1) . Str::substr($initials, -1)
             : $initials;
+    }
+
+    /**
+     * The one platform role this account holds, read as a scalar.
+     *
+     * Every account holds exactly one role, so the collection behind it is an
+     * implementation detail of spatie/laravel-permission rather than something
+     * a reader should have to unpack. Null when the `roles` relation is not
+     * loaded: the accessor never lazy-loads it, because strict mode would throw
+     * at whichever render site forgot to eager-load.
+     *
+     * @return Attribute<UserRole|null, never>
+     */
+    protected function role(): Attribute
+    {
+        return Attribute::get(fn (): ?UserRole => $this->relationLoaded('roles')
+            ? UserRole::tryFrom((string) $this->roles->first()?->name)
+            : null);
     }
 
     /**

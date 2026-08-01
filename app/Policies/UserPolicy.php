@@ -13,6 +13,10 @@ use Illuminate\Auth\Access\Response;
  * deleting a user would cascade away every meal, check-in and flare they ever
  * logged. Listing every account is administrator-only oversight; a user may only
  * ever see their own account.
+ *
+ * `resetPassword` and `setRole` are the two exceptions, and both are named
+ * abilities rather than a relaxed `update` so that the general prohibition stays
+ * intact and each has to be asked for. Neither touches anything a user recorded.
  */
 class UserPolicy
 {
@@ -57,6 +61,27 @@ class UserPolicy
         return $user->isAdmin()
             ? Response::allow()
             : Response::deny('Only administrators can reset another account\'s password.');
+    }
+
+    /**
+     * The second narrow exception to `update`, on the same reasoning as
+     * `resetPassword`: a role is a grant this installation makes, not something
+     * the account's owner recorded, and it is the only way a self-registered
+     * account can be given backstage access — registration always mints a member.
+     *
+     * An administrator may not set their own role. Revoking your own admin would
+     * lock you out of the one surface that could give it back, so the guard is
+     * against the accident rather than against any malice.
+     */
+    public function setRole(User $user, User $subject): Response
+    {
+        if (! $user->isAdmin()) {
+            return Response::deny('Only administrators can set an account\'s role.');
+        }
+
+        return $user->id === $subject->id
+            ? Response::deny('You cannot change your own role.')
+            : Response::allow();
     }
 
     public function delete(User $user, User $subject): Response

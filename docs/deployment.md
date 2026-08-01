@@ -17,7 +17,25 @@ Railway project **`suivre-staging`** (workspace *My Projects*), environment
 Public URL: **https://web-production-1abde.up.railway.app**
 
 Seeded accounts (staging only, `docker/entrypoint.sh`): `admin@suivre.staging`
-and `user@suivre.staging`, both password **`suivre-staging`**, pre-verified.
+and `user@suivre.staging`, both pre-verified with the initial password
+**`suivre-staging`**. That password is set **on creation only** — change it from
+the backstage and the change survives a redeploy.
+
+## Accounts for real people
+
+The backstage cannot create an account: `UserPolicy::create()` denies flat out and
+`UserResource` has no create page. Registration owns creation, and that is the
+right seam for a second reason — the register form posts the browser's timezone,
+so an account made anywhere other than the device its owner will use starts on
+UTC and every day boundary in their journal is wrong.
+
+So: **register at the public URL, on the phone or laptop you'll actually log
+from.** Then, if that account needs the backstage, sign in as the seeded admin
+and use **Set role** on the Users table to promote it. Two abilities are the only
+things the backstage may do to an account it doesn't own — `setRole` and
+`resetPassword`. An administrator cannot change their own role.
+
+Registration is open to anyone who reaches the URL. There is no invite gate.
 
 ## Build & release model
 
@@ -30,7 +48,10 @@ and `user@suivre.staging`, both password **`suivre-staging`**, pre-verified.
   HTTP healthcheck (the worker has no HTTP server; the web app is curl-verified).
 - **Start** is the Dockerfile `CMD` → `docker/entrypoint.sh`, which branches on
   `CONTAINER_ROLE`:
-  - **web:** `config:cache` → `event:cache` → seed staging accounts → `octane:start`.
+  - **web:** `config:cache` → `event:cache` → seed staging accounts → seed the
+    food catalog (taxonomy, then foods — they resolve categories by slug) →
+    `octane:start`. All three seeders are idempotent, so this is a no-op once
+    seeded. Without the catalog every food a user types misses the classifier.
   - **worker:** `queue:work --tries=3 --max-time=3600`.
 
 ### Gotchas baked into the config (do not "simplify" away)

@@ -38,13 +38,17 @@ class UserResource extends Resource
 
     /**
      * The journal counts are the whole point of the index — load them in the
-     * base query so the table never issues a query per row.
+     * base query so the table never issues a query per row. `roles` is loaded
+     * for the same reason and one more: `User::$role` returns null rather than
+     * lazy-loading, so a page that forgot to eager-load would quietly render
+     * every account as having no role at all.
      *
      * @return Builder<User>
      */
     public static function getEloquentQuery(): Builder
     {
         return parent::getEloquentQuery()
+            ->with('roles')
             ->withCount(['meals', 'dailyCheckins', 'conditions', 'flareEvents']);
     }
 
