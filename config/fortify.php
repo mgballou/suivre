@@ -163,7 +163,8 @@ return [
     */
 
     'features' => [
-        Features::registration(),
+        // Registration is deliberately absent. Accounts are created from the
+        // Filament backstage, so there is no public sign-up on this install.
         Features::resetPasswords(),
         Features::emailVerification(),
         Features::twoFactorAuthentication([
