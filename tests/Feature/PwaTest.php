@@ -57,7 +57,7 @@ class PwaTest extends TestCase
 
     public function test_the_shell_links_the_manifest_and_the_ios_metadata(): void
     {
-        $response = $this->get('/')->assertOk();
+        $response = $this->get(route('login'))->assertOk();
 
         $response->assertSee('<link rel="manifest" href="/manifest.webmanifest">', escape: false);
         $response->assertSee('name="apple-mobile-web-app-capable" content="yes"', escape: false);
@@ -67,7 +67,7 @@ class PwaTest extends TestCase
 
     public function test_the_shell_declares_a_theme_colour_for_each_scheme(): void
     {
-        $response = $this->get('/')->assertOk();
+        $response = $this->get(route('login'))->assertOk();
 
         $response->assertSee('media="(prefers-color-scheme: light)" content="#fbfbfa"', escape: false);
         $response->assertSee('media="(prefers-color-scheme: dark)" content="#131314"', escape: false);
@@ -78,7 +78,7 @@ class PwaTest extends TestCase
         // Without `viewport-fit=cover` the safe-area-inset-* variables the tab
         // bar pads itself with all resolve to zero, and the home indicator
         // overlaps the tabs.
-        $this->get('/')
+        $this->get(route('login'))
             ->assertOk()
             ->assertSee('viewport-fit=cover', escape: false);
     }

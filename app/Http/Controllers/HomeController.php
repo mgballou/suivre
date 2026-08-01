@@ -8,16 +8,15 @@ use App\Models\User;
 use Filament\Facades\Filament;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Inertia\Inertia;
-use Inertia\Response;
 
 class HomeController extends Controller
 {
     /**
-     * Guests see the welcome page. Everyone else lands on their own side of the
-     * app: a member on the calendar, an administrator in the backstage.
+     * Root is a signpost, not a screen. Everyone lands on their own side of the
+     * app: a member on the calendar, an administrator in the backstage, and a
+     * guest at the login form.
      */
-    public function __invoke(Request $request): Response|RedirectResponse
+    public function __invoke(Request $request): RedirectResponse
     {
         $user = $request->user();
 
@@ -27,6 +26,6 @@ class HomeController extends Controller
                 : redirect()->route('calendar');
         }
 
-        return Inertia::render('welcome');
+        return redirect()->route('login');
     }
 }

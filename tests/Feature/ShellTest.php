@@ -35,11 +35,9 @@ class ShellTest extends TestCase
         $this->get('/calendar')->assertRedirect(route('login'));
     }
 
-    public function test_guests_see_the_welcome_page_on_root(): void
+    public function test_guests_are_redirected_to_login_from_root(): void
     {
-        $this->get('/')
-            ->assertOk()
-            ->assertInertia(fn (Assert $page) => $page->component('welcome'));
+        $this->get('/')->assertRedirect(route('login'));
     }
 
     public function test_authenticated_users_on_root_are_redirected_to_the_calendar(): void
