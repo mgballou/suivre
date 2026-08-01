@@ -20,6 +20,8 @@ it('returns a Response rather than a bool from every ability', function (): void
     expect($this->policy->view($this->admin, $this->subject))->toBeInstanceOf(Response::class);
     expect($this->policy->create($this->admin))->toBeInstanceOf(Response::class);
     expect($this->policy->update($this->admin, $this->subject))->toBeInstanceOf(Response::class);
+    expect($this->policy->setRole($this->admin, $this->subject))->toBeInstanceOf(Response::class);
+    expect($this->policy->resetPassword($this->admin, $this->subject))->toBeInstanceOf(Response::class);
     expect($this->policy->delete($this->admin, $this->subject))->toBeInstanceOf(Response::class);
     expect($this->policy->deleteAny($this->admin))->toBeInstanceOf(Response::class);
 });
@@ -35,9 +37,13 @@ it('restricts an ordinary user to viewing only their own account', function (): 
     expect($this->policy->view($this->member, $this->subject)->denied())->toBeTrue();
 });
 
-it('forbids creating, editing or deleting an account from the backstage', function (): void {
-    expect($this->policy->create($this->admin)->denied())->toBeTrue();
+it('forbids editing or deleting an account from the backstage', function (): void {
     expect($this->policy->update($this->admin, $this->subject)->denied())->toBeTrue();
     expect($this->policy->delete($this->admin, $this->subject)->denied())->toBeTrue();
     expect($this->policy->deleteAny($this->admin)->denied())->toBeTrue();
+});
+
+it('lets an administrator create an account, since registration no longer can', function (): void {
+    expect($this->policy->create($this->admin)->allowed())->toBeTrue();
+    expect($this->policy->create($this->member)->denied())->toBeTrue();
 });

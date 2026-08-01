@@ -7,6 +7,7 @@ namespace Tests\Feature\Filament\Resources\Users;
 use App\Enums\UserRole;
 use App\Filament\Resources\Users\Actions\SetUserRoleAction;
 use App\Filament\Resources\Users\Pages\ListUsers;
+use App\Models\Condition;
 use App\Models\User;
 use Filament\Actions\Testing\TestAction;
 use Livewire\Livewire;
@@ -54,4 +55,20 @@ it('keeps the ability out of a member\'s hands', function (): void {
     $member = User::factory()->createQuietly();
 
     expect($member->can('setRole', User::factory()->createQuietly()))->toBeFalse();
+});
+
+it('refuses to strand a journal behind the other side of the app', function (): void {
+    // The two roles reach opposite halves. Flipping this account's role would
+    // leave everything it logged intact and its owner unable to reach it.
+    $admin = User::factory()->admin()->createQuietly();
+
+    $this->actingAs($admin);
+
+    $member = User::factory()->createQuietly();
+    Condition::factory()->for($member)->createQuietly();
+
+    Livewire::test(ListUsers::class)
+        ->assertActionHidden(TestAction::make(SetUserRoleAction::class)->table($member));
+
+    expect($admin->can('setRole', $member))->toBeFalse();
 });

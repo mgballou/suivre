@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace App\Filament\Resources\Users;
 
+use App\Filament\Resources\Users\Pages\CreateUser;
 use App\Filament\Resources\Users\Pages\ListUsers;
 use App\Filament\Resources\Users\Pages\ViewUser;
+use App\Filament\Resources\Users\Schemas\UserForm;
 use App\Filament\Resources\Users\Schemas\UserInfolist;
 use App\Filament\Resources\Users\Schemas\UsersTable;
 use App\Models\User;
@@ -19,10 +21,12 @@ use Illuminate\Database\Eloquent\Builder;
 use UnitEnum;
 
 /**
- * Backstage oversight of accounts. Account data is user-owned; the backstage
- * has read-only visibility only, never create/edit/delete — registration owns
- * creation, the user maintains their own profile, and deletion would cascade
- * away an entire journal.
+ * Backstage oversight of accounts. Account data is user-owned, so the backstage
+ * reads it and never edits or deletes it — the user maintains their own profile,
+ * and deletion would cascade away an entire journal.
+ *
+ * Creation is the exception, and only because public registration is closed:
+ * with no sign-up page, an account has to start somewhere.
  *
  * @extends resource<User>
  */
@@ -52,6 +56,11 @@ class UserResource extends Resource
             ->withCount(['meals', 'dailyCheckins', 'conditions', 'flareEvents']);
     }
 
+    public static function form(Schema $schema): Schema
+    {
+        return UserForm::configure($schema);
+    }
+
     public static function infolist(Schema $schema): Schema
     {
         return UserInfolist::configure($schema);
@@ -77,6 +86,7 @@ class UserResource extends Resource
     {
         return [
             'index' => ListUsers::route('/'),
+            'create' => CreateUser::route('/create'),
             'view' => ViewUser::route('/{record}'),
         ];
     }

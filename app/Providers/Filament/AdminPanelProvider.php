@@ -29,6 +29,10 @@ class AdminPanelProvider extends PanelProvider
             ->id('admin')
             ->path('admin')
             ->login()
+            // An administrator is barred from /settings along with the rest of
+            // the user app, so without this there is no screen anywhere on which
+            // they could change their own password.
+            ->profile(isSimple: false)
             ->colors([
                 'primary' => Color::Amber,
             ])

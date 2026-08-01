@@ -39,6 +39,9 @@ use Spatie\Permission\Traits\HasRoles;
  * @property CarbonImmutable|null $created_at
  * @property CarbonImmutable|null $updated_at
  * @property-read UserRole|null $role
+ * @property-read int $meals_count
+ * @property-read int $daily_checkins_count
+ * @property-read int $conditions_count
  * @property-read Collection<int, DailyCheckin> $dailyCheckins
  * @property-read Collection<int, Meal> $meals
  * @property-read Collection<int, Role> $roles
@@ -72,6 +75,33 @@ class User extends Authenticatable implements FilamentUser, PasskeyUser
     public function isAdmin(): bool
     {
         return $this->hasRole(UserRole::Admin);
+    }
+
+    /**
+     * Whether this account has recorded anything of its own.
+     *
+     * Conditions count: naming what you track is the first thing the journal
+     * asks for and the point from which the rest is worth keeping.
+     *
+     * The counted path is not an optimisation so much as a requirement. A
+     * Filament table evaluates a record action's authorization once per row, and
+     * `setRole` asks this question — so querying unconditionally would issue
+     * three EXISTS statements per account listed.
+     */
+    public function hasJournal(): bool
+    {
+        if ($this->hasAttribute('meals_count')
+            && $this->hasAttribute('daily_checkins_count')
+            && $this->hasAttribute('conditions_count')
+        ) {
+            return $this->meals_count > 0
+                || $this->daily_checkins_count > 0
+                || $this->conditions_count > 0;
+        }
+
+        return $this->meals()->exists()
+            || $this->dailyCheckins()->exists()
+            || $this->conditions()->exists();
     }
 
     /**

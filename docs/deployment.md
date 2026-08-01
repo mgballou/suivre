@@ -23,19 +23,31 @@ the backstage and the change survives a redeploy.
 
 ## Accounts for real people
 
-The backstage cannot create an account: `UserPolicy::create()` denies flat out and
-`UserResource` has no create page. Registration owns creation, and that is the
-right seam for a second reason — the register form posts the browser's timezone,
-so an account made anywhere other than the device its owner will use starts on
-UTC and every day boundary in their journal is wrong.
+There is **no public registration** (D27). Accounts are created from the
+backstage: **Accounts → Users → New user**, which asks for a name, email,
+password, timezone and role.
 
-So: **register at the public URL, on the phone or laptop you'll actually log
-from.** Then, if that account needs the backstage, sign in as the seeded admin
-and use **Set role** on the Users table to promote it. Two abilities are the only
-things the backstage may do to an account it doesn't own — `setRole` and
-`resetPassword`. An administrator cannot change their own role.
+Two things about that form are load-bearing:
 
-Registration is open to anyone who reaches the URL. There is no invite gate.
+- **The timezone is required and it is yours to get right.** The journal is keyed
+  on the account holder's local day, so a wrong one files their meals and ratings
+  against the wrong date. It defaults to your own timezone as a starting point,
+  not an answer. They can correct it later at `/settings/profile`; they will not
+  think to, so set it correctly now.
+- **The role decides which half of the app they get, and only one.** An
+  administrator uses `/admin` and is redirected away from the journal and from
+  `/settings`; a member is the reverse. Tell them the password in person — nothing
+  is emailed.
+
+An administrator changes their own name, email and password on the backstage's own
+profile page (top-right user menu). Filament's multi-factor auth is not wired up
+yet; the member side has Fortify 2FA at `/settings/security`.
+
+Afterwards the backstage may do exactly two things to an account it does not own —
+**Set role** and **Set password**. It cannot edit or delete one. You cannot change
+your own role, and you cannot change the role of an account that has already
+logged something: the two roles reach opposite halves, so the flip would strand
+that journal behind a door its owner can no longer open.
 
 ## Build & release model
 

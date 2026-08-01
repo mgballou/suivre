@@ -34,9 +34,14 @@ class UserPolicy
             : Response::deny('You may only view your own account.');
     }
 
+    /**
+     * Public registration is closed, so the backstage is where an account starts.
+     */
     public function create(User $user): Response
     {
-        return Response::deny('Accounts are created by registration, not the backstage.');
+        return $user->isAdmin()
+            ? Response::allow()
+            : Response::deny('Only administrators can create an account.');
     }
 
     public function update(User $user, User $subject): Response
@@ -72,6 +77,11 @@ class UserPolicy
      * An administrator may not set their own role. Revoking your own admin would
      * lock you out of the one surface that could give it back, so the guard is
      * against the accident rather than against any malice.
+     *
+     * Nor may anyone change the role of an account that has logged something.
+     * The two roles reach opposite halves of the app, so flipping one leaves the
+     * journal intact and its owner permanently unable to open it. Denying the
+     * change is recoverable; stranding a year of health records is not.
      */
     public function setRole(User $user, User $subject): Response
     {
@@ -79,8 +89,12 @@ class UserPolicy
             return Response::deny('Only administrators can set an account\'s role.');
         }
 
-        return $user->id === $subject->id
-            ? Response::deny('You cannot change your own role.')
+        if ($user->id === $subject->id) {
+            return Response::deny('You cannot change your own role.');
+        }
+
+        return $subject->hasJournal()
+            ? Response::deny('This account has a journal. Changing its role would put that journal behind a door its owner can no longer open.')
             : Response::allow();
     }
 
