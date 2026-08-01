@@ -17,6 +17,8 @@ class UserInfolist
                 TextEntry::make('name'),
                 TextEntry::make('email')
                     ->copyable(),
+                TextEntry::make('role')
+                    ->badge(),
                 TextEntry::make('timezone'),
                 IconEntry::make('email_verified_at')
                     ->label('Email verified')

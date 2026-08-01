@@ -114,11 +114,20 @@ Events decouple cross-domain reactions to a state change.
   preconditions (e.g. state checks) belong in the policy, the single source of truth; the UI never
   re-implements them.
 - **Roles** come from **spatie/laravel-permission** (D23). Every account holds **exactly one**,
-  mutually exclusive: `admin` reaches the Filament backstage (`User::canAccessPanel()` gates on it)
-  and reads every user's records; `member` is an ordinary app user with no backstage access.
-  Registration mints a member; the base factory state does too; `admin()` replaces it. `view`
-  policies allow an admin any record, owners only their own; admins never mutate user-generated data.
-  Keep policies at this level — the wildcard/scoped **per-record** machinery (`posts.*.update`,
+  mutually exclusive: `admin` reaches the Filament backstage and reads every user's records;
+  `member` is an ordinary app user. The base factory state mints a member; `admin()` replaces it.
+  `view` policies allow an admin any record, owners only their own; admins never mutate
+  user-generated data.
+- **The two roles reach opposite halves of the app, and both directions are enforced** (D27).
+  `User::canAccessPanel()` keeps a member out of `/admin`; `RequireMemberAccount` keeps an admin out
+  of the user app — journal *and* `/settings` — so an admin manages its own credentials on Filament's
+  own profile page. Apply that middleware to user-app route groups only, **never** to the auth routes:
+  logging out is a `web` route, and an admin bounced off it could not sign out. Consequences worth
+  knowing before you write a test or a seeder: **there is no public registration** — `CreateUserAccount`,
+  reached from the backstage, is the only way an account begins, and it takes an explicit timezone
+  because no browser is present to report one. `setRole` refuses an account that `hasJournal()`,
+  since flipping sides would strand what it logged.
+- Keep policies at this level — the wildcard/scoped **per-record** machinery (`posts.*.update`,
   `canOrElse`, `SyncScopedPermissions...`) is still **deferred**; don't build it now, but always
   return `Response` so the seam exists.
 
