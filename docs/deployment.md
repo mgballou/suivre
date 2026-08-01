@@ -17,7 +17,37 @@ Railway project **`suivre-staging`** (workspace *My Projects*), environment
 Public URL: **https://web-production-1abde.up.railway.app**
 
 Seeded accounts (staging only, `docker/entrypoint.sh`): `admin@suivre.staging`
-and `user@suivre.staging`, both password **`suivre-staging`**, pre-verified.
+and `user@suivre.staging`, both pre-verified with the initial password
+**`suivre-staging`**. That password is set **on creation only** — change it from
+the backstage and the change survives a redeploy.
+
+## Accounts for real people
+
+There is **no public registration** (D27). Accounts are created from the
+backstage: **Accounts → Users → New user**, which asks for a name, email,
+password, timezone and role.
+
+Two things about that form are load-bearing:
+
+- **The timezone is required and it is yours to get right.** The journal is keyed
+  on the account holder's local day, so a wrong one files their meals and ratings
+  against the wrong date. It defaults to your own timezone as a starting point,
+  not an answer. They can correct it later at `/settings/profile`; they will not
+  think to, so set it correctly now.
+- **The role decides which half of the app they get, and only one.** An
+  administrator uses `/admin` and is redirected away from the journal and from
+  `/settings`; a member is the reverse. Tell them the password in person — nothing
+  is emailed.
+
+An administrator changes their own name, email and password on the backstage's own
+profile page (top-right user menu). Filament's multi-factor auth is not wired up
+yet; the member side has Fortify 2FA at `/settings/security`.
+
+Afterwards the backstage may do exactly two things to an account it does not own —
+**Set role** and **Set password**. It cannot edit or delete one. You cannot change
+your own role, and you cannot change the role of an account that has already
+logged something: the two roles reach opposite halves, so the flip would strand
+that journal behind a door its owner can no longer open.
 
 ## Build & release model
 
@@ -30,7 +60,10 @@ and `user@suivre.staging`, both password **`suivre-staging`**, pre-verified.
   HTTP healthcheck (the worker has no HTTP server; the web app is curl-verified).
 - **Start** is the Dockerfile `CMD` → `docker/entrypoint.sh`, which branches on
   `CONTAINER_ROLE`:
-  - **web:** `config:cache` → `event:cache` → seed staging accounts → `octane:start`.
+  - **web:** `config:cache` → `event:cache` → seed staging accounts → seed the
+    food catalog (taxonomy, then foods — they resolve categories by slug) →
+    `octane:start`. All three seeders are idempotent, so this is a no-op once
+    seeded. Without the catalog every food a user types misses the classifier.
   - **worker:** `queue:work --tries=3 --max-time=3600`.
 
 ### Gotchas baked into the config (do not "simplify" away)

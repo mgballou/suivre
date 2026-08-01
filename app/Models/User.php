@@ -12,6 +12,7 @@ use Filament\Models\Contracts\FilamentUser;
 use Filament\Panel;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -37,6 +38,10 @@ use Spatie\Permission\Traits\HasRoles;
  * @property string|null $remember_token
  * @property CarbonImmutable|null $created_at
  * @property CarbonImmutable|null $updated_at
+ * @property-read UserRole|null $role
+ * @property-read int $meals_count
+ * @property-read int $daily_checkins_count
+ * @property-read int $conditions_count
  * @property-read Collection<int, DailyCheckin> $dailyCheckins
  * @property-read Collection<int, Meal> $meals
  * @property-read Collection<int, Role> $roles
@@ -70,6 +75,33 @@ class User extends Authenticatable implements FilamentUser, PasskeyUser
     public function isAdmin(): bool
     {
         return $this->hasRole(UserRole::Admin);
+    }
+
+    /**
+     * Whether this account has recorded anything of its own.
+     *
+     * Conditions count: naming what you track is the first thing the journal
+     * asks for and the point from which the rest is worth keeping.
+     *
+     * The counted path is not an optimisation so much as a requirement. A
+     * Filament table evaluates a record action's authorization once per row, and
+     * `setRole` asks this question — so querying unconditionally would issue
+     * three EXISTS statements per account listed.
+     */
+    public function hasJournal(): bool
+    {
+        if ($this->hasAttribute('meals_count')
+            && $this->hasAttribute('daily_checkins_count')
+            && $this->hasAttribute('conditions_count')
+        ) {
+            return $this->meals_count > 0
+                || $this->daily_checkins_count > 0
+                || $this->conditions_count > 0;
+        }
+
+        return $this->meals()->exists()
+            || $this->dailyCheckins()->exists()
+            || $this->conditions()->exists();
     }
 
     /**
@@ -122,6 +154,24 @@ class User extends Authenticatable implements FilamentUser, PasskeyUser
         return Str::length($initials) > 1
             ? Str::substr($initials, 0, 1) . Str::substr($initials, -1)
             : $initials;
+    }
+
+    /**
+     * The one platform role this account holds, read as a scalar.
+     *
+     * Every account holds exactly one role, so the collection behind it is an
+     * implementation detail of spatie/laravel-permission rather than something
+     * a reader should have to unpack. Null when the `roles` relation is not
+     * loaded: the accessor never lazy-loads it, because strict mode would throw
+     * at whichever render site forgot to eager-load.
+     *
+     * @return Attribute<UserRole|null, never>
+     */
+    protected function role(): Attribute
+    {
+        return Attribute::get(fn (): ?UserRole => $this->relationLoaded('roles')
+            ? UserRole::tryFrom((string) $this->roles->first()?->name)
+            : null);
     }
 
     /**

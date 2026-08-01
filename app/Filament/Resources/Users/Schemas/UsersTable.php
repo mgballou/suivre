@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Filament\Resources\Users\Schemas;
 
 use App\Filament\Resources\Users\Actions\ResetUserPasswordAction;
+use App\Filament\Resources\Users\Actions\SetUserRoleAction;
 use Filament\Actions\ViewAction;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
@@ -25,6 +26,8 @@ class UsersTable
                     ->searchable()
                     ->sortable()
                     ->copyable(),
+                TextColumn::make('role')
+                    ->badge(),
                 TextColumn::make('timezone')
                     ->searchable()
                     ->sortable(),
@@ -68,6 +71,7 @@ class UsersTable
             ])
             ->recordActions([
                 ViewAction::make(),
+                SetUserRoleAction::make(),
                 ResetUserPasswordAction::make(),
             ]);
     }
