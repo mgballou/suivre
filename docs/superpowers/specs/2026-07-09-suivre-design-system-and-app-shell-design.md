@@ -266,7 +266,7 @@ one authored.
 
 | Route | Name | Notes |
 |---|---|---|
-| `/` | `home` | Guest: `welcome`. Authed: redirect to `calendar`. No public marketing (D6). |
+| `/` | `home` | Redirect only — guest to `login`, member to `calendar`, admin to the panel. No public marketing (D6). |
 | `/calendar/{month?}` | `calendar` | Landing route. `month` is `YYYY-MM`, validated. Ticket B ships shell + placeholder body; SUI-6 fills it. |
 | `/day/{date}` | `day` | Defined now so SUI-7 does not move URLs. Placeholder in Ticket B. |
 | `/insights` | `insights` | Placeholder. The tab ships now; nav shape must not change when E4 lands. |

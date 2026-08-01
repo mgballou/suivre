@@ -43,8 +43,8 @@ it('leaves an administrator able to sign out', function (): void {
     $this->assertGuest();
 });
 
-it('leaves a guest to the welcome page', function (): void {
-    $this->get('/')->assertOk();
+it('leaves a guest to the login form', function (): void {
+    $this->get('/')->assertRedirect(route('login'));
 });
 
 it('gives an administrator somewhere to change their own password', function (): void {
