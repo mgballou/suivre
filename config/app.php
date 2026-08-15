@@ -125,4 +125,18 @@ return [
         'store' => env('APP_MAINTENANCE_STORE', 'database'),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Staging Seed Password
+    |--------------------------------------------------------------------------
+    |
+    | The initial password given to the accounts StagingSeeder creates, and
+    | only ever the initial one. Leave it unset and the seeder mints a random
+    | one instead, so a throwaway environment is never reachable with a
+    | password anybody can read out of this repository.
+    |
+    */
+
+    'staging_seed_password' => env('STAGING_SEED_PASSWORD'),
+
 ];

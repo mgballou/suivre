@@ -14,12 +14,16 @@ Railway project **`suivre-staging`** (workspace *My Projects*), environment
 | `worker` | `php artisan queue:work` | same image | `CONTAINER_ROLE=worker`, no domain |
 | `Postgres` | managed Postgres 18 | Railway template | `pg_trgm` enabled via migration |
 
-Public URL: **https://web-production-1abde.up.railway.app**
+The public URL is whatever Railway assigns the `web` service; read it from the
+dashboard rather than from here, so this file cannot go stale or advertise the
+box.
 
 Seeded accounts (staging only, `docker/entrypoint.sh`): `admin@suivre.staging`
-and `user@suivre.staging`, both pre-verified with the initial password
-**`<redacted>`**. That password is set **on creation only** — change it from
-the backstage and the change survives a redeploy.
+and `user@suivre.staging`, both pre-verified. Their initial password comes from
+the **`STAGING_SEED_PASSWORD`** variable on the `web` service; leave it unset and
+each account is created with a random one, reachable only by resetting it. Either
+way the password is set **on creation only** — change it from the backstage and
+the change survives a redeploy.
 
 ## Accounts for real people
 

@@ -9,14 +9,14 @@
 **Tech Stack:** Laravel 13, Fortify 1.37, Inertia 3 (`inertiajs/inertia-laravel`), Wayfinder (`laravel/wayfinder`), React 19, TypeScript 5.7, shadcn/ui (new-york, neutral), Tailwind 4, Vite 8, Pest 4 / PHPUnit-style classes, PHPStan level 9.
 
 **Reference checkout:** the official kit is cloned at
-`/private/tmp/claude-501/-Users-matthewballou-projects-suivre/a71de6c2-1af7-432e-8f9a-87a927b1d0a5/scratchpad/react-starter-kit`, pinned at commit **`a01c2cb`** (2026-06-30). Every "copy from the kit" instruction below means: copy from that checkout at that commit. Referred to hereafter as **`$KIT`**.
+`~/scratch/react-starter-kit`, pinned at commit **`a01c2cb`** (2026-06-30). Every "copy from the kit" instruction below means: copy from that checkout at that commit. Referred to hereafter as **`$KIT`**.
 
 ---
 
 ## Global Constraints
 
 - **Herd only.** `herd php artisan …`, `herd composer …`. Never bare `php`/`composer`.
-- **Worktree.** All work happens in `/Users/matthewballou/projects/sui-30-migrate-user-facing-app-to-inertia-react-shadcnui`. Serve at `https://sui-30.suivre.test`.
+- **Worktree.** All work happens in `~/projects/sui-30-migrate-user-facing-app-to-inertia-react-shadcnui`. Serve at `https://sui-30.suivre.test`.
 - **No product surface changes.** If a screenshot of `/settings/security` looks different, the ticket overreached. Font stays **Instrument Sans** — the spec's Inter is a token change belonging to Ticket B (SUI-31).
 - **Keep `livewire/livewire` and `livewire/blaze`.** Filament needs them. Only `livewire/flux` is removed.
 - **`/admin` is untouched.** `AdminPanelProvider` enumerates its middleware explicitly and never references the `web` group, so `HandleInertiaRequests` cannot reach it. Do not modify anything under `app/Filament` or `app/Providers/Filament`.
@@ -161,7 +161,7 @@ Note `typescript`, `@types/*` sit in `dependencies` in the kit; `devDependencies
 - [ ] **Step 5: Copy the build + TS config**
 
 ```bash
-KIT=/private/tmp/claude-501/-Users-matthewballou-projects-suivre/a71de6c2-1af7-432e-8f9a-87a927b1d0a5/scratchpad/react-starter-kit
+KIT=~/scratch/react-starter-kit
 cp "$KIT/tsconfig.json" tsconfig.json
 cp "$KIT/components.json" components.json
 rm vite.config.js
@@ -222,7 +222,7 @@ export default defineConfig({
 Leave `resources/js/app.js` in place — `partials/head.blade.php` still `@vite`s it until Task 5.
 
 ```bash
-KIT=/private/tmp/claude-501/-Users-matthewballou-projects-suivre/a71de6c2-1af7-432e-8f9a-87a927b1d0a5/scratchpad/react-starter-kit
+KIT=~/scratch/react-starter-kit
 cp "$KIT/resources/js/app.tsx" resources/js/app.tsx
 cp -R "$KIT/resources/js/components" resources/js/components
 cp -R "$KIT/resources/js/hooks"      resources/js/hooks
@@ -445,7 +445,7 @@ Expected: FAIL — the response is a Livewire-rendered Blade page, not an Inerti
 - [ ] **Step 3: Copy the auth pages**
 
 ```bash
-KIT=/private/tmp/claude-501/-Users-matthewballou-projects-suivre/a71de6c2-1af7-432e-8f9a-87a927b1d0a5/scratchpad/react-starter-kit
+KIT=~/scratch/react-starter-kit
 cp -R "$KIT/resources/js/pages/auth" resources/js/pages/auth
 ```
 
@@ -843,7 +843,7 @@ Import `App\Http\Controllers\Settings\ProfileController`.
 - [ ] **Step 6: Copy the page and add the timezone Select**
 
 ```bash
-KIT=/private/tmp/claude-501/-Users-matthewballou-projects-suivre/a71de6c2-1af7-432e-8f9a-87a927b1d0a5/scratchpad/react-starter-kit
+KIT=~/scratch/react-starter-kit
 mkdir -p resources/js/pages/settings
 cp "$KIT/resources/js/pages/settings/profile.tsx" resources/js/pages/settings/profile.tsx
 ```
@@ -1242,7 +1242,7 @@ Add imports `App\Http\Controllers\Settings\SecurityController` and `Illuminate\A
 - [ ] **Step 6: Copy the pages, delete the Livewire ones**
 
 ```bash
-KIT=/private/tmp/claude-501/-Users-matthewballou-projects-suivre/a71de6c2-1af7-432e-8f9a-87a927b1d0a5/scratchpad/react-starter-kit
+KIT=~/scratch/react-starter-kit
 cp "$KIT/resources/js/pages/settings/security.tsx"   resources/js/pages/settings/security.tsx
 cp "$KIT/resources/js/pages/settings/appearance.tsx" resources/js/pages/settings/appearance.tsx
 
