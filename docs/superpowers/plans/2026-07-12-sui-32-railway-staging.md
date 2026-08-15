@@ -415,7 +415,7 @@ git commit -m "Enable pg_trgm via migration; add idempotent StagingSeeder"
 - Consumes: authenticated `railway` CLI (already logged in as `matthewbuiltthat`).
 - Produces: a fresh project `suivre-staging` with a Postgres service exposing `${{Postgres.DATABASE_URL}}`.
 
-> All commands run from the repo root `/Users/matthewballou/projects/suivre`. Do **not** touch the unrelated `handy-agreement` project.
+> All commands run from the repo root `~/projects/suivre`. Do **not** touch the unrelated `handy-agreement` project.
 
 - [ ] **Step 1: Create a fresh project and link this directory**
 
