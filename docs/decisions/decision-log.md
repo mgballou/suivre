@@ -41,7 +41,7 @@ Running record of major decisions made while brainstorming the rebuild. Newest d
 
 ## D6 — Multi-user eventually; user-scoped from day one
 
-- **Decision:** Scope every table by user and use real auth from the start. MVP is two users (you + partner), each a fully private journal. No public onboarding/marketing yet, but no architecture that blocks it.
+- **Decision:** Scope every table by user and use real auth from the start. MVP serves a handful of invited accounts, each a fully private journal. No public onboarding/marketing yet, but no architecture that blocks it.
 - **Why:** Cheap to scope by user now; expensive to retrofit multi-tenancy later.
 - **Rules out:** Single-global-user shortcuts; building public signup/onboarding now.
 

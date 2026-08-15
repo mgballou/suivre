@@ -12,7 +12,7 @@
 
 Every task's requirements implicitly include these (verbatim from the spec):
 
-- **Repo:** private GitHub repo `suivre-insights-poc` at `/Users/matthewballou/projects/suivre-insights-poc` (sibling of `suivre`). venv+pip-managed: a project `.venv/`, editable install (`pip install -e .`), pinned `requirements.txt`. Invoke tools as `.venv/bin/pytest`, `.venv/bin/jupyter`.
+- **Repo:** private GitHub repo `suivre-insights-poc` at `~/projects/suivre-insights-poc` (sibling of `suivre`). venv+pip-managed: a project `.venv/`, editable install (`pip install -e .`), pinned `requirements.txt`. Invoke tools as `.venv/bin/pytest`, `.venv/bin/jupyter`.
 - **No real data; one user, one condition, one outcome series.** Intensity is an integer 0–10.
 - **Grounding is walled off:** no condition name, trigger list, or clinical claim in the repo, product, or decision log. Tag names are generic (`tag_0…`, with `dairy`/`sugar` used only as neutral labels for the co-occurring cluster).
 - **Lift = mean difference in intensity points** (headline); standardized `d` = lift / pooled SD (frontier only).
@@ -27,7 +27,7 @@ Every task's requirements implicitly include these (verbatim from the spec):
 ### Task 1: Scaffold repo + `SimConfig`
 
 **Files:**
-- Create: `/Users/matthewballou/projects/suivre-insights-poc/pyproject.toml` (minimal, setuptools src-layout) + `requirements.txt`, `.venv/`
+- Create: `~/projects/suivre-insights-poc/pyproject.toml` (minimal, setuptools src-layout) + `requirements.txt`, `.venv/`
 - Create: `src/insights/__init__.py`
 - Create: `src/insights/config.py`
 - Create: `tests/test_config.py`
@@ -38,7 +38,7 @@ Every task's requirements implicitly include these (verbatim from the spec):
 - [ ] **Step 1: Scaffold the repo**
 
 ```bash
-cd /Users/matthewballou/projects
+cd ~/projects
 mkdir suivre-insights-poc && cd suivre-insights-poc
 python3 -m venv .venv
 .venv/bin/pip install --upgrade pip
@@ -666,8 +666,8 @@ git commit -m "Add narrative notebook and generated figures"
 ### Task 6: README, findings note, ticket link
 
 **Files:**
-- Create: `/Users/matthewballou/projects/suivre-insights-poc/README.md`
-- Create: `/Users/matthewballou/projects/suivre/docs/2026-07-18-lag-lift-spike-findings.md`
+- Create: `~/projects/suivre-insights-poc/README.md`
+- Create: `~/projects/suivre/docs/2026-07-18-lag-lift-spike-findings.md`
 - Modify (Linear): attach the POC repo to SUI-36
 
 **Interfaces:**
@@ -690,11 +690,11 @@ Structure (fill from the notebook's actual numbers):
 
 ```bash
 # POC repo
-cd /Users/matthewballou/projects/suivre-insights-poc
+cd ~/projects/suivre-insights-poc
 git add README.md && git commit -m "Add README with reproduction steps and headline verdict"
 
 # suivre repo (on the SUI-36 branch)
-cd /Users/matthewballou/projects/suivre
+cd ~/projects/suivre
 git add docs/2026-07-18-lag-lift-spike-findings.md
 git -c commit.gpgsign=false commit -m "Add SUI-36 lag-lift spike findings note"
 ```
@@ -702,7 +702,7 @@ git -c commit.gpgsign=false commit -m "Add SUI-36 lag-lift spike findings note"
 - [ ] **Step 4: Create the private GitHub repo, push, and link to SUI-36**
 
 ```bash
-cd /Users/matthewballou/projects/suivre-insights-poc
+cd ~/projects/suivre-insights-poc
 gh repo create suivre-insights-poc --private --source=. --remote=origin --push
 ```
 Then attach the repo URL to SUI-36 via the Linear MCP (`create_attachment`), and open the `suivre` findings-note branch as a PR per the usual flow.

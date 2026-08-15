@@ -11,6 +11,8 @@ use Database\Seeders\StagingSeeder;
 use Illuminate\Support\Facades\Hash;
 
 beforeEach(function (): void {
+    config()->set('app.staging_seed_password', 'seeded-for-this-test');
+
     $this->seed(StagingSeeder::class);
 });
 
@@ -27,14 +29,22 @@ it('seeds an administrator and a throwaway member', function (): void {
 it('lets the seeded accounts sign in without a mail transport', function (): void {
     $admin = stagingUser('admin@suivre.staging');
 
-    expect(Hash::check(StagingSeeder::INITIAL_PASSWORD, $admin->password))->toBeTrue();
+    expect(Hash::check('seeded-for-this-test', $admin->password))->toBeTrue();
     expect($admin->email_verified_at)->not->toBeNull();
+});
+
+it('mints an unguessable password when the environment sets none', function (): void {
+    config()->set('app.staging_seed_password', null);
+    User::query()->delete();
+
+    $this->seed(StagingSeeder::class);
+
+    expect(Hash::check('seeded-for-this-test', stagingUser('admin@suivre.staging')->password))->toBeFalse();
 });
 
 it('does not undo a password changed since the account was seeded', function (): void {
     // This seeder runs on every boot of the web container. Re-filling the
-    // password would revert it to a value published in the repo, silently, on
-    // the next restart.
+    // password would silently revert it to the seeded value on the next restart.
     app(ResetUserPassword::class)(stagingUser('admin@suivre.staging'), 'something-only-i-know');
 
     $this->seed(StagingSeeder::class);
