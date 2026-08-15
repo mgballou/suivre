@@ -8,16 +8,11 @@ use App\Enums\UserRole;
 use App\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 use Spatie\Permission\Models\Role;
 
 class StagingSeeder extends Seeder
 {
-    /**
-     * The initial password for a seeded account, and only ever the initial one —
-     * see `upsertUser`.
-     */
-    public const string INITIAL_PASSWORD = 'suivre-staging';
-
     /**
      * Idempotent staging accounts: an admin (Filament backstage oversight) and a
      * throwaway member for real-world app use with no backstage access. Passwords
@@ -36,11 +31,11 @@ class StagingSeeder extends Seeder
         // The password is set on creation and never again. This seeder runs on
         // every boot of the web container, so filling it unconditionally would
         // silently undo a password changed from the backstage the next time the
-        // service restarted — and the value it reverted to is published in the
-        // repo. `email_verified_at` is set as a property, not mass-assigned: it
-        // is absent from the model's Fillable and strict mode would throw.
+        // service restarted. `email_verified_at` is set as a property, not
+        // mass-assigned: it is absent from the model's Fillable and strict mode
+        // would throw.
         if (! $user->exists) {
-            $user->password = Hash::make(self::INITIAL_PASSWORD);
+            $user->password = Hash::make(self::initialPassword());
             $user->email_verified_at = now();
         }
 
@@ -50,5 +45,22 @@ class StagingSeeder extends Seeder
         // syncRoles keeps the seeder idempotent: re-running never stacks roles and
         // holds each account to exactly its one role.
         $user->syncRoles([Role::findOrCreate($role->value)]);
+    }
+
+    /**
+     * The initial password for a seeded account, and only ever the initial one —
+     * see `upsertUser`. It comes from the environment so that no readable
+     * credential ships with the source. Unset, each seeded account gets its own
+     * random password and is reachable only by resetting it from the backstage.
+     */
+    public static function initialPassword(): string
+    {
+        // Not config()->string(): that rejects an explicit null, and "unset" is a
+        // supported state here rather than a misconfiguration.
+        $configured = config('app.staging_seed_password');
+
+        return is_string($configured) && $configured !== ''
+            ? $configured
+            : Str::random(40);
     }
 }
