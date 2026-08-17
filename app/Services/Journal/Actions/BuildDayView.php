@@ -20,6 +20,7 @@ use App\Models\User;
 use App\Services\Journal\Data\DayCondition;
 use App\Services\Journal\Data\DayFlare;
 use App\Services\Journal\Data\DayMeal;
+use App\Services\Journal\Data\DaySection;
 use App\Services\Journal\Data\DayView;
 use App\Services\Journal\Data\MealTypeOption;
 use App\Services\Journal\Data\ScaleOption;
@@ -43,6 +44,9 @@ class BuildDayView
             ->first();
 
         $conditions = $this->conditions($user, $date);
+        $flares = $this->flares($user, $date);
+        $meals = $this->meals($user, $date);
+        $sections = $this->sections($checkin, $conditions, $meals, $flares);
 
         return new DayView(
             date: $date->toDateString(),
@@ -60,11 +64,114 @@ class BuildDayView
                 'stress' => $this->options(StressLevel::ordered()),
             ],
             conditions: $conditions,
-            flares: $this->flares($user, $date),
+            flares: $flares,
             flareIntensities: $this->options(FlareIntensity::ordered()),
-            meals: $this->meals($user, $date),
+            meals: $meals,
             mealTypes: $this->mealTypeOptions(),
+            sections: $sections,
+            openSection: $this->openSection($sections),
         );
+    }
+
+    /**
+     * The day's four cards, each stating what it holds.
+     *
+     * Every summary is flat description — "3 items", "None", "Not recorded".
+     * None of them counts toward a total and none of them is a nudge: a journal
+     * that scores the day stops being a journal (D20/D28).
+     *
+     * @param  array<int, DayCondition>  $conditions
+     * @param  array<int, DayMeal>  $meals
+     * @param  array<int, DayFlare>  $flares
+     * @return array<int, DaySection>
+     */
+    private function sections(?DailyCheckin $checkin, array $conditions, array $meals, array $flares): array
+    {
+        $rated = count(array_filter(
+            $conditions,
+            static fn (DayCondition $condition): bool => $condition->intensity !== null,
+        ));
+
+        $items = array_sum(array_map(
+            static fn (DayMeal $meal): int => count($meal->entries),
+            $meals,
+        ));
+
+        return [
+            new DaySection(
+                key: 'checkin',
+                title: 'Check-in',
+                summary: $checkin instanceof DailyCheckin
+                    ? $this->sleepSummary($checkin->sleep)
+                    : 'Not recorded',
+                recorded: $checkin instanceof DailyCheckin,
+            ),
+            new DaySection(
+                key: 'conditions',
+                title: 'Conditions',
+                summary: match (true) {
+                    $conditions === [] => 'None tracked',
+                    $rated > 0 => "{$rated} rated",
+                    default => 'Not rated',
+                },
+                recorded: $rated > 0,
+            ),
+            new DaySection(
+                key: 'meals',
+                title: 'Meals',
+                summary: $items > 0
+                    ? $items . ' ' . str('item')->plural($items)->value()
+                    : 'Nothing logged',
+                recorded: $meals !== [],
+            ),
+            new DaySection(
+                key: 'flares',
+                title: 'Flares',
+                summary: $flares === []
+                    ? 'None'
+                    : count($flares) . ' ' . str('flare')->plural(count($flares))->value(),
+                recorded: $flares !== [],
+            ),
+        ];
+    }
+
+    /**
+     * How a saved check-in reads in one collapsed line.
+     *
+     * The enum's own label is a bare "Poor" or "Good", which serves a Filament
+     * badge but sits badly in this column: a lone adjective beside "Check-in"
+     * reads as a grade of the person rather than as the night they recorded.
+     * A whole phrase says the same thing and cannot be read that way. The label
+     * stays as it is, because the badge still wants the short form.
+     */
+    private function sleepSummary(?SleepQuality $sleep): string
+    {
+        return match ($sleep) {
+            SleepQuality::Good => 'Slept well',
+            SleepQuality::Poor => 'Slept poorly',
+            null => 'Recorded',
+        };
+    }
+
+    /**
+     * The card the day opens on: the first thing not yet on file.
+     *
+     * Guidance without a wizard — a fresh day lands on the check-in, a partly
+     * filled one on the gap, and a reviewed one on nothing at all. Flares are
+     * excluded because an absent flare is a complete answer, not a gap, and a
+     * card that stayed open on every quiet day would read as a demand.
+     *
+     * @param  array<int, DaySection>  $sections
+     */
+    private function openSection(array $sections): ?string
+    {
+        foreach ($sections as $section) {
+            if ($section->key !== 'flares' && ! $section->recorded) {
+                return $section->key;
+            }
+        }
+
+        return null;
     }
 
     /**
