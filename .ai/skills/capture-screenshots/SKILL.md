@@ -37,8 +37,8 @@ Core principles:
   post real data into a PR.
 - **The test is disposable.** Default to deleting it when done; keep it only if the author wants it as smoke
   coverage (CI would then run it every push).
-- **State concretely; verify, don't re-discover.** Suivre is **single-user MVP** — no Filament tenancy, no
-  roles/permissions. Confirm the page rendered for the seeded user (§2) rather than re-deriving the access
+- **State concretely; verify, don't re-discover.** Suivre has no Filament tenancy, and exactly two mutually
+  exclusive roles. Confirm the page rendered for the seeded user (§2) rather than re-deriving the access
   model each run.
 
 ## 0. Resolve context first
@@ -79,8 +79,16 @@ tenancy**, so no `tenant:` argument (simpler than multi-tenant apps).
 
 ### Authenticate past the access gate
 
-Suivre is single-user: `User` implements `FilamentUser` with `canAccessPanel(): true` (D16), so any seeded
-user reaches `/admin`. There are **no roles to seed** — just `actingAs` a user.
+The two roles reach **opposite** halves of the app and both directions are enforced (D27), so the seeded
+identity decides which surfaces are reachable at all:
+
+- **User app** (`/calendar`, `/day/…`, `/insights`, `/settings`) — a plain `User::factory()`, which mints a
+  member. Add `->tracking()`: `RequireTrackedCondition` bounces an account with no condition on file out of
+  the journal, so a bare user photographs the onboarding redirect.
+- **Backstage** (`/admin`) — `User::factory()->admin()`. A member gets a 403; an admin visiting the journal
+  gets redirected back out.
+
+One `it()` cannot show both. `actingAs` a second user inside the body when the shot is a backstage one.
 
 Use a **stable identity** so avatar/initials and any user-derived chrome render identically across shots and
 re-runs (not fresh random data each factory call):
@@ -115,8 +123,10 @@ Run: `herd php artisan test tests/Browser/<Feature>ScreenshotsTest.php`.
 
 Capture a variant only when the diff exercises that axis — never the full cross-product.
 
-- **Theme (dark/light)** — Filament admin only (the front-end has no dark mode by default). Chain
-  `->inLightMode()` / `->inDarkMode()`.
+- **Theme (dark/light)** — both panels. The user app's appearance defaults to `system`, so the emulated
+  colour scheme drives it. Chain `->inLightMode()` / `->inDarkMode()` **on the pending page, before
+  `->on()`** — the scheme is a browser-context option, and `->on()` resolves the context, so calling it
+  afterwards fails with "undefined method `Webpage::inLightMode()`".
 - **Viewport** — admin and front-end (both are responsive). `->on()->mobile()` / `->on()->desktop()` /
   `->resize($w, $h)`. Set the viewport *before* asserting and shooting — layouts re-flow on resize.
 - **Browser (Chrome default / firefox / safari=WebKit)** — only for engine-specific fixes. Selection is
