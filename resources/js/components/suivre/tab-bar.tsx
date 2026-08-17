@@ -43,7 +43,7 @@ export function TabBar({ className }: { className?: string }) {
                         style={
                             {
                                 '--tab-index': activeIndex,
-                                '--tab-count': 3,
+                                '--tab-count': mainNavItems.length,
                                 filter: 'url(#gooey)',
                             } as React.CSSProperties
                         }
