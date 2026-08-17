@@ -89,8 +89,7 @@ export function FlareLogger({
     return (
         <section className="flex flex-col gap-4">
             <div>
-                <h2 className="text-sm font-medium text-foreground">Flare</h2>
-                <p className="mt-1 text-sm text-muted-foreground">
+                <p className="text-sm text-muted-foreground">
                     Log an episode as it happens. Two taps is the whole thing.
                 </p>
             </div>
