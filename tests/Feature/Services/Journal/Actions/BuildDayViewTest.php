@@ -257,7 +257,7 @@ it('moves the open section past whatever the day already holds', function (): vo
     $view = app(BuildDayView::class)($user, $date, $date);
 
     expect($view->openSection)->toBe('conditions');
-    expect($view->sections[0]->summary)->toBe(SleepQuality::Good->getLabel());
+    expect($view->sections[0]->summary)->toBe('Slept well');
     expect($view->sections[0]->recorded)->toBeTrue();
 });
 

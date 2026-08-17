@@ -103,15 +103,47 @@ describe('DaySections', () => {
         ).toHaveAttribute('aria-expanded', 'false');
     });
 
-    it('adopts the server choice again when the day changes underneath it', () => {
+    it('holds the open card when a save returns a further-advanced choice', () => {
         const { rerender } = render(
             <DaySections sections={sections} openSection="checkin">
                 {bodies}
             </DaySections>,
         );
 
+        // Saving a check-in re-renders the page with openSection already moved
+        // on. Following it would shut the card under the person still using it.
         rerender(
-            <DaySections sections={sections} openSection="meals">
+            <DaySections sections={sections} openSection="conditions">
+                {bodies}
+            </DaySections>,
+        );
+
+        expect(
+            screen.getByRole('button', { name: /Check-in/ }),
+        ).toHaveAttribute('aria-expanded', 'true');
+        expect(
+            screen.getByRole('button', { name: /Conditions/ }),
+        ).toHaveAttribute('aria-expanded', 'false');
+    });
+
+    it('takes the server choice again for a different day', () => {
+        const { rerender } = render(
+            <DaySections
+                key="2026-08-12"
+                sections={sections}
+                openSection="checkin"
+            >
+                {bodies}
+            </DaySections>,
+        );
+
+        // The page keys this component by date, so another day is a remount.
+        rerender(
+            <DaySections
+                key="2026-08-13"
+                sections={sections}
+                openSection="meals"
+            >
                 {bodies}
             </DaySections>,
         );
