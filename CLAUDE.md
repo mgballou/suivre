@@ -574,6 +574,23 @@ Two mechanics that will bite if rediscovered by trial and error:
   so a component takes the saved `level` as a prop and lets the colour arrive on the round trip
   rather than computing a bucket that would be a second, drifting copy of the scale.
 
+## Depth comes from tokens
+
+Elevation, glass, panel tint and the gooey filter are the material layer (D28). Every value is a
+token in `app.css`; a component asks for `.elevation-raised` or `.glass` and never writes a shadow,
+a blur radius or a surface colour of its own. A bespoke value at a call site is a review failure —
+the point of a system is that the fifth screen costs less than the first.
+
+Two things that will bite:
+
+- **Elevation is a surface *and* a shadow.** `.elevation-raised` sets both, because a shadow alone
+  on the dark scheme's near-black page reads as grime rather than as lift. There is no
+  shadow-without-surface utility, deliberately.
+- **Glass is only for things that overlay content** — the tab bar, sheets, popovers, a sticky
+  header. Its contrast is proven against the *composite* over the worst backdrop it can sit above
+  (`MaterialLayerTest`), not against its nominal fill, so changing `--glass-alpha` or either
+  `--glass-surface` means re-running that test rather than looking at the result.
+
 === .ai/spatie-data rules ===
 
 # Spatie Data Objects
