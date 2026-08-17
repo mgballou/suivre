@@ -14,10 +14,12 @@ type DaySectionsProps = {
  * The day's four cards. One open at a time — this component's only job is
  * deciding which, so a card never has to know its siblings exist.
  *
- * The server picks the card the day opens on. That choice is re-adopted
- * whenever it changes, because Inertia re-renders this page in place when
- * navigating between days: state seeded once would carry yesterday's open card
- * into today.
+ * `openSection` is the card the *day* opens on, read once rather than followed.
+ * Every control inside these cards writes on tap, so saving a check-in returns
+ * a response whose `openSection` has already advanced to the next gap; adopting
+ * that would shut the card under the hands of the person still using it. The
+ * caller keys this component by date, and that is what makes moving to another
+ * day pick up the new choice.
  */
 export function DaySections({
     sections,
@@ -25,12 +27,6 @@ export function DaySections({
     children,
 }: DaySectionsProps) {
     const [open, setOpen] = useState<string | null>(openSection);
-    const [chosen, setChosen] = useState<string | null>(openSection);
-
-    if (chosen !== openSection) {
-        setChosen(openSection);
-        setOpen(openSection);
-    }
 
     return (
         <div className="elevation-raised overflow-hidden rounded-lg border border-border">

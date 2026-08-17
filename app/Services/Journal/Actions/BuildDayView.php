@@ -102,7 +102,7 @@ class BuildDayView
                 key: 'checkin',
                 title: 'Check-in',
                 summary: $checkin instanceof DailyCheckin
-                    ? ($checkin->sleep?->getLabel() ?? 'Recorded')
+                    ? $this->sleepSummary($checkin->sleep)
                     : 'Not recorded',
                 recorded: $checkin instanceof DailyCheckin,
             ),
@@ -133,6 +133,24 @@ class BuildDayView
                 recorded: $flares !== [],
             ),
         ];
+    }
+
+    /**
+     * How a saved check-in reads in one collapsed line.
+     *
+     * The enum's own label is a bare "Poor" or "Good", which serves a Filament
+     * badge but sits badly in this column: a lone adjective beside "Check-in"
+     * reads as a grade of the person rather than as the night they recorded.
+     * A whole phrase says the same thing and cannot be read that way. The label
+     * stays as it is, because the badge still wants the short form.
+     */
+    private function sleepSummary(?SleepQuality $sleep): string
+    {
+        return match ($sleep) {
+            SleepQuality::Good => 'Slept well',
+            SleepQuality::Poor => 'Slept poorly',
+            null => 'Recorded',
+        };
     }
 
     /**

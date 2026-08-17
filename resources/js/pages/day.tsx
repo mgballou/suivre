@@ -114,7 +114,18 @@ export default function Day({
                         />
                     </header>
 
-                    <DaySections sections={sections} openSection={openSection}>
+                    {/*
+                     * Keyed by date for the same reason the bodies below are:
+                     * Inertia re-renders this page in place when moving between
+                     * days, and which card is open is per-day state. The key is
+                     * also what stops a save — whose response carries a fresh
+                     * `openSection` — from being read as an instruction to move.
+                     */}
+                    <DaySections
+                        key={`sections-${date}`}
+                        sections={sections}
+                        openSection={openSection}
+                    >
                         {{
                             checkin: (
                                 <CheckinForm
