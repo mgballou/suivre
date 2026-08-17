@@ -63,3 +63,49 @@ The smallest real slice: open the PWA and log a two-tap daily check-in on a cale
 ## Sequencing
 
 E1 first (smallest real thing on the phone). E2 and E3 are independent and both feed **E4** (the payoff). E5 and E6 are polish layered on top. Each epic is its own spec→plan→tickets cycle; we refine details per epic rather than up front.
+
+---
+
+# V1 — after the MVP
+
+E1–E4 and E6 are complete; E5 has two tickets left in the backlog. The MVP proved the loop
+end to end, and using it surfaced three things worth a phase of their own. Linear project
+**[Suivre v1](https://linear.app/matthewbuiltthat/project/suivre-v1-643079340517)** (team
+`SUI`), one milestone per workstream.
+
+## V1 — Food intelligence
+
+The classifier resolves one catalog row per typed line and reads only that row's own
+categories, so "lemon pepper wings" is one food and "carbonara" carries nothing from its
+components. The composition schema has existed since July and no code reads it; there is
+no backstage resource for `FoodItem` at all, so nobody can curate a dish. Logging charges
+five steps for the result.
+
+Span decomposition, composition resolution, an entry that links many foods, catalog
+curation in Filament, type-ahead logging, a correction loop that grows the catalog, and
+food items as insight subjects behind an exposure floor. **D9's no-AI rule holds** — all
+of it is deterministic. `MealType` is retired along the way.
+
+**Spec:** `docs/superpowers/specs/2026-08-16-food-intelligence-design.md`.
+**Depends on:** E3 + E4.
+
+## V1 — Interface depth
+
+The day page is one undifferentiated scroll of four sections; the surface is flat enough
+to read as unstyled rather than as restraint. Adds a material layer — elevation, glass on
+things that genuinely overlay, panel tint, a softly-tuned gooey filter — and rebuilds the
+day as summary cards that expand in place.
+
+**Amends D20** with material, and changes none of its commitments: no red, no streaks, no
+praise, no celebratory motion.
+
+**Spec:** `docs/superpowers/specs/2026-08-16-interface-depth-design.md`.
+**Depends on:** E1.
+
+## V1 — Public presentation
+
+The repository is public and reads like a private one: no description, no topics, a README
+that does not show the product. Brings it to the standard of a repo worth finding, and
+clears the git hygiene a public history exposes.
+
+**Depends on:** nothing.
