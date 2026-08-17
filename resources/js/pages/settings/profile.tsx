@@ -39,7 +39,7 @@ export default function Profile({
 
             <h1 className="sr-only">Profile settings</h1>
 
-            <div className="space-y-6">
+            <div className="panel-tint space-y-6 rounded-lg p-4">
                 <Heading
                     variant="small"
                     title="Profile"
