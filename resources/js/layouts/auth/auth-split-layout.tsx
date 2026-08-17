@@ -36,7 +36,9 @@ export default function AuthSplitLayout({
                             {description}
                         </p>
                     </div>
-                    {children}
+                    <div className="elevation-raised rounded-lg p-6">
+                        {children}
+                    </div>
                 </div>
             </div>
         </div>
