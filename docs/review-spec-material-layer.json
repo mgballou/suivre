@@ -1,0 +1,61 @@
+{
+    "project": "suivre",
+    "base_url": "https://sui-60.suivre.test",
+    "viewport": { "width": 430, "height": 932 },
+    "screens": [
+        {
+            "name": "day-cards-one-surface",
+            "path": "/day/2026-08-20",
+            "question": "Do the four day sections read as one surface or as separate boxes?",
+            "answers": ["one", "separate", "unsure"]
+        },
+        {
+            "name": "day-card-expansion",
+            "path": "/day/2026-08-20",
+            "question": "Tap a closed section. Does the body that opens feel attached to its row or detached from it?",
+            "answers": ["attached", "detached", "unsure"]
+        },
+        {
+            "name": "day-summary-tone",
+            "path": "/day/2026-08-20",
+            "question": "Read the right-hand summaries ('Not recorded', 'Nothing logged', 'None'). Do they read as neutral or as a nag?",
+            "answers": ["neutral", "nag", "unsure"]
+        },
+        {
+            "name": "calendar-grid-card",
+            "path": "/calendar",
+            "question": "Does the month grid sit on a card lifted off the page, or flat against it?",
+            "answers": ["lifted", "flat", "unsure"]
+        },
+        {
+            "name": "tab-bar-glass",
+            "path": "/calendar",
+            "question": "Scroll the page under the bottom bar. Does the bar read as glass or as a solid strip?",
+            "answers": ["glass", "solid", "unsure"]
+        },
+        {
+            "name": "tab-indicator-travel",
+            "path": "/insights",
+            "question": "Tap between two bottom tabs and watch the pill move. Does it travel as one shape or as two?",
+            "answers": ["one", "two", "unsure"]
+        },
+        {
+            "name": "insights-card-elevation",
+            "path": "/insights",
+            "question": "Do the four chart cards read as distinct panels or blend into the page?",
+            "answers": ["distinct", "blended", "unsure"]
+        },
+        {
+            "name": "settings-profile-tint",
+            "path": "/settings/profile",
+            "question": "Does the tinted panel group the fields, or look like a stray box round them?",
+            "answers": ["groups", "stray", "unsure"]
+        },
+        {
+            "name": "login-card-elevation",
+            "path": "/login",
+            "question": "Log out first. Does the sign-in form read as a card on the page, or as floating away from it?",
+            "answers": ["card", "floating", "unsure"]
+        }
+    ]
+}
