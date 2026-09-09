@@ -9,6 +9,7 @@ type IntensityPickerProps = {
     value: ConditionIntensity | null;
     level: IntensityLevel;
     onSelect: (value: ConditionIntensity) => void;
+    onClear: () => void;
 };
 
 const SCALE: readonly ConditionIntensity[] = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
@@ -29,7 +30,7 @@ const SCALE: readonly ConditionIntensity[] = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
  *
  * Selecting is one-way, as on every other scale here: re-tapping the chosen
  * value does not clear it. Zero is a legitimate rating — "nothing today" — so
- * clearing would need a separate gesture, not an accidental double tap.
+ * clearing is its own gesture, shown only once there is something to take back.
  */
 export function IntensityPicker({
     name,
@@ -38,6 +39,7 @@ export function IntensityPicker({
     value,
     level,
     onSelect,
+    onClear,
 }: IntensityPickerProps) {
     return (
         <fieldset data-hue={hue} className="flex flex-col gap-2">
@@ -83,6 +85,20 @@ export function IntensityPicker({
                     );
                 })}
             </div>
+
+            {value !== null && (
+                <div className="flex justify-end">
+                    <button
+                        type="button"
+                        onClick={onClear}
+                        aria-label={`Clear the ${label} rating`}
+                        data-testid={`${name}-clear`}
+                        className="-mr-2 inline-flex min-h-11 items-center rounded-md px-2 text-xs text-muted-foreground transition-colors duration-[var(--dur-micro)] ease-quiet hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+                    >
+                        Clear
+                    </button>
+                </div>
+            )}
         </fieldset>
     );
 }

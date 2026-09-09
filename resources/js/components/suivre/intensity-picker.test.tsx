@@ -12,6 +12,7 @@ describe('IntensityPicker', () => {
                 value={null}
                 level={0}
                 onSelect={vi.fn()}
+                onClear={vi.fn()}
             />,
         );
 
@@ -29,6 +30,7 @@ describe('IntensityPicker', () => {
                 value={null}
                 level={0}
                 onSelect={vi.fn()}
+                onClear={vi.fn()}
             />,
         );
 
@@ -44,6 +46,7 @@ describe('IntensityPicker', () => {
                 value={7}
                 level={4}
                 onSelect={vi.fn()}
+                onClear={vi.fn()}
             />,
         );
 
@@ -60,6 +63,7 @@ describe('IntensityPicker', () => {
                 value={0}
                 level={0}
                 onSelect={vi.fn()}
+                onClear={vi.fn()}
             />,
         );
 
@@ -75,6 +79,7 @@ describe('IntensityPicker', () => {
                 value={null}
                 level={0}
                 onSelect={vi.fn()}
+                onClear={vi.fn()}
             />,
         );
 
@@ -93,6 +98,7 @@ describe('IntensityPicker', () => {
                 value={null}
                 level={0}
                 onSelect={onSelect}
+                onClear={vi.fn()}
             />,
         );
 
@@ -112,6 +118,7 @@ describe('IntensityPicker', () => {
                 value={8}
                 level={4}
                 onSelect={onSelect}
+                onClear={vi.fn()}
             />,
         );
 
@@ -129,6 +136,7 @@ describe('IntensityPicker', () => {
                 value={null}
                 level={0}
                 onSelect={vi.fn()}
+                onClear={vi.fn()}
             />,
         );
 
@@ -147,6 +155,7 @@ describe('IntensityPicker', () => {
                 value={7}
                 level={4}
                 onSelect={vi.fn()}
+                onClear={vi.fn()}
             />,
         );
 
@@ -165,6 +174,7 @@ describe('IntensityPicker', () => {
                 value={null}
                 level={0}
                 onSelect={vi.fn()}
+                onClear={vi.fn()}
             />,
         );
 
@@ -172,5 +182,43 @@ describe('IntensityPicker', () => {
             expect(radio.closest('label')).toHaveClass('min-h-11');
             expect(radio.closest('label')).toHaveClass('min-w-11');
         }
+    });
+    it('offers no clear control until there is a rating to take back', () => {
+        render(
+            <IntensityPicker
+                name="condition-1"
+                label="Headache"
+                hue="moss"
+                value={null}
+                level={0}
+                onSelect={vi.fn()}
+                onClear={vi.fn()}
+            />,
+        );
+
+        expect(
+            screen.queryByRole('button', { name: 'Clear the Headache rating' }),
+        ).not.toBeInTheDocument();
+    });
+
+    it('offers a clear control against a rating of zero, which is a record', () => {
+        const onClear = vi.fn();
+        render(
+            <IntensityPicker
+                name="condition-1"
+                label="Headache"
+                hue="moss"
+                value={0}
+                level={0}
+                onSelect={vi.fn()}
+                onClear={onClear}
+            />,
+        );
+
+        fireEvent.click(
+            screen.getByRole('button', { name: 'Clear the Headache rating' }),
+        );
+
+        expect(onClear).toHaveBeenCalledTimes(1);
     });
 });
