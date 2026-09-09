@@ -14,7 +14,7 @@ class EstimateNoiseBand
      *
      * SUI-36 gated detection on clearing a 95th-percentile noise band drawn
      * from tags known to be inert. A real user has no known-inert tags, so the
-     * band is drawn from the tag itself: its occurrence series is rotated away
+     * band is drawn from the tag itself (D34): its occurrence series is rotated away
      * from the intensity series and re-measured, once per offset. Rotation
      * keeps how often the tag fires and how it clumps — which matters, because
      * flares are sticky and an i.i.d. null would draw the band too low — while
