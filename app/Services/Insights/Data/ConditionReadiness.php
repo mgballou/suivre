@@ -11,10 +11,17 @@ use Illuminate\Contracts\Support\Arrayable;
  * to be worth trusting.
  *
  * Readiness is per condition, not per user, because the engine's volume gate is:
- * `ComputeCorrelations` counts the days carrying a rating for **that** condition
- * and refuses to rank below `MINIMUM_LOGGED_DAYS`. Someone who added a second
- * condition in month three is genuinely two months behind on it, and a single
- * user-level number would promise them insights that will not arrive.
+ * `ComputeCorrelations` counts the days carrying both a rating for **that**
+ * condition and a logged meal, and refuses to rank below
+ * `MINIMUM_COMPARABLE_DAYS`. Someone who added a second condition in month three
+ * is genuinely two months behind on it, and a single user-level number would
+ * promise them insights that will not arrive.
+ *
+ * The count has to be the gate's own quantity and not the easier one beside it
+ * (D31). A meter reading "ready" off rated days, against a gate that counts rated
+ * days with meals, would show a condition as arrived while the engine returns
+ * insufficient data — and `BuildConditionInsights` drops those, so the condition
+ * would appear in neither the waiting list nor the ranking.
  *
  * `isReady` and `remainingDays` are computed here rather than in the component
  * for the same reason every threshold in this app is: the client must never hold
@@ -28,18 +35,18 @@ readonly class ConditionReadiness implements Arrayable
         public int $id,
         public string $name,
         public string $hue,
-        public int $loggedDays,
+        public int $comparableDays,
         public int $requiredDays,
     ) {}
 
     public function isReady(): bool
     {
-        return $this->loggedDays >= $this->requiredDays;
+        return $this->comparableDays >= $this->requiredDays;
     }
 
     public function remainingDays(): int
     {
-        return max(0, $this->requiredDays - $this->loggedDays);
+        return max(0, $this->requiredDays - $this->comparableDays);
     }
 
     /**
@@ -47,7 +54,7 @@ readonly class ConditionReadiness implements Arrayable
      *     id: int,
      *     name: string,
      *     hue: string,
-     *     loggedDays: int,
+     *     comparableDays: int,
      *     requiredDays: int,
      *     remainingDays: int,
      *     isReady: bool,
@@ -59,7 +66,7 @@ readonly class ConditionReadiness implements Arrayable
             'id' => $this->id,
             'name' => $this->name,
             'hue' => $this->hue,
-            'loggedDays' => $this->loggedDays,
+            'comparableDays' => $this->comparableDays,
             'requiredDays' => $this->requiredDays,
             'remainingDays' => $this->remainingDays(),
             'isReady' => $this->isReady(),

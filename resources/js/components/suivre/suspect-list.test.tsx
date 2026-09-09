@@ -25,7 +25,7 @@ function insight(overrides: Partial<ConditionInsight> = {}): ConditionInsight {
         conditionName: 'Eczema',
         hue: 'marine',
         suspects: [hint()],
-        loggedDays: 94,
+        comparableDays: 94,
         windowDays: 3,
         ...overrides,
     };

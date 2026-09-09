@@ -24,9 +24,25 @@ function summaryFor(User $user): JournalSummary
     return app(BuildJournalSummary::class)($user, CarbonImmutable::parse(TODAY));
 }
 
-function rate(Condition $condition, int $days): void
+/**
+ * Rate the condition on each of the last `$days` days, and log a meal on each of
+ * them, because readiness counts the days that carry both (D31).
+ */
+function rate(User $user, Condition $condition, int $days): void
 {
+    rateWithoutMeals($condition, $days);
+
     for ($offset = 0; $offset < $days; $offset++) {
+        Meal::factory()
+            ->for($user)
+            ->eatenAt(CarbonImmutable::parse(TODAY, $user->timezone)->subDays($offset)->addHours(12)->utc())
+            ->createQuietly();
+    }
+}
+
+function rateWithoutMeals(Condition $condition, int $days, int $from = 0): void
+{
+    for ($offset = $from; $offset < $from + $days; $offset++) {
         ConditionLog::factory()
             ->forCondition($condition)
             ->on(CarbonImmutable::parse(TODAY)->subDays($offset))
@@ -48,15 +64,25 @@ it('reports readiness against the same threshold the engine gates on', function 
     $user = User::factory()->createQuietly();
     $condition = Condition::factory()->for($user)->createQuietly();
 
-    rate($condition, days: 12);
+    rate($user, $condition, days: 12);
 
     $summary = summaryFor($user);
 
     expect($summary->conditions)->toHaveCount(1);
-    expect($summary->conditions[0]->loggedDays)->toBe(12);
-    expect($summary->conditions[0]->requiredDays)->toBe(CorrelationThresholds::MINIMUM_LOGGED_DAYS);
-    expect($summary->conditions[0]->remainingDays())->toBe(CorrelationThresholds::MINIMUM_LOGGED_DAYS - 12);
+    expect($summary->conditions[0]->comparableDays)->toBe(12);
+    expect($summary->conditions[0]->requiredDays)->toBe(CorrelationThresholds::MINIMUM_COMPARABLE_DAYS);
+    expect($summary->conditions[0]->remainingDays())->toBe(CorrelationThresholds::MINIMUM_COMPARABLE_DAYS - 12);
     expect($summary->conditions[0]->isReady())->toBeFalse();
+});
+
+it('leaves a rated day with no meal on it out of the progress figure', function (): void {
+    $user = User::factory()->createQuietly();
+    $condition = Condition::factory()->for($user)->createQuietly();
+
+    rate($user, $condition, days: 10);
+    rateWithoutMeals($condition, days: 40, from: 10);
+
+    expect(summaryFor($user)->conditions[0]->comparableDays)->toBe(10);
 });
 
 it('counts readiness per condition, because the volume gate is per condition', function (): void {
@@ -64,23 +90,23 @@ it('counts readiness per condition, because the volume gate is per condition', f
     $old = Condition::factory()->for($user)->createQuietly(['name' => 'Eczema']);
     $recent = Condition::factory()->for($user)->createQuietly(['name' => 'Migraine']);
 
-    rate($old, days: 20);
-    rate($recent, days: 3);
+    rate($user, $old, days: 20);
+    rate($user, $recent, days: 3);
 
     $summary = summaryFor($user);
 
     expect($summary->conditions)->toHaveCount(2);
     expect($summary->conditions[0]->name)->toBe('Eczema');
-    expect($summary->conditions[0]->loggedDays)->toBe(20);
+    expect($summary->conditions[0]->comparableDays)->toBe(20);
     expect($summary->conditions[1]->name)->toBe('Migraine');
-    expect($summary->conditions[1]->loggedDays)->toBe(3);
+    expect($summary->conditions[1]->comparableDays)->toBe(3);
 });
 
 it('marks a condition ready once it clears the threshold', function (): void {
     $user = User::factory()->createQuietly();
     $condition = Condition::factory()->for($user)->createQuietly();
 
-    rate($condition, days: CorrelationThresholds::MINIMUM_LOGGED_DAYS);
+    rate($user, $condition, days: CorrelationThresholds::MINIMUM_COMPARABLE_DAYS);
 
     expect(summaryFor($user)->conditions[0]->isReady())->toBeTrue();
     expect(summaryFor($user)->conditions[0]->remainingDays())->toBe(0);
@@ -90,7 +116,7 @@ it('leaves stopped conditions out, since they are not accumulating', function ()
     $user = User::factory()->createQuietly();
     $stopped = Condition::factory()->for($user)->createQuietly(['is_active' => false]);
 
-    rate($stopped, days: 5);
+    rate($user, $stopped, days: 5);
 
     expect(summaryFor($user)->conditions)->toBe([]);
 });

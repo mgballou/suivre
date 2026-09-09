@@ -36,15 +36,21 @@ final class CorrelationThresholds
     public const LAG_PROFILE_DAYS = 7;
 
     /**
-     * Distinct local days carrying a rating for the condition, below which the
-     * report refuses to rank at all.
+     * Distinct local days carrying both a rating for the condition and a logged
+     * meal, below which the report refuses to rank at all.
      *
      * SUI-36 findings 1 and 6: hit-rate for a ≥1.5-point trigger only reaches
      * 0.8 around 75–90 days, and the softest possible surface — a single
      * tentative hint — is right just 0.58 of the time at 30 days and 0.66 at
      * 60. Only 90 days clears 0.7.
+     *
+     * The spike's days were all comparable — `SimConfig.missingness` was 0.0 and
+     * the `observed` column it would have produced was never read — so 90 is a
+     * count of days the estimator could use, and D31 makes the gate count the
+     * same thing. Ninety rated days of which forty carry a meal is a forty-day
+     * ranking, and forty days is where the spike says the ranking is a coin toss.
      */
-    public const MINIMUM_LOGGED_DAYS = 90;
+    public const MINIMUM_COMPARABLE_DAYS = 90;
 
     /**
      * Rated exposed days a tag needs before it is ranked. SUI-36 finding 2: on
