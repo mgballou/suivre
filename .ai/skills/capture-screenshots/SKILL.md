@@ -319,6 +319,10 @@ gh api repos/mgballou/suivre/commits/<SHOT_SHA> -q '.files[].filename'
   client-side. `->assertSee('<post-load text>')` auto-waits; add `->wait(1)` for safety.
 - **View every PNG** (open it / read the file) to confirm it's styled, authenticated, and populated. A blank
   shot means a missing render wait or stale/un-built Vite assets (`npm run build`).
+- **For phone width use `->on()->desktop()->resize(390, …)`, not `->on()->mobile()`.** Under `mobile()` a
+  deferred Inertia prop never paints: `->assertSee()` on its copy still passes, `->wait()` does not help, and
+  the shot is the skeleton. `resize()` renders it. Trust the pixels over the passing assertion — this one
+  fails silently in the only direction that matters.
 - **`->click('Text')` only finds visible text** — icon-only triggers (row `…` menus, header filter icons)
   time out. Pass a CSS selector: `->click('[aria-label="…"]')`.
 - **No `Event::fake()` in screenshot tests** — an argument-less `Event::fake()` swallows the event Livewire

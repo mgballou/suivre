@@ -27,6 +27,8 @@ function insight(overrides: Partial<ConditionInsight> = {}): ConditionInsight {
         suspects: [hint()],
         loggedDays: 94,
         windowDays: 3,
+        measuredTags: 9,
+        thinTags: 2,
         ...overrides,
     };
 }
@@ -113,11 +115,64 @@ describe('SuspectList', () => {
         expect(screen.getByText(/strongest the same day/)).toBeInTheDocument();
     });
 
-    it('treats an empty ranking as a result, not a gap', () => {
-        render(<SuspectList insights={[insight({ suspects: [] })]} />);
+    it('prints a negative lift with one sign, not two', () => {
+        render(
+            <SuspectList
+                insights={[insight({ suspects: [hint({ lift: -0.4 })] })]}
+            />,
+        );
+
+        expect(screen.getByText('-0.4 points')).toBeInTheDocument();
+        expect(screen.queryByText('+-0.4 points')).not.toBeInTheDocument();
+    });
+
+    it('calls an empty ranking a result when foods were measured', () => {
+        render(
+            <SuspectList
+                insights={[
+                    insight({ suspects: [], measuredTags: 9, thinTags: 2 }),
+                ]}
+            />,
+        );
 
         expect(
-            screen.getByText(/nothing separated itself from chance/i),
+            screen.getByText(
+                /9 foods had enough days to compare, and none came out above your baseline/i,
+            ),
+        ).toBeInTheDocument();
+        expect(
+            screen.getByText(/a real result, not a gap/i),
+        ).toBeInTheDocument();
+    });
+
+    it('claims no result when nothing could be measured at all', () => {
+        render(
+            <SuspectList
+                insights={[
+                    insight({ suspects: [], measuredTags: 0, thinTags: 6 }),
+                ]}
+            />,
+        );
+
+        expect(
+            screen.getByText(/nothing could be measured here yet/i),
+        ).toBeInTheDocument();
+        expect(
+            screen.queryByText(/a real result, not a gap/i),
+        ).not.toBeInTheDocument();
+    });
+
+    it('names the missing meals when no food was logged at all', () => {
+        render(
+            <SuspectList
+                insights={[
+                    insight({ suspects: [], measuredTags: 0, thinTags: 0 }),
+                ]}
+            />,
+        );
+
+        expect(
+            screen.getByText(/no meals are logged against these days/i),
         ).toBeInTheDocument();
     });
 
