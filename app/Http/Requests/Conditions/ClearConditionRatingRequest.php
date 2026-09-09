@@ -12,6 +12,8 @@ use Illuminate\Support\Facades\Gate;
 
 class ClearConditionRatingRequest extends FormRequest
 {
+    private ?ConditionLog $conditionLog = null;
+
     /**
      * Authorised against the rating itself rather than the condition, because
      * the rating is what is being removed and `ConditionLogPolicy` already owns
@@ -37,10 +39,15 @@ class ClearConditionRatingRequest extends FormRequest
      *
      * Looked up by condition and date alone: scoping it to the signed-in user
      * would turn someone else's rating into a 404 and never reach the policy,
-     * which is the thing that decides ownership.
+     * which is the thing that decides ownership. Held after the first call,
+     * because `authorize()` and the controller both ask for it.
      */
     public function conditionLog(): ConditionLog
     {
+        if ($this->conditionLog instanceof ConditionLog) {
+            return $this->conditionLog;
+        }
+
         $condition = $this->route('condition');
         $date = (string) $this->route('date');
 
@@ -54,7 +61,7 @@ class ClearConditionRatingRequest extends FormRequest
 
         abort_unless($log instanceof ConditionLog, 404);
 
-        return $log;
+        return $this->conditionLog = $log;
     }
 
     /**
