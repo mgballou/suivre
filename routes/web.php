@@ -42,7 +42,8 @@ Route::middleware(['auth', 'verified', RequireMemberAccount::class])->group(func
             ->group(function () {
                 Route::get('/', DayController::class)->name('day');
                 Route::post('checkin', DayCheckinController::class)->name('day.checkin');
-                Route::post('conditions/{condition}', DayConditionController::class)->name('day.conditions.rate');
+                Route::post('conditions/{condition}', [DayConditionController::class, 'store'])->name('day.conditions.rate');
+                Route::delete('conditions/{condition}', [DayConditionController::class, 'destroy'])->name('day.conditions.clear');
                 Route::post('conditions/{condition}/flares', DayFlareController::class)->name('day.conditions.flare');
                 Route::post('meals', DayMealController::class)->name('day.meals.store');
             });

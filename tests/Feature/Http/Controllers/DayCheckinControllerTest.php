@@ -18,6 +18,18 @@ class DayCheckinControllerTest extends TestCase
 {
     use RefreshDatabase;
 
+    /**
+     * The journal is bounded to days the user has lived through, so the suite
+     * pins its own today rather than leaning on the wall clock being past July
+     * 2026.
+     */
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->travelTo(CarbonImmutable::parse('2026-07-15 09:00:00', 'UTC'));
+    }
+
     public function test_a_single_tap_persists_a_check_in(): void
     {
         $user = User::factory()->tracking()->create();
@@ -130,6 +142,21 @@ class DayCheckinControllerTest extends TestCase
     {
         $this->post('/day/2026-07-15/checkin', ['mood' => MoodLevel::Good->value])
             ->assertRedirect(route('login'));
+
+        $this->assertSame(0, DailyCheckin::query()->count());
+    }
+
+    public function test_it_refuses_a_check_in_on_a_day_outside_the_journal(): void
+    {
+        $user = User::factory()->tracking()->create();
+
+        $this->actingAs($user)
+            ->post('/day/9999-12-31/checkin', ['mood' => MoodLevel::Good->value])
+            ->assertSessionHasErrors('date');
+
+        $this->actingAs($user)
+            ->post('/day/2026-07-14/checkin', ['mood' => MoodLevel::Good->value])
+            ->assertSessionHasErrors('date');
 
         $this->assertSame(0, DailyCheckin::query()->count());
     }

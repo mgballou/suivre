@@ -17,6 +17,18 @@ class DayFlareControllerTest extends TestCase
 {
     use RefreshDatabase;
 
+    /**
+     * The journal is bounded to days the user has lived through, so the suite
+     * pins its own today rather than leaning on the wall clock being past July
+     * 2026. Tests that need a later today travel on from here.
+     */
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->travelTo(CarbonImmutable::parse('2026-07-15 09:00:00', 'UTC'));
+    }
+
     public function test_two_taps_log_a_flare(): void
     {
         $user = User::factory()->create();
@@ -70,10 +82,10 @@ class DayFlareControllerTest extends TestCase
 
     public function test_a_back_filled_flare_lands_at_midday_on_the_day_it_names(): void
     {
-        $this->travelTo(CarbonImmutable::parse('2026-07-20 09:00:00', 'UTC'));
-
         $user = User::factory()->create();
         $condition = Condition::factory()->for($user)->createQuietly();
+
+        $this->travelTo(CarbonImmutable::parse('2026-07-20 09:00:00', 'UTC'));
 
         $this->actingAs($user)->post("/day/2026-07-15/conditions/{$condition->id}/flares", [
             'intensity' => FlareIntensity::Mild->value,
@@ -186,6 +198,22 @@ class DayFlareControllerTest extends TestCase
         $this->post("/day/2026-07-15/conditions/{$condition->id}/flares", [
             'intensity' => FlareIntensity::Mild->value,
         ])->assertRedirect(route('login'));
+
+        $this->assertSame(0, FlareEvent::query()->count());
+    }
+
+    public function test_it_refuses_a_flare_on_a_day_outside_the_journal(): void
+    {
+        $user = User::factory()->create();
+        $condition = Condition::factory()->for($user)->createQuietly();
+
+        $this->actingAs($user)
+            ->post("/day/9999-12-31/conditions/{$condition->id}/flares", ['intensity' => FlareIntensity::Mild->value])
+            ->assertSessionHasErrors('date');
+
+        $this->actingAs($user)
+            ->post("/day/2026-07-14/conditions/{$condition->id}/flares", ['intensity' => FlareIntensity::Mild->value])
+            ->assertSessionHasErrors('date');
 
         $this->assertSame(0, FlareEvent::query()->count());
     }
