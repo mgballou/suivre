@@ -8,6 +8,8 @@ use App\Enums\MoodLevel;
 use App\Enums\SleepQuality;
 use App\Enums\StressLevel;
 use App\Models\DailyCheckin;
+use App\Models\User;
+use App\Rules\WithinJournalBounds;
 use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -27,12 +29,20 @@ class RecordDailyCheckinRequest extends FormRequest
      * YYYY-MM-DD pattern but is not a real day (2026-02-31) is rejected here
      * rather than silently rolling over into the next month inside Carbon.
      *
+     * `WithinJournalBounds` then rejects a day the user cannot have lived
+     * through — after their own today, or before their account began. The
+     * route allows four digits of year, and the insights read walks first
+     * rating to last rating one day at a time.
+     *
      * @return array<string, array<int, mixed>>
      */
     public function rules(): array
     {
+        /** @var User $user */
+        $user = $this->user();
+
         return [
-            'date' => ['required', 'date_format:Y-m-d'],
+            'date' => ['bail', 'required', 'date_format:Y-m-d', new WithinJournalBounds($user)],
             'mood' => ['nullable', Rule::enum(MoodLevel::class)],
             'sleep' => ['nullable', Rule::enum(SleepQuality::class)],
             'stress' => ['nullable', Rule::enum(StressLevel::class)],

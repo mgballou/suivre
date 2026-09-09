@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Http\Requests\Meals;
 
 use App\Enums\MealType;
+use App\Models\User;
+use App\Rules\WithinJournalBounds;
 use App\Services\Meals\Data\MealEntryDraft;
 use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Http\FormRequest;
@@ -28,12 +30,20 @@ class StoreMealRequest extends FormRequest
      * line saves as free text and goes to the review queue — and `exists`
      * because a client may not invent a catalog reference.
      *
+     * `WithinJournalBounds` then rejects a day the user cannot have lived
+     * through — after their own today, or before their account began. The
+     * route allows four digits of year, and the insights read walks first
+     * rating to last rating one day at a time.
+     *
      * @return array<string, array<int, mixed>>
      */
     public function rules(): array
     {
+        /** @var User $user */
+        $user = $this->user();
+
         return [
-            'date' => ['required', 'date_format:Y-m-d'],
+            'date' => ['bail', 'required', 'date_format:Y-m-d', new WithinJournalBounds($user)],
             'meal_type' => ['required', Rule::enum(MealType::class)],
             'entries' => ['required', 'array', 'min:1', 'max:30'],
             'entries.*.text' => ['required', 'string', 'max:255'],
