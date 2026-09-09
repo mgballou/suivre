@@ -65,6 +65,11 @@ function timing(peakLag: number | null): string | null {
  * carries the days it was measured on, and a row whose lift sits inside the
  * range chance produces says so on its face.
  *
+ * `clearsNoiseBand` is decided against the whole report, not the row (D29), so
+ * on a log where nothing is a trigger the caveat is expected on every row —
+ * including the first. The copy therefore cannot call the row the weakest of
+ * the signals here, because most of the time it is all of them.
+ *
  * Nothing here is coloured by severity and nothing is red: a suspect is
  * something to test, not an alarm (D20).
  */
@@ -142,8 +147,7 @@ export function SuspectList({ insights }: SuspectListProps) {
                                     {!suspect.clearsNoiseBand && (
                                         <p className="text-xs text-muted-foreground">
                                             Sits inside the range chance alone
-                                            produces. Weakest of the signals
-                                            here.
+                                            produces across everything you log.
                                         </p>
                                     )}
                                 </li>
