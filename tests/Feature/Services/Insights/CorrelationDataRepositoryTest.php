@@ -119,3 +119,72 @@ it('reads one condition’s ratings and leaves another condition’s alone', fun
 
     expect($intensity)->toBe(['2026-07-20' => 6]);
 });
+
+it('reads a meal day off the day the user was living, not the stored instant', function (): void {
+    $user = User::factory()->createQuietly(['timezone' => 'Pacific/Auckland']);
+
+    Meal::factory()
+        ->for($user)
+        ->eatenAt(CarbonImmutable::parse('2026-07-20 23:30', 'UTC'))
+        ->createQuietly();
+
+    $days = app(CorrelationDataRepository::class)->mealDays(
+        $user,
+        CarbonImmutable::parse('2026-07-19'),
+        CarbonImmutable::parse('2026-07-22'),
+    );
+
+    expect($days)->toBe(['2026-07-21' => true]);
+});
+
+it('counts a meal with nothing classified in it as a day the user logged', function (): void {
+    $user = User::factory()->createQuietly();
+
+    Meal::factory()
+        ->for($user)
+        ->eatenAt(CarbonImmutable::parse('2026-07-20 12:00', 'UTC'))
+        ->createQuietly();
+
+    $days = app(CorrelationDataRepository::class)->mealDays($user);
+
+    expect($days)->toBe(['2026-07-20' => true]);
+});
+
+it('counts only the rated days a meal was logged on', function (): void {
+    $user = User::factory()->createQuietly();
+    $condition = Condition::factory()->for($user)->createQuietly();
+    $other = Condition::factory()->for($user)->createQuietly();
+
+    foreach (['2026-07-18', '2026-07-19', '2026-07-20'] as $date) {
+        ConditionLog::factory()
+            ->forCondition($condition)
+            ->on(CarbonImmutable::parse($date))
+            ->createQuietly(['intensity' => 3]);
+    }
+
+    ConditionLog::factory()
+        ->forCondition($other)
+        ->on(CarbonImmutable::parse('2026-07-18'))
+        ->createQuietly(['intensity' => 3]);
+
+    foreach (['2026-07-18 12:00', '2026-07-19 12:00'] as $at) {
+        Meal::factory()->for($user)->eatenAt(CarbonImmutable::parse($at, 'UTC'))->createQuietly();
+    }
+
+    $counts = app(CorrelationDataRepository::class)->comparableDayCounts($user);
+
+    expect($counts[$condition->id])->toBe(2);
+    expect($counts[$other->id])->toBe(1);
+});
+
+it('counts no comparable days for a user who has logged no meals', function (): void {
+    $user = User::factory()->createQuietly();
+    $condition = Condition::factory()->for($user)->createQuietly();
+
+    ConditionLog::factory()
+        ->forCondition($condition)
+        ->on(CarbonImmutable::parse('2026-07-18'))
+        ->createQuietly(['intensity' => 3]);
+
+    expect(app(CorrelationDataRepository::class)->comparableDayCounts($user))->toBe([]);
+});

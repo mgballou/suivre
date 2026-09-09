@@ -57,23 +57,30 @@ class BuildJournalSummary
      * accumulating, so a progress figure against them would only ever describe a
      * wait that is not happening.
      *
+     * The progress figure is the engine's own gated quantity — days carrying a
+     * rating *and* a logged meal (D31) — read from the repository the engine
+     * reads it from, so the meter and the gate cannot disagree. Counting rows in
+     * `condition_logs` was the cheaper query and the wrong number.
+     *
      * @return array<int, ConditionReadiness>
      */
     private function readiness(User $user): array
     {
+        $comparableDays = app(CorrelationDataRepository::class)->comparableDayCounts($user);
+
         return $user->conditions()
             ->tap(new ActiveScope())
-            ->withCount('conditionLogs')
-            ->orderByDesc('condition_logs_count')
             ->orderBy('id')
             ->get()
             ->map(static fn (Condition $condition): ConditionReadiness => new ConditionReadiness(
                 id: $condition->id,
                 name: $condition->name,
                 hue: $condition->color->value,
-                loggedDays: (int) $condition->condition_logs_count,
-                requiredDays: CorrelationThresholds::MINIMUM_LOGGED_DAYS,
+                comparableDays: $comparableDays[$condition->id] ?? 0,
+                requiredDays: CorrelationThresholds::MINIMUM_COMPARABLE_DAYS,
             ))
+            ->sortByDesc(static fn (ConditionReadiness $readiness): int => $readiness->comparableDays)
+            ->values()
             ->all();
     }
 
