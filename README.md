@@ -58,9 +58,12 @@ The thresholds it produced are what the engine runs on:
   and a heatmap instead.
 - **Lift is measured across lags from same-day out to a week**, and each suspect names its
   strongest.
-- **Each tag is checked against its own noise band.** Its occurrences are shifted along the
-  timeline up to sixty times to see what lift falls out by chance. Tags that land under
-  their band are still listed, marked as such.
+- **The noise band is drawn once for the whole ranking.** Every tag's occurrences are
+  shifted along the timeline together, up to sixty times, and the largest lift each shift
+  produces anywhere on the list is recorded. A tag has to beat the 95th percentile of that
+  to be presented without a caveat, because a list of eight tags each checked against its
+  own band flagged something on two journals in five where nothing was a trigger. Tags that
+  land under the band are still listed, marked as such.
 - **Tags that keep appearing together are reported as a pair.** Dairy and sugar eaten on the
   same days are ranked as one row, because the log has no day that separates them.
 
@@ -68,7 +71,7 @@ The thresholds it produced are what the engine runs on:
 
 ## Start with the decision log
 
-**[`docs/decisions/decision-log.md`](docs/decisions/decision-log.md)** is 27 numbered
+**[`docs/decisions/decision-log.md`](docs/decisions/decision-log.md)** is 28 numbered
 entries covering every significant product and architecture decision here. Each states the
 decision, the reasoning, and what it rules out. It is append-only and newest-last, so a
 later entry supersedes an earlier one rather than editing it.
