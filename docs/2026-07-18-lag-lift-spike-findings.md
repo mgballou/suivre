@@ -1,6 +1,10 @@
 # Lag-Lift Insight — Spike Findings (SUI-36)
 
-- **Status:** Active
+- **Status:** Active as the record of what the spike measured. **Not a measurement of the shipped
+  engine:** production substitutes a within-tag rotation null for the cross-tag null every rate
+  below was computed against, and drops the top-3 ranking requirement (**D34**). The window also
+  differs — `n_window = 2` here, 3 in production — and every run below sets `missingness = 0.0`,
+  so nothing here describes a journal with gaps in it.
 - **Verdict:** **ADJUST** — the lag-lift insight is real for moderate-to-strong triggers given ~90 days of data, but fragile against confounding and small-`n` noise in ways that reshape E4 and the product framing.
 - **Spec / plan:** `docs/superpowers/specs/2026-07-18-lag-lift-validation-spike-design.md`, `docs/superpowers/plans/2026-07-18-lag-lift-validation-spike.md` (+ `…-deepdive.md`)
 - **POC (all numbers reproducible):** [`mgballou/suivre-insights-poc`](https://github.com/mgballou/suivre-insights-poc) — Python, seeded, `.venv/bin/pytest` (28 tests) + `notebooks/01_lag_lift_spike.ipynb`.

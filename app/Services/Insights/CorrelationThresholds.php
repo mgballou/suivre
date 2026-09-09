@@ -6,7 +6,13 @@ namespace App\Services\Insights;
 
 /**
  * Every tunable number the lag-lift engine leans on, in one place with the
- * SUI-36 spike finding that justifies it.
+ * SUI-36 spike finding behind it.
+ *
+ * Read those citations as provenance rather than as proof. The spike measured
+ * detection against a null drawn from tags it knew to be inert, and this engine
+ * cannot: it rotates each tag against itself instead. D34 records that
+ * substitution and which of the numbers below are inherited across it without
+ * being re-derived — the 90-day gate, the two 10-day floors and the percentile.
  *
  * These are deliberately constants and not configuration: the MVP computes
  * correlations on demand with no operator knobs. E5 (SUI-25) promotes the set
@@ -60,9 +66,17 @@ final class CorrelationThresholds
     public const MINIMUM_BASELINE_DAYS = 10;
 
     /**
-     * The percentile of a tag's own null distribution that its lift must beat
-     * to be flagged as clearing the noise band — the detection criterion SUI-36
-     * used throughout (`sweep.is_hit`, `alerts.alert_precision`).
+     * The percentile of a tag's own rotation null that its lift must beat to be
+     * flagged as clearing the noise band.
+     *
+     * The 95 is inherited from SUI-36 and has not been re-derived here, which
+     * D34 records. The spike took its percentile of a different distribution
+     * entirely — the lifts of the tags it had planted no effect in — and paired
+     * it with a top-three ranking requirement this engine has no equivalent of.
+     * A band drawn from a tag's own rotations cannot be justified by the spike's
+     * hit-rates, so it is not justified by them: 95 is kept as a conventional
+     * bar whose shape argument survives the substitution, and nothing here
+     * claims more for it than that.
      */
     public const NOISE_BAND_PERCENTILE = 95.0;
 
