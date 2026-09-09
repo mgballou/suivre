@@ -674,6 +674,12 @@ This guideline covers project-specific conventions only.
 - Test file paths should mirror the relative path of the file being tested.
 - All test files should have a namespace corresponding to their directory.
 - If a test file already exists, run the tests first to see failures before making changes.
+- **`php artisan test` is not the whole suite.** `phpunit.xml` excludes the `monte-carlo`
+  group — Monte-Carlo tests that run the correlation engine over dozens of synthetic
+  journals, too slow for the gate and for CI. Run them with
+  `herd php artisan test --group=monte-carlo`, which overrides the exclusion, whenever you
+  touch the insights engine. They are the only tests that exercise it on a journal with no
+  planted effect, which is what D29 measures.
 
 ## Mocking Conventions
 
