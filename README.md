@@ -68,7 +68,7 @@ The thresholds it produced are what the engine runs on:
 
 ## Start with the decision log
 
-**[`docs/decisions/decision-log.md`](docs/decisions/decision-log.md)** is 27 numbered
+**[`docs/decisions/decision-log.md`](docs/decisions/decision-log.md)** is 28 numbered
 entries covering every significant product and architecture decision here. Each states the
 decision, the reasoning, and what it rules out. It is append-only and newest-last, so a
 later entry supersedes an earlier one rather than editing it.
@@ -232,7 +232,7 @@ in [`docs/local-setup.md`](docs/local-setup.md).
 
 | Path | What is in it |
 | --- | --- |
-| [`docs/decisions/decision-log.md`](docs/decisions/decision-log.md) | The 27 recorded decisions. Start here. |
+| [`docs/decisions/decision-log.md`](docs/decisions/decision-log.md) | The 28 recorded decisions. Start here. |
 | [`docs/roadmap.md`](docs/roadmap.md) | The MVP epics, and the v1 phase that follows them. |
 | [`docs/2026-07-18-lag-lift-spike-findings.md`](docs/2026-07-18-lag-lift-spike-findings.md) | What the correlation spike found, and the thresholds it set. |
 | [`docs/superpowers/specs/`](docs/superpowers/specs/) · [`plans/`](docs/superpowers/plans/) | Dated design artifacts. Each carries a status banner saying whether it still applies. |
