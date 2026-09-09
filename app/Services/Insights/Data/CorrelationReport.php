@@ -24,6 +24,11 @@ use Illuminate\Contracts\Support\Arrayable;
  * found" over "not enough logged yet" — SUI-36 findings 1 and 6 make those two
  * statements very different claims.
  *
+ * `reportNoiseBand` is the bar every row on the ready report is gated on: the
+ * lift the strongest of these tags reaches when they are all rotated away from
+ * the ratings together (D29). It belongs to the report rather than to any row
+ * because it is a property of how many tags were tested at once.
+ *
  * @implements Arrayable<string, mixed>
  */
 readonly class CorrelationReport implements Arrayable
@@ -36,6 +41,7 @@ readonly class CorrelationReport implements Arrayable
         public int $comparableDays,
         public int $requiredDays,
         public int $windowDays,
+        public ?float $reportNoiseBand,
         private array $suspects,
     ) {}
 
@@ -58,6 +64,7 @@ readonly class CorrelationReport implements Arrayable
      *     comparableDays: int,
      *     requiredDays: int,
      *     windowDays: int,
+     *     reportNoiseBand: float|null,
      *     suspects: array<int, array<string, mixed>>,
      * }
      */
@@ -68,6 +75,7 @@ readonly class CorrelationReport implements Arrayable
             'comparableDays' => $this->comparableDays,
             'requiredDays' => $this->requiredDays,
             'windowDays' => $this->windowDays,
+            'reportNoiseBand' => $this->reportNoiseBand,
             'suspects' => array_map(
                 static fn (CorrelationSuspect $suspect): array => $suspect->toArray(),
                 $this->suspects,
@@ -85,6 +93,7 @@ readonly class CorrelationReport implements Arrayable
             comparableDays: $comparableDays,
             requiredDays: $requiredDays,
             windowDays: $windowDays,
+            reportNoiseBand: null,
             suspects: [],
         );
     }
@@ -95,13 +104,19 @@ readonly class CorrelationReport implements Arrayable
      *
      * @param  array<int, CorrelationSuspect>  $suspects
      */
-    public static function ranked(array $suspects, int $comparableDays, int $requiredDays, int $windowDays): self
-    {
+    public static function ranked(
+        array $suspects,
+        int $comparableDays,
+        int $requiredDays,
+        int $windowDays,
+        ?float $reportNoiseBand,
+    ): self {
         return new self(
             status: CorrelationStatus::Ready,
             comparableDays: $comparableDays,
             requiredDays: $requiredDays,
             windowDays: $windowDays,
+            reportNoiseBand: $reportNoiseBand,
             suspects: $suspects,
         );
     }
