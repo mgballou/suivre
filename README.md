@@ -54,7 +54,9 @@ lag and heavy confounding. A [spike](docs/2026-07-18-lag-lift-spike-findings.md)
 known triggers in synthetic journals and measured what a ranking could recover from them.
 The thresholds it produced are what the engine runs on:
 
-- **Ranking starts at ninety days of ratings.** Below that the page shows counts, a trend
+- **Ranking starts at ninety days that carry both a rating and a logged meal.** A rated day
+  with no meal against it is missing data rather than a day of nothing, so it counts toward
+  neither the gate nor the comparison (D31). Below the ninety the page shows counts, a trend
   and a heatmap instead.
 - **Lift is measured across lags from same-day out to a week**, and each suspect names its
   strongest.
