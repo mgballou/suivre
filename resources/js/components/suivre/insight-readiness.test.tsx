@@ -12,7 +12,7 @@ function readiness(
         id: 1,
         name: 'Eczema',
         hue: 'marine',
-        loggedDays: 34,
+        comparableDays: 34,
         requiredDays: 90,
         remainingDays: 56,
         isReady: false,
@@ -21,11 +21,13 @@ function readiness(
 }
 
 describe('InsightReadiness', () => {
-    it('states the progress and the threshold it is working towards', () => {
+    it('counts days that carry both a rating and a meal, not days rated', () => {
         render(<InsightReadiness conditions={[readiness()]} />);
 
         expect(screen.getByText('Eczema')).toBeInTheDocument();
-        expect(screen.getByText('34 of 90 days rated')).toBeInTheDocument();
+        expect(
+            screen.getByText('34 of 90 days rated and logged'),
+        ).toBeInTheDocument();
     });
 
     it('says why the wait exists rather than presenting it as a locked feature', () => {
@@ -53,7 +55,7 @@ describe('InsightReadiness', () => {
                     readiness({
                         id: 2,
                         name: 'Migraine',
-                        loggedDays: 90,
+                        comparableDays: 90,
                         remainingDays: 0,
                         isReady: true,
                     }),
@@ -70,7 +72,7 @@ describe('InsightReadiness', () => {
             <InsightReadiness
                 conditions={[
                     readiness({
-                        loggedDays: 120,
+                        comparableDays: 120,
                         remainingDays: 0,
                         isReady: true,
                     }),

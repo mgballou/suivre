@@ -4,7 +4,7 @@ export type ConditionReadiness = {
     id: number;
     name: string;
     hue: ConditionHue;
-    loggedDays: number;
+    comparableDays: number;
     requiredDays: number;
     remainingDays: number;
     isReady: boolean;
@@ -23,9 +23,14 @@ type InsightReadinessProps = {
  * so naming a trigger early would be guessing in a confident voice. Saying that
  * plainly turns the wait into the reason to keep going.
  *
+ * The meter counts days carrying both a rating and a logged meal, because that
+ * is what the engine compares (D31). Rating without logging what you ate moves
+ * nothing, and the wording says so — a meter that advanced on ratings alone
+ * would promise a ranking the engine will refuse to produce.
+ *
  * Deliberately not a streak. No praise, no warning, no colour for falling
- * behind, and a missed day costs nothing: the meter counts days rated in total,
- * so it only ever moves forward (D20).
+ * behind, and a missed day costs nothing: the meter counts days in total, so it
+ * only ever moves forward (D20).
  */
 export function InsightReadiness({ conditions }: InsightReadinessProps) {
     if (conditions.length === 0) {
@@ -46,9 +51,10 @@ export function InsightReadiness({ conditions }: InsightReadinessProps) {
                 <h2 className="text-sm font-medium">Working towards insights</h2>
                 <p className="text-sm text-muted-foreground">
                     Suivre starts looking for patterns once a condition has{' '}
-                    {waiting[0].requiredDays} days of ratings. Before that there
-                    is not enough to tell a real pattern from chance, and it
-                    would rather say nothing than guess.
+                    {waiting[0].requiredDays} days that carry both a rating and a
+                    logged meal. Before that there is not enough to tell a real
+                    pattern from chance, and it would rather say nothing than
+                    guess.
                 </p>
             </div>
 
@@ -62,15 +68,15 @@ export function InsightReadiness({ conditions }: InsightReadinessProps) {
                         <div className="flex items-baseline justify-between gap-3">
                             <span className="text-sm">{condition.name}</span>
                             <span className="text-xs tabular-nums text-muted-foreground">
-                                {condition.loggedDays} of{' '}
-                                {condition.requiredDays} days rated
+                                {condition.comparableDays} of{' '}
+                                {condition.requiredDays} days rated and logged
                             </span>
                         </div>
 
                         <div
                             role="progressbar"
                             aria-label={`${condition.name} progress towards insights`}
-                            aria-valuenow={condition.loggedDays}
+                            aria-valuenow={condition.comparableDays}
                             aria-valuemin={0}
                             aria-valuemax={condition.requiredDays}
                             className="h-1 w-full overflow-hidden rounded-full bg-muted"
@@ -78,7 +84,7 @@ export function InsightReadiness({ conditions }: InsightReadinessProps) {
                             <div
                                 className="h-full rounded-full bg-condition-4 transition-[width] duration-[var(--dur-arrival)] ease-quiet"
                                 style={{
-                                    width: `${(condition.loggedDays / condition.requiredDays) * 100}%`,
+                                    width: `${(condition.comparableDays / condition.requiredDays) * 100}%`,
                                 }}
                             />
                         </div>
