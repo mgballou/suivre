@@ -12,6 +12,17 @@
             <directory>tests/Feature</directory>
         </testsuite>
     </testsuites>
+    <!--
+        Monte-Carlo tests run the correlation engine over dozens of synthetic
+        journals and take about a minute each, so they are out of the default
+        run and out of CI. Run them with `herd php artisan test` passing the
+        group on the command line, which overrides this exclusion.
+    -->
+    <groups>
+        <exclude>
+            <group>monte-carlo</group>
+        </exclude>
+    </groups>
     <source>
         <include>
             <directory>app</directory>

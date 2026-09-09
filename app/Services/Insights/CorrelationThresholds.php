@@ -60,17 +60,24 @@ final class CorrelationThresholds
     public const MINIMUM_BASELINE_DAYS = 10;
 
     /**
-     * The percentile of a tag's own null distribution that its lift must beat
-     * to be flagged as clearing the noise band — the detection criterion SUI-36
+     * The percentile of the report's null distribution that a lift must beat to
+     * be flagged as clearing the noise band — the detection criterion SUI-36
      * used throughout (`sweep.is_hit`, `alerts.alert_precision`).
+     *
+     * D29 changed the distribution the percentile is taken of, not the
+     * percentile: it is now the largest lift the report's tags reach per
+     * rotation, so 95 buys a report that flags nothing about one journal in
+     * twenty rather than a row that flags falsely one time in twenty.
      */
     public const NOISE_BAND_PERCENTILE = 95.0;
 
     /**
-     * How many circular shifts of a tag's occurrence series are used to build
-     * that null distribution. Shifting rather than resampling keeps the tag's
-     * rate and its day-to-day clumping intact, which matters because flares are
-     * sticky (AR(1)) and an i.i.d. null would understate the band.
+     * How many circular shifts of the occurrence series are used to build that
+     * null distribution. Shifting rather than resampling keeps each tag's rate
+     * and its day-to-day clumping intact, which matters because flares are
+     * sticky (AR(1)) and an i.i.d. null would understate the band. Every tag is
+     * shifted by the same offset, which keeps their real co-occurrence intact
+     * too (D29).
      */
     public const MAXIMUM_NOISE_BAND_SHIFTS = 60;
 

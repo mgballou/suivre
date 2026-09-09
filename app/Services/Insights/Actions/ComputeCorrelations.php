@@ -14,6 +14,7 @@ use App\Services\Insights\Data\CorrelationReport;
 use App\Services\Insights\Data\CorrelationSuspect;
 use App\Services\Insights\Data\DayMask;
 use App\Services\Insights\Data\LiftMeasurement;
+use App\Services\Insights\Data\NoiseBands;
 use App\Services\Insights\Data\SuspectTag;
 use Carbon\CarbonImmutable;
 
@@ -33,9 +34,13 @@ use Carbon\CarbonImmutable;
  *   insufficient-data outcome, not a hedged ranking. Below 90 days even the
  *   softest single hint is right barely more than half the time.
  * - **Noise band.** Each suspect states whether its lift beat the 95th
- *   percentile of what the same tag produces when rotated away from the
- *   intensity series. This is a gate on what is worth whispering, not a
- *   significance test — D11 rules out the false rigor of p-values at this `n`.
+ *   percentile of what the *strongest* tag on the report produces when every
+ *   tag is rotated away from the intensity series together. The band is drawn
+ *   once for the whole report because the report tests every measurable tag at
+ *   once (D29); gating each row on its own band left a flagged row on two
+ *   journals in five where nothing was a trigger. This is a gate on what is
+ *   worth whispering, not a significance test — D11 rules out the false rigor
+ *   of p-values at this `n`.
  * - **Separability (D24, stage 1).** Tags that travel together are only named
  *   individually when the marginal lift survives being measured on the days
  *   they appear apart. The criterion chosen here: two tags are co-travellers
@@ -107,14 +112,28 @@ class ComputeCorrelations
             $windowDays,
         );
 
+        $masks = [];
+
+        foreach ($clusters->groups as $row => $group) {
+            $mask = $this->clusterMask($presence, $group);
+
+            if ($mask !== null) {
+                $masks[$row] = $mask;
+            }
+        }
+
+        $bands = app(EstimateNoiseBands::class)($intensities, $masks, $windowDays);
+
         $suspects = [];
 
-        foreach ($clusters->groups as $group) {
+        foreach ($masks as $row => $mask) {
             $suspect = $this->buildSuspect(
                 $intensities,
-                $presence,
+                $mask,
                 $history->tags,
-                $group,
+                $clusters->groups[$row],
+                $bands,
+                $row,
                 $windowDays,
                 $lagProfileDays,
             );
@@ -134,6 +153,7 @@ class ComputeCorrelations
             loggedDays: $loggedDays,
             requiredDays: CorrelationThresholds::MINIMUM_LOGGED_DAYS,
             windowDays: $windowDays,
+            reportNoiseBand: $bands->report,
         );
     }
 
@@ -234,42 +254,54 @@ class ComputeCorrelations
     }
 
     /**
-     * Turn one cluster into a ranked row.
+     * The occurrence days a whole cluster covers.
      *
      * A cluster of several tags is measured on the union of their occurrence
      * days: the pattern is "a day any of these appeared", which is what the
      * coarse phrasing D24 mandates ("meals with X and Y") actually describes.
      *
-     * @param  array<int, int|null>  $intensities
      * @param  array<int, DayMask>  $presence
-     * @param  array<int, SuspectTag>  $tags
      * @param  array<int, int>  $group
      */
-    private function buildSuspect(
-        array $intensities,
-        array $presence,
-        array $tags,
-        array $group,
-        int $windowDays,
-        int $lagProfileDays,
-    ): ?CorrelationSuspect {
+    private function clusterMask(array $presence, array $group): ?DayMask
+    {
         $mask = null;
 
         foreach ($group as $categoryId) {
             $mask = $mask === null ? $presence[$categoryId] : $mask->union($presence[$categoryId]);
         }
 
-        if ($mask === null) {
-            return null;
-        }
+        return $mask;
+    }
 
+    /**
+     * Turn one cluster into a ranked row.
+     *
+     * `clearsNoiseBand` is gated on the report's band, not the row's own (D29):
+     * the page tests every measurable tag at once, and a row is only worth
+     * whispering about when it beats what the *best* of them reaches by
+     * coincidence. The row's own band still travels with it as the narrower
+     * comparison it is.
+     *
+     * @param  array<int, int|null>  $intensities
+     * @param  array<int, SuspectTag>  $tags
+     * @param  array<int, int>  $group
+     */
+    private function buildSuspect(
+        array $intensities,
+        DayMask $mask,
+        array $tags,
+        array $group,
+        NoiseBands $bands,
+        int $row,
+        int $windowDays,
+        int $lagProfileDays,
+    ): ?CorrelationSuspect {
         $measurement = $this->measure($intensities, $mask, $windowDays);
 
         if ($measurement === null) {
             return null;
         }
-
-        $noiseBand = app(EstimateNoiseBand::class)($intensities, $mask, $windowDays);
 
         return new CorrelationSuspect(
             granularity: count($group) === 1
@@ -281,8 +313,8 @@ class ComputeCorrelations
             )),
             measurement: $measurement,
             lagProfile: app(BuildLagProfile::class)($intensities, $mask, $lagProfileDays),
-            noiseBand: $noiseBand,
-            clearsNoiseBand: $noiseBand !== null && $measurement->lift > $noiseBand,
+            noiseBand: $bands->forRow($row),
+            clearsNoiseBand: $bands->clears($measurement->lift),
         );
     }
 }
