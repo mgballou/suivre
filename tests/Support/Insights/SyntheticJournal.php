@@ -59,6 +59,14 @@ final class SyntheticJournal
      * Add a trigger category to the vocabulary. `effect` is the intensity
      * points the kernel spreads over the days that follow it; zero makes the
      * tag inert.
+     *
+     * To make a tag deliberately **unmeasurable**, take the crowded end of the
+     * scale rather than the sparse one: a rate near 1.0 leaves fewer than ten
+     * tag-free days and the tag is dropped for want of a baseline. Chasing the
+     * sparse end is a poor bet — the exposure window is three days wide, so
+     * three occurrences already reach the ten exposed days the floor asks for,
+     * and a rate low enough to draw two of them over four months is low enough
+     * to draw none.
      */
     public function tag(string $name, float $rate, float $effect = 0.0): self
     {

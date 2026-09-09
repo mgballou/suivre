@@ -122,13 +122,38 @@ it('reports a ready condition with an empty ranking rather than skipping it', fu
 
     expect($insights)->toHaveCount(1);
     expect($insights[0]->suspects)->toBe([]);
+    expect($insights[0]->measuredTags)->toBe(0);
+    expect($insights[0]->thinTags)->toBe(0);
+});
+
+it('carries the counts that say which empty an empty ranking is', function (): void {
+    $user = User::factory()->createQuietly();
+    $condition = Condition::factory()->for($user)->createQuietly();
+
+    $occurrences = range(0, 119, 10);
+    journal($condition, days: 120, occurrences: $occurrences);
+    feed($user, taggedFood('whole milk', 'dairy'), $occurrences);
+
+    // Eaten twice in a hundred and twenty days: seen, never measurable.
+    feed($user, taggedFood('fennel', 'fennel'), [4, 60]);
+
+    $insight = app(BuildConditionInsights::class)($user)[0];
+
+    expect($insight->suspects)->not->toBeEmpty();
+    expect($insight->measuredTags)->toBe(1);
+    expect($insight->thinTags)->toBe(1);
+    expect($insight->toArray()['measuredTags'])->toBe(1);
 });
 
 it('names at most five suspects', function (): void {
     $user = User::factory()->createQuietly();
     $condition = Condition::factory()->for($user)->createQuietly();
 
-    journal($condition, days: 180, occurrences: range(0, 179, 10));
+    // Worse on every tag's exposure window and calm on the days between, so all
+    // eight sit above their own baseline and are ranked. Under the D30 floor a
+    // fixture whose worse days tracked only half the tags would leave four of
+    // them at or below baseline and test the floor rather than the cut.
+    journal($condition, days: 180, occurrences: range(0, 179, 5));
 
     // Phases five days apart on a forty-day period: every tag clears the
     // exposed and baseline minimums, and no two exposure windows overlap, so

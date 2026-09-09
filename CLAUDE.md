@@ -649,6 +649,7 @@ Suivre is a **personal food-and-symptom journal** that correlates diet/lifestyle
 - `herd composer check` runs **Pint + PHPStan (level 9) + `wayfinder:generate` + `tsc --noEmit` + tests**. Keep them all green. There is **no PHPStan baseline** — fix causes, never suppress. Wayfinder's output is gitignored, so it must be generated before `tsc` can typecheck.
 - Pest 4, tests mirror source paths. The suite runs on a dedicated **Postgres** database (`suivre_test`); Postgres-only features like `pg_trgm` (used by the food classifier) work in both local (Herd) and CI (`postgres:18`) and need only `CREATE EXTENSION IF NOT EXISTS pg_trgm` in a migration — not an abstraction.
 - CI mirrors `herd composer check` across parallel jobs (`static-analysis` = PHPStan L9, `frontend` = `tsc --noEmit` + vitest, `test` = Pest on `postgres:18`, `quality` = Pint `--test`). A green CI run means the same thing as a green local gate; the pre-push hook is bypassable with `--no-verify`, so CI is the non-bypassable gate.
+- **A pull request stacked on another branch gets no CI at all.** `tests.yml` and `lint.yml` filter `pull_request` on the **base** branch (`main`, `develop`, `master`, `workos`), so a PR based on a feature branch runs zero checks and shows none — which reads as untested rather than unrun. When you stack, the local `herd composer check` is the only evidence there is: run it and paste the output in the PR body, and say what the PR is based on.
 
 ## Pull requests
 

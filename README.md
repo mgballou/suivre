@@ -58,6 +58,10 @@ The thresholds it produced are what the engine runs on:
   and a heatmap instead.
 - **Lift is measured across lags from same-day out to a week**, and each suspect names its
   strongest.
+- **Only tags above baseline are named.** A food the log associates with better days is not
+  a weak suspicion but a different statement, so it is left off the list rather than ranked
+  last. When the list comes back empty it says which empty it is: every measurable food
+  compared and none above baseline, or nothing in the log measurable at all.
 - **The noise band is drawn once for the whole ranking.** Every tag's occurrences are
   shifted along the timeline together, up to sixty times, and the largest lift each shift
   produces anywhere on the list is recorded. A tag has to beat the 95th percentile of that

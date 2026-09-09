@@ -179,6 +179,65 @@ it('never accuses an innocent tag that only ever travels with a real trigger', f
     expect($cluster->toArray()['granularity'])->toBe('co_occurrence_cluster');
 });
 
+it('never ranks a tag that is not above baseline', function () use ($today): void {
+    $user = User::factory()->createQuietly(['timezone' => 'Europe/London']);
+    $condition = Condition::factory()->for($user)->createQuietly();
+
+    $journal = new SyntheticJournal(days: 120, seed: 5150);
+
+    foreach ([0.12, 0.15, 0.18, 0.20, 0.22, 0.25, 0.28, 0.32] as $index => $rate) {
+        $journal->tag("inert-{$index}", rate: $rate);
+    }
+
+    $journal->plant($user, $condition, $today);
+
+    $report = app(ComputeCorrelations::class)($user, $condition);
+
+    // Roughly half of a set of inert tags falls below its own baseline by
+    // chance, and every one of those used to be ranked and printed.
+    expect($report->measuredTags)->toBeGreaterThan(count($report->suspects()));
+
+    foreach ($report->suspects() as $suspect) {
+        expect($suspect->measurement->lift)->toBeGreaterThan(0.0);
+    }
+});
+
+it('separates the tags it measured from the tags it could not', function () use ($today): void {
+    $user = User::factory()->createQuietly(['timezone' => 'Europe/London']);
+    $condition = Condition::factory()->for($user)->createQuietly();
+
+    // 'daily' is eaten almost every day, so its exposure window swallows the
+    // calendar and it never reaches the ten tag-free days a baseline needs. It
+    // is dropped rather than ranked, and counted as one the report could not
+    // measure rather than one it measured and found nothing in.
+    (new SyntheticJournal(days: 120, seed: 5151))
+        ->tag('trigger', rate: 0.22, effect: 3.0)
+        ->tag('noise-a', rate: 0.30)
+        ->tag('daily', rate: 0.98)
+        ->plant($user, $condition, $today);
+
+    $report = app(ComputeCorrelations::class)($user, $condition);
+
+    expect($report->measuredTags)->toBe(2);
+    expect($report->thinTags)->toBe(1);
+    expect($report->toArray()['measuredTags'])->toBe(2);
+    expect($report->toArray()['thinTags'])->toBe(1);
+});
+
+it('reports nothing measured on a journal with no meals in it', function () use ($today): void {
+    $user = User::factory()->createQuietly(['timezone' => 'Europe/London']);
+    $condition = Condition::factory()->for($user)->createQuietly();
+
+    (new SyntheticJournal(days: 120, seed: 5152))->plant($user, $condition, $today);
+
+    $report = app(ComputeCorrelations::class)($user, $condition);
+
+    expect($report->status)->toBe(CorrelationStatus::Ready);
+    expect($report->suspects())->toBe([]);
+    expect($report->measuredTags)->toBe(0);
+    expect($report->thinTags)->toBe(0);
+});
+
 it('refuses to correlate a condition the user does not own', function (): void {
     $user = User::factory()->createQuietly();
     $condition = Condition::factory()->createQuietly();
