@@ -246,6 +246,7 @@ Running record of major decisions made while brainstorming the rebuild. Newest d
 - **What this inherits without re-deriving:** the 95th percentile itself, the 90-day gate, the 10-day exposed and baseline floors and the 0.4 overlap bar were all calibrated in SUI-36 against the spike's cross-tag null. D29 changes the distribution the percentile is taken of, not the numbers around it. That they survive the substitution is now measurable rather than assumed — the tests above are where it would show.
 - **Rules out:** gating any row on its own band alone; rotating each food independently, which would draw the null from an independence real logs do not have; a p-value or a per-row correction factor (D11 rules out the false rigor of both at this sample size); hiding rows that fail to clear — they still show, marked.
 
+
 ## D34 — The shipped noise band is the tag's own rotations; the spike's cross-tag null could not ship
 
 > **Numbering note:** D28 through D33 are claimed by open pull requests (#68, #76, #77, #78, #79). This entry takes D34 so none of them collide; whichever merges second keeps its number.
