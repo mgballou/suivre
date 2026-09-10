@@ -21,7 +21,12 @@ class BuildCalendarMonth
      * range query scoped to the user, so the grid costs two queries no matter
      * how many days it renders or how many conditions the user tracks.
      *
-     * `$today` is the user's local day (ResolveUserDay), never the server's.
+     * `$today` is the user's local day (ResolveUserDay), never the server's,
+     * and it is also the ceiling: a day that has not happened cannot be
+     * reported on, so the grid neither links to one nor offers the month that
+     * holds it. Both comparisons are made on the calendar string rather than
+     * the instant, because two start-of-month instants in different timezones
+     * order by offset and not by month.
      */
     public function __invoke(User $user, CarbonImmutable $month, CarbonImmutable $today): CalendarMonth
     {
@@ -46,14 +51,17 @@ class BuildCalendarMonth
                     : RampStep::Barely->value,
                 hasCheckin: $hasCheckin,
                 isToday: $date === $todayDate,
+                isReachable: $date <= $todayDate,
             );
         }
+
+        $nextMonth = $start->addMonth()->format('Y-m');
 
         return new CalendarMonth(
             month: $start->format('Y-m'),
             label: $start->format('F Y'),
             previousMonth: $start->subMonth()->format('Y-m'),
-            nextMonth: $start->addMonth()->format('Y-m'),
+            nextMonth: $nextMonth > $today->format('Y-m') ? null : $nextMonth,
             leadingBlanks: $start->dayOfWeekIso - 1,
             days: $days,
         );

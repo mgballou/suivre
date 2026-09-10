@@ -172,6 +172,51 @@ describe('MealLogger', () => {
         });
     });
 
+    it('shows the reason a meal was refused and keeps the drafts standing', async () => {
+        post.mockResolvedValue({
+            lines: [
+                {
+                    text: 'milk',
+                    foodItemId: 7,
+                    foodItemName: 'whole milk',
+                    tags: ['Dairy'],
+                    score: 0.9,
+                    matched: true,
+                },
+            ],
+        });
+
+        routerPost.mockImplementation(
+            (
+                _url: string,
+                _data: unknown,
+                options: {
+                    onError: (errors: Record<string, string>) => void;
+                    onFinish: () => void;
+                },
+            ) => {
+                options.onError({ date: 'That day has not happened yet.' });
+                options.onFinish();
+            },
+        );
+
+        render(<MealLogger date="2026-07-20" meals={[]} mealTypes={mealTypes} />);
+
+        type('milk');
+        fireEvent.click(screen.getByRole('button', { name: /check these/i }));
+        await screen.findByText('whole milk');
+
+        fireEvent.click(screen.getByLabelText('Breakfast'));
+        fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+
+        expect(
+            await screen.findByText('That day has not happened yet.'),
+        ).toBeInTheDocument();
+        expect(screen.getByText('whole milk')).toBeInTheDocument();
+        expect(screen.getByRole('checkbox')).toBeChecked();
+        expect(screen.getByRole('button', { name: 'Save' })).toBeEnabled();
+    });
+
     it('will not save until a meal has been picked', async () => {
         post.mockResolvedValue({
             lines: [
