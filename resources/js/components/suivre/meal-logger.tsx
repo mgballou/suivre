@@ -1,5 +1,6 @@
 import { router, useHttp } from '@inertiajs/react';
 import { useState } from 'react';
+import InputError from '@/components/input-error';
 import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
 import { store } from '@/routes/day/meals';
@@ -52,11 +53,15 @@ type MealLoggerProps = {
  * miss must never block logging, so the catalog's ignorance is the catalog's
  * problem — it goes to the review queue, and the line simply carries no tags
  * until an operator fixes that.
+ *
+ * A write the server refuses says why and leaves the drafts standing, because
+ * they are what the user has to correct. Only a saved meal clears the form.
  */
 export function MealLogger({ date, meals, mealTypes }: MealLoggerProps) {
     const [mealType, setMealType] = useState<string | null>(null);
     const [drafts, setDrafts] = useState<Draft[] | null>(null);
     const [saving, setSaving] = useState(false);
+    const [error, setError] = useState<string>();
 
     const check = useHttp<{ lines: string[] }, { lines: Suggestion[] }>({
         lines: [],
@@ -81,6 +86,7 @@ export function MealLogger({ date, meals, mealTypes }: MealLoggerProps) {
         }
 
         setSaving(true);
+        setError(undefined);
 
         router.post(
             store.url({ date }),
@@ -98,6 +104,7 @@ export function MealLogger({ date, meals, mealTypes }: MealLoggerProps) {
                     setDrafts(null);
                     setMealType(null);
                 },
+                onError: (errors) => setError(Object.values(errors)[0]),
                 onFinish: () => setSaving(false),
             },
         );
@@ -228,6 +235,8 @@ export function MealLogger({ date, meals, mealTypes }: MealLoggerProps) {
                 </button>
             ) : (
                 <div className="flex flex-col gap-3">
+                    <InputError message={error} />
+
                     <ul className="flex flex-col gap-2">
                         {drafts.map((draft, index) => (
                             <li

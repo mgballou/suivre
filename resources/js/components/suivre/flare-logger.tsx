@@ -1,6 +1,7 @@
 import { router } from '@inertiajs/react';
 import { ChevronDown } from 'lucide-react';
 import { useId, useState } from 'react';
+import InputError from '@/components/input-error';
 import type { ScaleOption } from '@/components/suivre/scale-picker';
 import {
     Collapsible,
@@ -45,6 +46,10 @@ type FlareLoggerProps = {
  * Intensity is never encoded in colour here. D20 rules out red, and a
  * three-step severity scale rendered as a traffic light is exactly the reading
  * the design system refuses.
+ *
+ * A refused write keeps the detail the user typed and says why. The intensity
+ * tap is the save, so there is no form left standing to carry the rejection on
+ * its own — a swallowed one reads as a logged flare that was never recorded.
  */
 export function FlareLogger({
     date,
@@ -57,6 +62,7 @@ export function FlareLogger({
     );
     const [duration, setDuration] = useState('');
     const [note, setNote] = useState('');
+    const [error, setError] = useState<string>();
     const durationField = useId();
     const noteField = useId();
 
@@ -64,6 +70,8 @@ export function FlareLogger({
         if (target === null) {
             return;
         }
+
+        setError(undefined);
 
         router.post(
             flare.url({ date, condition: target }),
@@ -78,6 +86,9 @@ export function FlareLogger({
                     setDuration('');
                     setNote('');
                 },
+                // The detail stays put on a refusal: it is what the user has to
+                // correct, and clearing it would make them type it again.
+                onError: (errors) => setError(Object.values(errors)[0]),
             },
         );
     };
@@ -143,6 +154,8 @@ export function FlareLogger({
                     </button>
                 ))}
             </div>
+
+            <InputError message={error} />
 
             <Collapsible>
                 <CollapsibleTrigger className="group inline-flex min-h-11 items-center gap-1 text-sm text-muted-foreground transition-colors duration-[var(--dur-micro)] ease-quiet hover:text-foreground">

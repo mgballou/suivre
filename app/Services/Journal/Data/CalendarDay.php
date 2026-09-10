@@ -14,6 +14,10 @@ use Illuminate\Contracts\Support\Arrayable;
  * never mask a severe one; a day checked into but never rated sits at step 1,
  * and `hasCheckin` carries the marker independently of the colour.
  *
+ * `isReachable` is false for a day the journal will not take a write for, so
+ * the grid can render it as a dead cell rather than a link to a page whose
+ * every control would be refused.
+ *
  * @implements Arrayable<string, mixed>
  */
 readonly class CalendarDay implements Arrayable
@@ -23,10 +27,11 @@ readonly class CalendarDay implements Arrayable
         public int $level,
         public bool $hasCheckin,
         public bool $isToday,
+        public bool $isReachable,
     ) {}
 
     /**
-     * @return array{date: string, level: int, hasCheckin: bool, isToday: bool}
+     * @return array{date: string, level: int, hasCheckin: bool, isToday: bool, isReachable: bool}
      */
     public function toArray(): array
     {
@@ -35,6 +40,7 @@ readonly class CalendarDay implements Arrayable
             'level' => $this->level,
             'hasCheckin' => $this->hasCheckin,
             'isToday' => $this->isToday,
+            'isReachable' => $this->isReachable,
         ];
     }
 }

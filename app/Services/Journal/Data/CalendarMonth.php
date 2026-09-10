@@ -12,6 +12,9 @@ use Illuminate\Contracts\Support\Arrayable;
  * `leadingBlanks` is how many empty cells precede the 1st so the grid lines up
  * under a Monday-first weekday header. Weeks are ISO (Monday–Sunday).
  *
+ * A neighbour is null when the journal does not reach it, and the nav drops the
+ * control rather than offering a month whose every day would be refused.
+ *
  * @implements Arrayable<string, mixed>
  */
 readonly class CalendarMonth implements Arrayable
@@ -22,8 +25,8 @@ readonly class CalendarMonth implements Arrayable
     public function __construct(
         public string $month,
         public string $label,
-        public string $previousMonth,
-        public string $nextMonth,
+        public ?string $previousMonth,
+        public ?string $nextMonth,
         public int $leadingBlanks,
         public array $days,
     ) {}
@@ -32,10 +35,10 @@ readonly class CalendarMonth implements Arrayable
      * @return array{
      *     month: string,
      *     label: string,
-     *     previousMonth: string,
-     *     nextMonth: string,
+     *     previousMonth: string|null,
+     *     nextMonth: string|null,
      *     leadingBlanks: int,
-     *     days: array<int, array{date: string, level: int, hasCheckin: bool, isToday: bool}>,
+     *     days: array<int, array{date: string, level: int, hasCheckin: bool, isToday: bool, isReachable: bool}>,
      * }
      */
     public function toArray(): array
