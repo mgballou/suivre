@@ -117,8 +117,7 @@ export function MealLogger({ date, meals, mealTypes }: MealLoggerProps) {
     return (
         <section className="flex flex-col gap-4">
             <div>
-                <h2 className="text-sm font-medium text-foreground">Meals</h2>
-                <p className="mt-1 text-sm text-muted-foreground">
+                <p className="text-sm text-muted-foreground">
                     One item per line. We will suggest what each is; correct
                     anything we get wrong.
                 </p>

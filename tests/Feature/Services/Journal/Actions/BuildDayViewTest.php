@@ -14,6 +14,8 @@ use App\Models\Condition;
 use App\Models\ConditionLog;
 use App\Models\DailyCheckin;
 use App\Models\FlareEvent;
+use App\Models\FoodEntry;
+use App\Models\Meal;
 use App\Models\User;
 use App\Services\Journal\Actions\BuildDayView;
 use Carbon\CarbonImmutable;
@@ -221,4 +223,88 @@ it('lists the days flares in the order they happened', function (): void {
     expect($view->flares[1]->time)->toBe('18:05');
     expect($view->flares[0]->duration)->toBe('45 min');
     expect($view->flares[0]->conditionName)->toBe('Headache');
+});
+
+it('describes an untouched day as what is not on file, never as what is left to do', function (): void {
+    $user = User::factory()->tracking()->createQuietly();
+    $date = CarbonImmutable::parse('2026-08-12');
+
+    $view = app(BuildDayView::class)($user, $date, $date)->toArray();
+
+    expect(array_column($view['sections'], 'key'))
+        ->toBe(['checkin', 'conditions', 'meals', 'flares']);
+    expect(array_column($view['sections'], 'summary'))
+        ->toBe(['Not recorded', 'Not rated', 'Nothing logged', 'None']);
+    expect(array_column($view['sections'], 'recorded'))
+        ->toBe([false, false, false, false]);
+});
+
+it('opens the first section with nothing on file', function (): void {
+    $user = User::factory()->tracking()->createQuietly();
+    $date = CarbonImmutable::parse('2026-08-12');
+
+    expect(app(BuildDayView::class)($user, $date, $date)->openSection)->toBe('checkin');
+});
+
+it('moves the open section past whatever the day already holds', function (): void {
+    $user = User::factory()->tracking()->createQuietly();
+    $date = CarbonImmutable::parse('2026-08-12');
+
+    DailyCheckin::factory()->for($user)->on($date)->createQuietly([
+        'sleep' => SleepQuality::Good,
+    ]);
+
+    $view = app(BuildDayView::class)($user, $date, $date);
+
+    expect($view->openSection)->toBe('conditions');
+    expect($view->sections[0]->summary)->toBe('Slept well');
+    expect($view->sections[0]->recorded)->toBeTrue();
+});
+
+it('leaves a reviewed day entirely collapsed', function (): void {
+    $user = User::factory()->tracking()->createQuietly();
+    $condition = $user->conditions()->sole();
+    $date = CarbonImmutable::parse('2026-08-12');
+
+    DailyCheckin::factory()->for($user)->on($date)->createQuietly([
+        'sleep' => SleepQuality::Good,
+    ]);
+    ConditionLog::factory()->forCondition($condition)->on($date)->createQuietly();
+    Meal::factory()->for($user)->eatenAt($date->setTime(12, 0))->createQuietly();
+
+    expect(app(BuildDayView::class)($user, $date, $date)->openSection)->toBeNull();
+});
+
+it('never opens the flare card, because an absent flare is a complete answer', function (): void {
+    $user = User::factory()->tracking()->createQuietly();
+    $condition = $user->conditions()->sole();
+    $date = CarbonImmutable::parse('2026-08-12');
+
+    DailyCheckin::factory()->for($user)->on($date)->createQuietly();
+    ConditionLog::factory()->forCondition($condition)->on($date)->createQuietly();
+    Meal::factory()->for($user)->eatenAt($date->setTime(12, 0))->createQuietly();
+
+    $view = app(BuildDayView::class)($user, $date, $date);
+
+    expect($view->openSection)->not->toBe('flares');
+    expect($view->sections[3]->summary)->toBe('None');
+});
+
+it('counts what a meal card holds in entries, because an entry is what the user typed', function (): void {
+    $user = User::factory()->tracking()->createQuietly();
+    $date = CarbonImmutable::parse('2026-08-12');
+
+    $meal = Meal::factory()->for($user)->eatenAt($date->setTime(12, 0))->createQuietly();
+    FoodEntry::factory()->count(3)->forMeal($meal)->createQuietly();
+
+    $view = app(BuildDayView::class)($user, $date, $date);
+
+    expect($view->sections[2]->summary)->toBe('3 items');
+});
+
+it('says a condition-less account tracks none rather than that it has failed to rate any', function (): void {
+    $user = User::factory()->createQuietly();
+    $date = CarbonImmutable::parse('2026-08-12');
+
+    expect(app(BuildDayView::class)($user, $date, $date)->sections[1]->summary)->toBe('None tracked');
 });
