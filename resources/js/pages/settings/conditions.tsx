@@ -51,16 +51,18 @@ export default function Conditions({ conditions, hues }: ConditionsProps) {
                  * the form: `useForm` reset() restores its initial values, and
                  * that initial colour is now spent.
                  */}
-                <h2 className="text-sm font-medium text-foreground">
-                    Add a condition
-                </h2>
+                <div className="panel-tint space-y-4 rounded-lg p-4">
+                    <h2 className="text-sm font-medium text-foreground">
+                        Add a condition
+                    </h2>
 
-                <ConditionForm
-                    key={unusedHue(conditions)}
-                    hues={hues}
-                    defaultHue={unusedHue(conditions)}
-                    submitLabel="Add condition"
-                />
+                    <ConditionForm
+                        key={unusedHue(conditions)}
+                        hues={hues}
+                        defaultHue={unusedHue(conditions)}
+                        submitLabel="Add condition"
+                    />
+                </div>
             </div>
         </>
     );

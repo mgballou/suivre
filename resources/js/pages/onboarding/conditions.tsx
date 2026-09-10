@@ -102,7 +102,7 @@ export default function OnboardingConditions({
                             event.preventDefault();
                             form.post(startTracking.url());
                         }}
-                        className="flex flex-col gap-6"
+                        className="elevation-raised flex flex-col gap-6 rounded-lg p-6"
                     >
                         <fieldset className="flex flex-col gap-3">
                             <legend className="mb-2 text-sm font-medium text-foreground">

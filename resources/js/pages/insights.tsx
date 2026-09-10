@@ -96,7 +96,7 @@ export default function Insights({
 
                 <InsightReadiness conditions={summary.conditions} />
 
-                <Card>
+                <Card className="elevation-raised">
                     <CardHeader>
                         <CardTitle>Condition intensity</CardTitle>
                         <CardDescription>
@@ -130,7 +130,7 @@ export default function Insights({
                     </CardContent>
                 </Card>
 
-                <Card>
+                <Card className="elevation-raised">
                     <CardHeader>
                         <CardTitle>Intensity by day</CardTitle>
                         <CardDescription>
@@ -143,7 +143,7 @@ export default function Insights({
                     </CardContent>
                 </Card>
 
-                <Card>
+                <Card className="elevation-raised">
                     <CardHeader>
                         <CardTitle>Foods against days</CardTitle>
                         <CardDescription>
@@ -166,7 +166,7 @@ export default function Insights({
                     </CardContent>
                 </Card>
 
-                <Card>
+                <Card className="elevation-raised">
                     <CardHeader>
                         <CardTitle>What you ate most</CardTitle>
                         <CardDescription>
