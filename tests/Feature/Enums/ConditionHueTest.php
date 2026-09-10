@@ -7,7 +7,7 @@ namespace Tests\Feature\Enums;
 use App\Enums\ColorScheme;
 use App\Enums\ConditionHue;
 use App\Enums\RampStep;
-use RuntimeException;
+use Tests\Support\Stylesheet;
 use Tests\Support\Wcag;
 
 /**
@@ -78,7 +78,7 @@ it('ships the curated ramps the stylesheet renders', function (ConditionHue $hue
         : ".dark [data-hue='{$hue->value}']";
 
     foreach ($hue->ramp($scheme) as $step => $swatch) {
-        expect(cssVariable($selector, "--condition-{$step}"))->toBe($swatch);
+        expect(Stylesheet::hex($selector, "--condition-{$step}"))->toBe($swatch);
     }
 })->with('ramps');
 
@@ -86,35 +86,7 @@ it('ships the petrol ramp and the ink rule the stylesheet renders', function (Co
     $selector = $scheme->isLight() ? ':root' : '.dark';
 
     foreach (RampStep::cases() as $step) {
-        expect(cssVariable($selector, "--intensity-{$step->value}"))->toBe($step->petrol($scheme));
-        expect(cssVariable($selector, "--ramp-ink-{$step->value}"))->toBe($step->ink($scheme));
+        expect(Stylesheet::hex($selector, "--intensity-{$step->value}"))->toBe($step->petrol($scheme));
+        expect(Stylesheet::hex($selector, "--ramp-ink-{$step->value}"))->toBe($step->ink($scheme));
     }
 })->with('schemes');
-
-/**
- * One custom property as authored in app.css.
- *
- * The stylesheet is the second home of every ramp value, so the pair has to be
- * checked rather than trusted: a hex corrected in PHP but not in CSS would
- * leave the contrast suite green while the app rendered the old colour.
- */
-function cssVariable(string $selector, string $property): string
-{
-    $css = (string) preg_replace('#/\*.*?\*/#s', '', (string) file_get_contents(resource_path('css/app.css')));
-
-    preg_match_all('/(?<selector>[^{}]+)\{(?<body>[^{}]*)\}/', $css, $blocks, PREG_SET_ORDER);
-
-    foreach ($blocks as $block) {
-        $lines = array_filter(array_map(trim(...), explode("\n", $block['selector'])));
-
-        if (end($lines) !== $selector) {
-            continue;
-        }
-
-        if (preg_match('/' . preg_quote($property, '/') . ':\s*(#[0-9a-f]{6});/', $block['body'], $value) === 1) {
-            return $value[1];
-        }
-    }
-
-    throw new RuntimeException("app.css declares no {$property} on {$selector}.");
-}
