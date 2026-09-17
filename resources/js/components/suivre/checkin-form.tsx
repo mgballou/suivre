@@ -1,5 +1,6 @@
 import { router } from '@inertiajs/react';
 import { useId, useState } from 'react';
+import InputError from '@/components/input-error';
 import {
     ScalePicker,
     type ScaleOption,
@@ -47,23 +48,40 @@ function normalise(note: string | null): string | null {
  *
  * The note is the exception: it saves on blur rather than per keystroke, since
  * a request per character is friction dressed as responsiveness.
+ *
+ * A write the server refuses drops back out of the draft and the reason is
+ * shown. Without a save button there is nothing else to carry a rejection, so
+ * swallowing one leaves a selection on screen that was never recorded.
  */
 export function CheckinForm({ date, values, scales }: CheckinFormProps) {
     const [draft, setDraft] = useState<CheckinValues>(values);
+    const [error, setError] = useState<string>();
     const noteField = useId();
 
     const save = (next: CheckinValues): void => {
+        const previous = draft;
+
         setDraft(next);
+        setError(undefined);
 
         router.post(
             recordCheckin.url({ date }),
             { ...next },
-            { preserveScroll: true, preserveState: true },
+            {
+                preserveScroll: true,
+                preserveState: true,
+                onError: (errors) => {
+                    setDraft(previous);
+                    setError(Object.values(errors)[0]);
+                },
+            },
         );
     };
 
     return (
         <div className="flex flex-col gap-8">
+            <InputError message={error} />
+
             <ScalePicker
                 name="mood"
                 label="Mood"
