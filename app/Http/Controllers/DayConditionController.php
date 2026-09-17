@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\Conditions\ClearConditionRatingRequest;
 use App\Http\Requests\Conditions\RateConditionRequest;
 use App\Models\Condition;
 use App\Models\User;
+use App\Services\Conditions\Actions\ClearConditionRating;
 use App\Services\Conditions\Actions\RateCondition;
 use Illuminate\Http\RedirectResponse;
 
@@ -19,7 +21,7 @@ class DayConditionController extends Controller
      * day re-renders it with the saved state and lets the day's colour arrive
      * (D20) rather than being announced.
      */
-    public function __invoke(RateConditionRequest $request, string $date, Condition $condition): RedirectResponse
+    public function store(RateConditionRequest $request, string $date, Condition $condition): RedirectResponse
     {
         /** @var User $user */
         $user = $request->user();
@@ -29,6 +31,25 @@ class DayConditionController extends Controller
             condition: $condition,
             date: $request->ratingDate(),
             intensity: $request->intensity(),
+        );
+
+        return to_route('day', ['date' => $date]);
+    }
+
+    /**
+     * Take a day's rating back off the record.
+     *
+     * Zero is a rating rather than a gap, so clearing cannot be another tap on
+     * the scale — it is its own gesture, and its own route.
+     */
+    public function destroy(ClearConditionRatingRequest $request, string $date, Condition $condition): RedirectResponse
+    {
+        /** @var User $user */
+        $user = $request->user();
+
+        app(ClearConditionRating::class)(
+            user: $user,
+            conditionLog: $request->conditionLog(),
         );
 
         return to_route('day', ['date' => $date]);

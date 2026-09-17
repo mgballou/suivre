@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Http\Requests\Conditions;
 
 use App\Models\Condition;
+use App\Models\User;
+use App\Rules\WithinJournalBounds;
 use Carbon\CarbonImmutable;
 use Illuminate\Auth\Access\Response;
 use Illuminate\Foundation\Http\FormRequest;
@@ -26,12 +28,20 @@ class RateConditionRequest extends FormRequest
      * YYYY-MM-DD pattern but naming no real day (2026-02-31) is rejected here
      * rather than rolling over into the next month inside Carbon.
      *
+     * `WithinJournalBounds` then rejects a day the user cannot have lived
+     * through — after their own today, or before their account began. The
+     * route allows four digits of year, and the insights read walks first
+     * rating to last rating one day at a time.
+     *
      * @return array<string, array<int, mixed>>
      */
     public function rules(): array
     {
+        /** @var User $user */
+        $user = $this->user();
+
         return [
-            'date' => ['required', 'date_format:Y-m-d'],
+            'date' => ['bail', 'required', 'date_format:Y-m-d', new WithinJournalBounds($user)],
             'intensity' => ['required', 'integer', 'between:0,10'],
         ];
     }
