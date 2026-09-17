@@ -142,7 +142,7 @@ it('carries the counts that say which empty an empty ranking is', function (): v
     $condition = Condition::factory()->for($user)->createQuietly();
 
     $occurrences = range(0, 119, 10);
-    journal($condition, days: 120, occurrences: $occurrences);
+    journal($user, $condition, days: 120, occurrences: $occurrences);
     feed($user, taggedFood('whole milk', 'dairy'), $occurrences);
 
     // Eaten twice in a hundred and twenty days: seen, never measurable.
