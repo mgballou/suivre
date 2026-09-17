@@ -41,6 +41,10 @@ use Carbon\CarbonImmutable;
  *   journals in five where nothing was a trigger. This is a gate on what is
  *   worth whispering, not a significance test — D11 rules out the false rigor
  *   of p-values at this `n`.
+ * - **Baseline floor (D30).** A tag is only ranked when its lift is above
+ *   zero. Below it the tag's exposed days were no worse than its baseline days,
+ *   and a list headed "Worth noticing" naming a food the log puts *below*
+ *   baseline is not a hedged suspicion — it is the wrong statement.
  * - **Separability (D24, stage 1).** Tags that travel together are only named
  *   individually when the marginal lift survives being measured on the days
  *   they appear apart. The criterion chosen here: two tags are co-travellers
@@ -128,6 +132,7 @@ class ComputeCorrelations
         $presence = $this->presenceMasks($days, $history->categoryIdsByDate);
 
         $measurements = $this->measurableTags($intensities, $presence, $windowDays);
+        $thinTags = count($presence) - count($measurements);
         $presence = array_intersect_key($presence, $measurements);
 
         $clusters = app(GroupCoOccurringTags::class)(
@@ -179,6 +184,8 @@ class ComputeCorrelations
             requiredDays: CorrelationThresholds::MINIMUM_COMPARABLE_DAYS,
             windowDays: $windowDays,
             reportNoiseBand: $bands->report,
+            measuredTags: count($measurements),
+            thinTags: $thinTags,
         );
     }
 
@@ -308,6 +315,10 @@ class ComputeCorrelations
      * coincidence. The row's own band still travels with it as the narrower
      * comparison it is.
      *
+     * A lift at or below zero returns no row at all (D30). The floor sits here
+     * rather than after the sort so that nothing below baseline can be ranked,
+     * sliced into the top five, or counted as a suspect the report found.
+     *
      * @param  array<int, int|null>  $intensities
      * @param  array<int, SuspectTag>  $tags
      * @param  array<int, int>  $group
@@ -325,6 +336,10 @@ class ComputeCorrelations
         $measurement = $this->measure($intensities, $mask, $windowDays);
 
         if ($measurement === null) {
+            return null;
+        }
+
+        if ($measurement->lift <= 0.0) {
             return null;
         }
 

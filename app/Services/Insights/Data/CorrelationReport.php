@@ -29,6 +29,11 @@ use Illuminate\Contracts\Support\Arrayable;
  * the ratings together (D29). It belongs to the report rather than to any row
  * because it is a property of how many tags were tested at once.
  *
+ * `measuredTags` and `thinTags` exist so an empty ranking can say which empty it
+ * means (D30). Nine tags measured and none above baseline is a result; nine tags
+ * seen and none of them on enough days to compare is the absence of one, and
+ * before these counts both arrived as the same empty array.
+ *
  * @implements Arrayable<string, mixed>
  */
 readonly class CorrelationReport implements Arrayable
@@ -42,6 +47,8 @@ readonly class CorrelationReport implements Arrayable
         public int $requiredDays,
         public int $windowDays,
         public ?float $reportNoiseBand,
+        public int $measuredTags,
+        public int $thinTags,
         private array $suspects,
     ) {}
 
@@ -65,6 +72,8 @@ readonly class CorrelationReport implements Arrayable
      *     requiredDays: int,
      *     windowDays: int,
      *     reportNoiseBand: float|null,
+     *     measuredTags: int,
+     *     thinTags: int,
      *     suspects: array<int, array<string, mixed>>,
      * }
      */
@@ -76,6 +85,8 @@ readonly class CorrelationReport implements Arrayable
             'requiredDays' => $this->requiredDays,
             'windowDays' => $this->windowDays,
             'reportNoiseBand' => $this->reportNoiseBand,
+            'measuredTags' => $this->measuredTags,
+            'thinTags' => $this->thinTags,
             'suspects' => array_map(
                 static fn (CorrelationSuspect $suspect): array => $suspect->toArray(),
                 $this->suspects,
@@ -94,13 +105,21 @@ readonly class CorrelationReport implements Arrayable
             requiredDays: $requiredDays,
             windowDays: $windowDays,
             reportNoiseBand: null,
+            measuredTags: 0,
+            thinTags: 0,
             suspects: [],
         );
     }
 
     /**
-     * A ranking, ordered by lift descending. It may legitimately be empty when
-     * no tag has enough exposed and baseline days to measure.
+     * A ranking, ordered by lift descending, holding only tags whose lift is
+     * above baseline.
+     *
+     * It may legitimately be empty, and the two counts say why: `measuredTags`
+     * is how many tags cleared the exposed and baseline day floors, `thinTags`
+     * how many were seen in the log and dropped short of them. Empty with
+     * `measuredTags` above zero is a measurement that found nothing; empty with
+     * `measuredTags` at zero is no measurement at all (D30).
      *
      * @param  array<int, CorrelationSuspect>  $suspects
      */
@@ -110,6 +129,8 @@ readonly class CorrelationReport implements Arrayable
         int $requiredDays,
         int $windowDays,
         ?float $reportNoiseBand,
+        int $measuredTags,
+        int $thinTags,
     ): self {
         return new self(
             status: CorrelationStatus::Ready,
@@ -117,6 +138,8 @@ readonly class CorrelationReport implements Arrayable
             requiredDays: $requiredDays,
             windowDays: $windowDays,
             reportNoiseBand: $reportNoiseBand,
+            measuredTags: $measuredTags,
+            thinTags: $thinTags,
             suspects: $suspects,
         );
     }
