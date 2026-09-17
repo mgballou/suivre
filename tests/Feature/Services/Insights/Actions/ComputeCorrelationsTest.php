@@ -32,7 +32,7 @@ function suspectSlugs(CorrelationSuspect $suspect): array
     return array_map(static fn ($tag): string => $tag->slug, $suspect->tags);
 }
 
-it('refuses to rank below the minimum logged days', function () use ($today): void {
+it('refuses to rank below the minimum comparable days', function () use ($today): void {
     $user = User::factory()->createQuietly(['timezone' => 'Europe/London']);
     $condition = Condition::factory()->for($user)->createQuietly();
 
@@ -44,8 +44,8 @@ it('refuses to rank below the minimum logged days', function () use ($today): vo
     $report = app(ComputeCorrelations::class)($user, $condition);
 
     expect($report->status)->toBe(CorrelationStatus::InsufficientData);
-    expect($report->loggedDays)->toBe(60);
-    expect($report->requiredDays)->toBe(CorrelationThresholds::MINIMUM_LOGGED_DAYS);
+    expect($report->comparableDays)->toBe(60);
+    expect($report->requiredDays)->toBe(CorrelationThresholds::MINIMUM_COMPARABLE_DAYS);
     expect($report->toArray()['suspects'])->toBe([]);
 });
 
@@ -79,7 +79,7 @@ it('surfaces a planted lagged trigger in the top three, clearing its noise band'
     $suspects = $report->suspects();
 
     expect($report->status)->toBe(CorrelationStatus::Ready);
-    expect($report->loggedDays)->toBe(120);
+    expect($report->comparableDays)->toBe(120);
 
     $topThree = array_merge(...array_map(suspectSlugs(...), array_slice($suspects, 0, 3)));
     expect($topThree)->toContain('trigger');
@@ -177,6 +177,53 @@ it('never accuses an innocent tag that only ever travels with a real trigger', f
     expect($cluster->measurement->exposedDays)->toBeGreaterThan(0);
     expect($cluster->measurement->occurrences)->toBeGreaterThan(0);
     expect($cluster->toArray()['granularity'])->toBe('co_occurrence_cluster');
+});
+
+it('keeps a planted trigger measurable when the meals go missing on the worst days', function () use ($today): void {
+    $user = User::factory()->createQuietly(['timezone' => 'Europe/London']);
+    $condition = Condition::factory()->for($user)->createQuietly();
+
+    (new SyntheticJournal(days: 200, seed: 120))
+        ->tag('trigger', rate: 0.35, effect: 2.0)
+        ->tag('noise-a', rate: 0.30)
+        ->tag('noise-b', rate: 0.25)
+        ->tag('noise-c', rate: 0.20)
+        ->tag('noise-d', rate: 0.15)
+        ->tag('noise-e', rate: 0.28)
+        ->plant($user, $condition, $today);
+
+    SyntheticJournal::dropMealsOnWorstDays($user, $condition, days: 50);
+
+    $report = app(ComputeCorrelations::class)($user, $condition);
+    $suspects = $report->suspects();
+
+    expect($report->comparableDays)->toBe(150);
+
+    $trigger = collect($suspects)->firstOrFail(
+        static fn (CorrelationSuspect $suspect): bool => in_array('trigger', suspectSlugs($suspect), strict: true),
+    );
+
+    expect($suspects[0])->toBe($trigger);
+    expect($trigger->measurement->lift)->toBeGreaterThan(1.0);
+    expect($trigger->clearsNoiseBand)->toBeTrue();
+});
+
+it('drops a rated day with no meal on it from the volume the gate counts', function () use ($today): void {
+    $user = User::factory()->createQuietly(['timezone' => 'Europe/London']);
+    $condition = Condition::factory()->for($user)->createQuietly();
+
+    (new SyntheticJournal(days: 120, seed: 31))
+        ->tag('trigger', rate: 0.25, effect: 3.0)
+        ->tag('noise', rate: 0.2)
+        ->plant($user, $condition, $today);
+
+    SyntheticJournal::dropMealsOnWorstDays($user, $condition, days: 40);
+
+    $report = app(ComputeCorrelations::class)($user, $condition);
+
+    expect($report->status)->toBe(CorrelationStatus::InsufficientData);
+    expect($report->comparableDays)->toBe(80);
+    expect($report->requiredDays)->toBe(CorrelationThresholds::MINIMUM_COMPARABLE_DAYS);
 });
 
 it('refuses to correlate a condition the user does not own', function (): void {

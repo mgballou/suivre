@@ -29,7 +29,7 @@ use Carbon\CarbonImmutable;
  *
  * Three things the spike forced into the design:
  *
- * - **Volume gate.** Under `MINIMUM_LOGGED_DAYS` the report is an explicit
+ * - **Volume gate.** Under `MINIMUM_COMPARABLE_DAYS` the report is an explicit
  *   insufficient-data outcome, not a hedged ranking. Below 90 days even the
  *   softest single hint is right barely more than half the time.
  * - **Noise band.** Each suspect states whether its lift beat the 95th
@@ -48,6 +48,17 @@ use Carbon\CarbonImmutable;
  *   The thresholds are documented on `CorrelationThresholds` and become Spatie
  *   runtime settings in E5 (SUI-25).
  *
+ * **A day with no meal on it is missing, not empty (D31).** The engine only ever
+ * compares days that carry both a rating and a logged meal; a rated day with no
+ * meal is dropped from the intensity series before anything is measured, so it
+ * reaches neither mean, neither day floor, nor the rotations the noise band is
+ * drawn from. Treating it as "none of these foods" is what the exposure map
+ * silently did, and it is wrong in the one direction that matters: the days
+ * people skip logging food are their worst days, so every tag's baseline
+ * absorbed them and every lift collapsed towards zero. The cost is power — an
+ * exposed day inside the lag window is dropped along with the rest — and that is
+ * the trade the decision names.
+ *
  * Computed on demand — the MVP has no scheduled recompute, job, or cache (D11).
  */
 class ComputeCorrelations
@@ -56,10 +67,12 @@ class ComputeCorrelations
      * Rank the trigger categories suspected of preceding this condition's bad
      * days.
      *
-     * "Logged days" — the volume the gate reads — is the number of distinct
-     * local calendar days carrying a rating for **this** condition. Meals are
-     * not counted: a lift is a comparison of rated days, so an unrated day
-     * cannot contribute to either side of it however much was eaten on it.
+     * "Comparable days" — the volume the gate reads — is the number of distinct
+     * local calendar days carrying both a rating for **this** condition and a
+     * logged meal. A lift compares rated days, so an unrated day cannot
+     * contribute to either side of it however much was eaten on it; and it
+     * compares them by what was eaten, so a day with no meal logged cannot
+     * either, however it was rated (D31).
      */
     public function __invoke(
         User $user,
@@ -72,21 +85,33 @@ class ComputeCorrelations
             exception: ConditionNotOwnedException::make($user, $condition),
         );
 
-        $intensityByDate = app(CorrelationDataRepository::class)->dailyIntensity($user, $condition);
-        $loggedDays = count($intensityByDate);
+        $repository = app(CorrelationDataRepository::class);
+        $intensityByDate = $repository->dailyIntensity($user, $condition);
+        $lead = max($windowDays, $lagProfileDays);
 
-        if ($loggedDays < CorrelationThresholds::MINIMUM_LOGGED_DAYS) {
+        if ($intensityByDate !== []) {
+            $rated = array_keys($intensityByDate);
+
+            $intensityByDate = array_intersect_key($intensityByDate, $repository->mealDays(
+                $user,
+                CarbonImmutable::parse($rated[0]),
+                CarbonImmutable::parse($rated[count($rated) - 1]),
+            ));
+        }
+
+        $comparableDays = count($intensityByDate);
+
+        if ($comparableDays < CorrelationThresholds::MINIMUM_COMPARABLE_DAYS) {
             return CorrelationReport::insufficientData(
-                loggedDays: $loggedDays,
-                requiredDays: CorrelationThresholds::MINIMUM_LOGGED_DAYS,
+                comparableDays: $comparableDays,
+                requiredDays: CorrelationThresholds::MINIMUM_COMPARABLE_DAYS,
                 windowDays: $windowDays,
             );
         }
 
         $dates = array_keys($intensityByDate);
-        $lead = max($windowDays, $lagProfileDays);
         $start = CarbonImmutable::parse($dates[0])->subDays($lead);
-        $end = CarbonImmutable::parse($dates[$loggedDays - 1]);
+        $end = CarbonImmutable::parse($dates[$comparableDays - 1]);
 
         $days = $this->spanDays($start, $end);
         $intensities = array_map(
@@ -94,7 +119,7 @@ class ComputeCorrelations
             $days,
         );
 
-        $history = app(CorrelationDataRepository::class)->exposureHistory($user, $start, $end);
+        $history = $repository->exposureHistory($user, $start, $end);
         $presence = $this->presenceMasks($days, $history->categoryIdsByDate);
 
         $measurements = $this->measurableTags($intensities, $presence, $windowDays);
@@ -131,8 +156,8 @@ class ComputeCorrelations
 
         return CorrelationReport::ranked(
             suspects: $suspects,
-            loggedDays: $loggedDays,
-            requiredDays: CorrelationThresholds::MINIMUM_LOGGED_DAYS,
+            comparableDays: $comparableDays,
+            requiredDays: CorrelationThresholds::MINIMUM_COMPARABLE_DAYS,
             windowDays: $windowDays,
         );
     }

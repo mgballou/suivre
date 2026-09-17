@@ -15,7 +15,7 @@ export type ConditionInsight = {
     conditionName: string;
     hue: ConditionHue;
     suspects: SuspectHint[];
-    loggedDays: number;
+    comparableDays: number;
     windowDays: number;
 };
 
@@ -96,7 +96,7 @@ export function SuspectList({ insights }: SuspectListProps) {
                             {insight.conditionName}
                         </h3>
                         <span className="text-xs tabular-nums text-muted-foreground">
-                            {insight.loggedDays} days rated
+                            {insight.comparableDays} days compared
                         </span>
                     </div>
 

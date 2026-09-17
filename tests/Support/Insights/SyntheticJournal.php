@@ -8,6 +8,7 @@ use App\Models\Category;
 use App\Models\Condition;
 use App\Models\FoodItem;
 use App\Models\User;
+use App\Services\Journal\Actions\ResolveDayBounds;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -268,5 +269,43 @@ final class SyntheticJournal
         $this->state = ($this->state * 1103515245 + 12345) % 2147483648;
 
         return $this->state / 2147483648;
+    }
+
+    /**
+     * Delete the meals — and only the meals — on the days the condition was
+     * rated worst, leaving every rating in place.
+     *
+     * This is the missingness a symptom journal actually has. Nobody logs their
+     * food on the day they feel worst, so the days that go missing are the days
+     * carrying the signal, and a treatment that reads a missing meal as "none of
+     * these foods" folds them into every tag's baseline (D31).
+     */
+    public static function dropMealsOnWorstDays(User $user, Condition $condition, int $days): void
+    {
+        $dates = DB::table('condition_logs')
+            ->where('user_id', $user->id)
+            ->where('condition_id', $condition->id)
+            ->orderByDesc('intensity')
+            ->orderBy('date')
+            ->limit($days)
+            ->pluck('date')
+            ->all();
+
+        $bounds = app(ResolveDayBounds::class);
+        $mealIds = [];
+
+        foreach ($dates as $date) {
+            $day = $bounds($user, CarbonImmutable::parse((string) $date));
+
+            $mealIds = array_merge($mealIds, DB::table('meals')
+                ->where('user_id', $user->id)
+                ->where('eaten_at', '>=', $day->startsAt)
+                ->where('eaten_at', '<', $day->endsAt)
+                ->pluck('id')
+                ->all());
+        }
+
+        DB::table('food_entries')->whereIn('meal_id', $mealIds)->delete();
+        DB::table('meals')->whereIn('id', $mealIds)->delete();
     }
 }

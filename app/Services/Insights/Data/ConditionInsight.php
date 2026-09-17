@@ -32,7 +32,7 @@ readonly class ConditionInsight implements Arrayable
         public string $conditionName,
         public string $hue,
         public array $suspects,
-        public int $loggedDays,
+        public int $comparableDays,
         public int $windowDays,
     ) {}
 
@@ -42,7 +42,7 @@ readonly class ConditionInsight implements Arrayable
      *     conditionName: string,
      *     hue: string,
      *     suspects: array<int, array<string, mixed>>,
-     *     loggedDays: int,
+     *     comparableDays: int,
      *     windowDays: int,
      * }
      */
@@ -56,7 +56,7 @@ readonly class ConditionInsight implements Arrayable
                 static fn (SuspectHint $hint): array => $hint->toArray(),
                 $this->suspects,
             ),
-            'loggedDays' => $this->loggedDays,
+            'comparableDays' => $this->comparableDays,
             'windowDays' => $this->windowDays,
         ];
     }
@@ -71,7 +71,7 @@ readonly class ConditionInsight implements Arrayable
             conditionName: $condition->name,
             hue: $condition->color->value,
             suspects: $suspects,
-            loggedDays: $report->loggedDays,
+            comparableDays: $report->comparableDays,
             windowDays: $report->windowDays,
         );
     }

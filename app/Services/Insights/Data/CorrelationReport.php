@@ -11,6 +11,12 @@ use Illuminate\Contracts\Support\Arrayable;
 /**
  * What `ComputeCorrelations` hands back for one user × condition.
  *
+ * `comparableDays` is the volume the report rests on: local days carrying both
+ * a rating for this condition and a logged meal (D31). It is not the number of
+ * days the user rated — a rated day with no meal is dropped before anything is
+ * measured, so counting it here would overstate the evidence by exactly the days
+ * the ranking never saw.
+ *
  * The report has two shapes and only two, minted through the named
  * constructors: an insufficient-data outcome that carries no ranking, and a
  * ready outcome that does. `suspects()` throws on the former rather than
@@ -27,7 +33,7 @@ readonly class CorrelationReport implements Arrayable
      */
     private function __construct(
         public CorrelationStatus $status,
-        public int $loggedDays,
+        public int $comparableDays,
         public int $requiredDays,
         public int $windowDays,
         private array $suspects,
@@ -40,7 +46,7 @@ readonly class CorrelationReport implements Arrayable
     {
         throw_if(
             condition: $this->status->isInsufficient(),
-            exception: InsufficientCorrelationDataException::make($this->loggedDays, $this->requiredDays),
+            exception: InsufficientCorrelationDataException::make($this->comparableDays, $this->requiredDays),
         );
 
         return $this->suspects;
@@ -49,7 +55,7 @@ readonly class CorrelationReport implements Arrayable
     /**
      * @return array{
      *     status: string,
-     *     loggedDays: int,
+     *     comparableDays: int,
      *     requiredDays: int,
      *     windowDays: int,
      *     suspects: array<int, array<string, mixed>>,
@@ -59,7 +65,7 @@ readonly class CorrelationReport implements Arrayable
     {
         return [
             'status' => $this->status->value,
-            'loggedDays' => $this->loggedDays,
+            'comparableDays' => $this->comparableDays,
             'requiredDays' => $this->requiredDays,
             'windowDays' => $this->windowDays,
             'suspects' => array_map(
@@ -72,11 +78,11 @@ readonly class CorrelationReport implements Arrayable
     /**
      * The user has not logged enough days for any ranking to be honest.
      */
-    public static function insufficientData(int $loggedDays, int $requiredDays, int $windowDays): self
+    public static function insufficientData(int $comparableDays, int $requiredDays, int $windowDays): self
     {
         return new self(
             status: CorrelationStatus::InsufficientData,
-            loggedDays: $loggedDays,
+            comparableDays: $comparableDays,
             requiredDays: $requiredDays,
             windowDays: $windowDays,
             suspects: [],
@@ -89,11 +95,11 @@ readonly class CorrelationReport implements Arrayable
      *
      * @param  array<int, CorrelationSuspect>  $suspects
      */
-    public static function ranked(array $suspects, int $loggedDays, int $requiredDays, int $windowDays): self
+    public static function ranked(array $suspects, int $comparableDays, int $requiredDays, int $windowDays): self
     {
         return new self(
             status: CorrelationStatus::Ready,
-            loggedDays: $loggedDays,
+            comparableDays: $comparableDays,
             requiredDays: $requiredDays,
             windowDays: $windowDays,
             suspects: $suspects,
