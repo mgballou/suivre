@@ -30,7 +30,9 @@ export default function AuthSimpleLayout({
                             </p>
                         </div>
                     </div>
-                    {children}
+                    <div className="elevation-raised rounded-lg p-6">
+                        {children}
+                    </div>
                 </div>
             </div>
         </div>

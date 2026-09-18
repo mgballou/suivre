@@ -39,7 +39,7 @@ export default function Profile({
 
             <h1 className="sr-only">Profile settings</h1>
 
-            <div className="space-y-6">
+            <div className="panel-tint space-y-6 rounded-lg p-4">
                 <Heading
                     variant="small"
                     title="Profile"
@@ -147,7 +147,7 @@ export default function Profile({
 
                                         {status ===
                                             'verification-link-sent' && (
-                                            <div className="mt-2 text-sm font-medium text-green-600">
+                                            <div className="mt-2 text-sm font-medium text-foreground">
                                                 A new verification link has been
                                                 sent to your email address.
                                             </div>
