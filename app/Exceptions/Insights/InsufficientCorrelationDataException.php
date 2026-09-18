@@ -16,10 +16,10 @@ use DomainException;
  */
 class InsufficientCorrelationDataException extends DomainException
 {
-    public static function make(int $loggedDays, int $requiredDays): self
+    public static function make(int $comparableDays, int $requiredDays): self
     {
         return new self(
-            "Correlation suspects need [{$requiredDays}] logged days; the user has [{$loggedDays}]."
+            "Correlation suspects need [{$requiredDays}] comparable days; the user has [{$comparableDays}]."
         );
     }
 }

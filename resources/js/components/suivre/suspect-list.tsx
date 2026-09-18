@@ -15,8 +15,10 @@ export type ConditionInsight = {
     conditionName: string;
     hue: ConditionHue;
     suspects: SuspectHint[];
-    loggedDays: number;
+    comparableDays: number;
     windowDays: number;
+    measuredTags: number;
+    thinTags: number;
 };
 
 type SuspectListProps = {
@@ -43,6 +45,46 @@ function headline(suspect: SuspectHint): string {
     return `${suspect.tags.slice(0, -1).join(', ')} with ${suspect.tags.at(-1)}`;
 }
 
+function countOf(total: number, noun: string): string {
+    return `${total} ${noun}${total === 1 ? '' : 's'}`;
+}
+
+/**
+ * A lift in rating points, carrying the sign the number itself has.
+ *
+ * The sign has to come out of the value rather than be prefixed to it: a
+ * hard-coded `+` ahead of `toFixed(1)` rendered a lift of -0.4 as `+-0.4`. The
+ * engine no longer ranks a lift at or below zero (D30), so this is the second
+ * guard rather than the first — but it is the one that reads the number.
+ * Rounding before the comparison keeps -0.04 from printing as `-0.0`.
+ */
+function points(lift: number): string {
+    const rounded = Number(lift.toFixed(1));
+
+    return `${rounded > 0 ? '+' : ''}${rounded.toFixed(1)} points`;
+}
+
+/**
+ * What an empty ranking means, which is one of two different things (D30).
+ *
+ * With foods measured, the emptiness is the measurement's answer and saying so
+ * is honest. With none measured, nothing was compared at all — and the sentence
+ * that reads as a result in the first case asserts one the log has not earned in
+ * the second. `thinTags` separates the two ways of measuring nothing: foods
+ * logged but never on enough days, and no logged food at all.
+ */
+function emptyRanking(insight: ConditionInsight): string {
+    if (insight.measuredTags > 0) {
+        return `${countOf(insight.measuredTags, 'food')} had enough days to compare, and none came out above your baseline. That is a real result, not a gap.`;
+    }
+
+    if (insight.thinTags > 0) {
+        return 'Nothing could be measured here yet. A food needs enough days with it, and enough days without, before the two can be compared — and nothing in your log clears both bars. Keep logging meals, and a food you eat now and then will add up.';
+    }
+
+    return 'Nothing could be measured here yet. No meals are logged against these days, so there is nothing to compare the ratings against.';
+}
+
 function timing(peakLag: number | null): string | null {
     if (peakLag === null) {
         return null;
@@ -64,6 +106,14 @@ function timing(peakLag: number | null): string | null {
  * person's ranking is a set of questions, not findings. Every row therefore
  * carries the days it was measured on, and a row whose lift sits inside the
  * range chance produces says so on its face.
+ *
+ * `clearsNoiseBand` is decided against the whole report, not the row (D29), so
+ * on a log where nothing is a trigger the caveat is expected on every row —
+ * including the first. The copy therefore cannot call the row the weakest of
+ * the signals here, because most of the time it is all of them.
+ *
+ * Nothing below baseline reaches this list at all (D30), and an empty list says
+ * which of two very different empties it is.
  *
  * Nothing here is coloured by severity and nothing is red: a suspect is
  * something to test, not an alarm (D20).
@@ -96,15 +146,13 @@ export function SuspectList({ insights }: SuspectListProps) {
                             {insight.conditionName}
                         </h3>
                         <span className="text-xs tabular-nums text-muted-foreground">
-                            {insight.loggedDays} days rated
+                            {insight.comparableDays} days compared
                         </span>
                     </div>
 
                     {insight.suspects.length === 0 ? (
                         <p className="text-sm text-muted-foreground">
-                            Nothing separated itself from chance. That is a
-                            real result, not a gap — it suggests no single food
-                            pattern in your log is driving this.
+                            {emptyRanking(insight)}
                         </p>
                     ) : (
                         <ol className="flex flex-col gap-3">
@@ -118,7 +166,7 @@ export function SuspectList({ insights }: SuspectListProps) {
                                             {headline(suspect)}
                                         </span>
                                         <span className="text-xs tabular-nums text-muted-foreground">
-                                            +{suspect.lift.toFixed(1)} points
+                                            {points(suspect.lift)}
                                         </span>
                                     </div>
 
@@ -142,8 +190,7 @@ export function SuspectList({ insights }: SuspectListProps) {
                                     {!suspect.clearsNoiseBand && (
                                         <p className="text-xs text-muted-foreground">
                                             Sits inside the range chance alone
-                                            produces. Weakest of the signals
-                                            here.
+                                            produces across everything you log.
                                         </p>
                                     )}
                                 </li>

@@ -6,6 +6,7 @@ namespace Tests\Feature\Http\Controllers;
 
 use App\Models\Condition;
 use App\Models\ConditionLog;
+use App\Models\Meal;
 use App\Models\User;
 use App\Services\Insights\CorrelationThresholds;
 use Carbon\CarbonImmutable;
@@ -71,13 +72,18 @@ class InsightsControllerTest extends TestCase
             ->on(CarbonImmutable::parse('2026-07-30'))
             ->createQuietly(['intensity' => 7]);
 
+        Meal::factory()
+            ->for($user)
+            ->eatenAt(CarbonImmutable::parse('2026-07-30 12:00', 'UTC'))
+            ->createQuietly();
+
         $this->actingAs($user)
             ->get('/insights')
             ->assertOk()
             ->assertInertia(fn (Assert $page) => $page
                 ->where('summary.conditions.0.name', 'Eczema')
-                ->where('summary.conditions.0.loggedDays', 1)
-                ->where('summary.conditions.0.requiredDays', CorrelationThresholds::MINIMUM_LOGGED_DAYS)
+                ->where('summary.conditions.0.comparableDays', 1)
+                ->where('summary.conditions.0.requiredDays', CorrelationThresholds::MINIMUM_COMPARABLE_DAYS)
                 ->where('summary.conditions.0.isReady', false)
                 ->etc()
             );

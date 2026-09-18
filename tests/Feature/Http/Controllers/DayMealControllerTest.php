@@ -18,6 +18,18 @@ class DayMealControllerTest extends TestCase
 {
     use RefreshDatabase;
 
+    /**
+     * The journal is bounded to days the user has lived through, so the suite
+     * pins its own today rather than leaning on the wall clock being past July
+     * 2026.
+     */
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->travelTo(CarbonImmutable::parse('2026-07-20 09:00:00', 'UTC'));
+    }
+
     public function test_it_saves_a_meal_against_the_day(): void
     {
         $user = User::factory()->tracking()->create();
@@ -167,5 +179,21 @@ class DayMealControllerTest extends TestCase
             '2026-07-25 21:00',
             $meal->eaten_at->setTimezone($user->timezone)->format('Y-m-d H:i'),
         );
+    }
+
+    public function test_it_refuses_a_meal_on_a_day_outside_the_journal(): void
+    {
+        $user = User::factory()->tracking()->create();
+        $entries = [['text' => 'porridge', 'food_item_id' => null]];
+
+        $this->actingAs($user)
+            ->post('/day/9999-12-31/meals', ['meal_type' => 'breakfast', 'entries' => $entries])
+            ->assertSessionHasErrors('date');
+
+        $this->actingAs($user)
+            ->post('/day/2026-07-19/meals', ['meal_type' => 'breakfast', 'entries' => $entries])
+            ->assertSessionHasErrors('date');
+
+        $this->assertSame(0, Meal::query()->count());
     }
 }

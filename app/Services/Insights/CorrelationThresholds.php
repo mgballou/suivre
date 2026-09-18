@@ -6,7 +6,13 @@ namespace App\Services\Insights;
 
 /**
  * Every tunable number the lag-lift engine leans on, in one place with the
- * SUI-36 spike finding that justifies it.
+ * SUI-36 spike finding behind it.
+ *
+ * Read those citations as provenance rather than as proof. The spike measured
+ * detection against a null drawn from tags it knew to be inert, and this engine
+ * cannot: it rotates each tag against itself instead. D34 records that
+ * substitution and which of the numbers below are inherited across it without
+ * being re-derived — the 90-day gate, the two 10-day floors and the percentile.
  *
  * These are deliberately constants and not configuration: the MVP computes
  * correlations on demand with no operator knobs. E5 (SUI-25) promotes the set
@@ -36,15 +42,21 @@ final class CorrelationThresholds
     public const LAG_PROFILE_DAYS = 7;
 
     /**
-     * Distinct local days carrying a rating for the condition, below which the
-     * report refuses to rank at all.
+     * Distinct local days carrying both a rating for the condition and a logged
+     * meal, below which the report refuses to rank at all.
      *
      * SUI-36 findings 1 and 6: hit-rate for a ≥1.5-point trigger only reaches
      * 0.8 around 75–90 days, and the softest possible surface — a single
      * tentative hint — is right just 0.58 of the time at 30 days and 0.66 at
      * 60. Only 90 days clears 0.7.
+     *
+     * The spike's days were all comparable — `SimConfig.missingness` was 0.0 and
+     * the `observed` column it would have produced was never read — so 90 is a
+     * count of days the estimator could use, and D31 makes the gate count the
+     * same thing. Ninety rated days of which forty carry a meal is a forty-day
+     * ranking, and forty days is where the spike says the ranking is a coin toss.
      */
-    public const MINIMUM_LOGGED_DAYS = 90;
+    public const MINIMUM_COMPARABLE_DAYS = 90;
 
     /**
      * Rated exposed days a tag needs before it is ranked. SUI-36 finding 2: on
@@ -60,17 +72,27 @@ final class CorrelationThresholds
     public const MINIMUM_BASELINE_DAYS = 10;
 
     /**
-     * The percentile of a tag's own null distribution that its lift must beat
-     * to be flagged as clearing the noise band — the detection criterion SUI-36
-     * used throughout (`sweep.is_hit`, `alerts.alert_precision`).
+     * The percentile of the report's null distribution that a lift must beat to
+     * be flagged as clearing the noise band.
+     *
+     * D29 changed the distribution the percentile is taken of, not the
+     * percentile: it is now the largest lift the report's tags reach per
+     * rotation, so 95 buys a report that flags nothing about one journal in
+     * twenty rather than a row that flags falsely one time in twenty.
+     *
+     * The 95 itself is inherited from SUI-36 and has not been re-derived
+     * against the rotation band (D34). It is kept as a conventional bar whose
+     * shape argument survives the substitution.
      */
     public const NOISE_BAND_PERCENTILE = 95.0;
 
     /**
-     * How many circular shifts of a tag's occurrence series are used to build
-     * that null distribution. Shifting rather than resampling keeps the tag's
-     * rate and its day-to-day clumping intact, which matters because flares are
-     * sticky (AR(1)) and an i.i.d. null would understate the band.
+     * How many circular shifts of the occurrence series are used to build that
+     * null distribution. Shifting rather than resampling keeps each tag's rate
+     * and its day-to-day clumping intact, which matters because flares are
+     * sticky (AR(1)) and an i.i.d. null would understate the band. Every tag is
+     * shifted by the same offset, which keeps their real co-occurrence intact
+     * too (D29).
      */
     public const MAXIMUM_NOISE_BAND_SHIFTS = 60;
 

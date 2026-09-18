@@ -35,6 +35,7 @@ function daysOfJuly(overrides: CalendarDay[] = []): CalendarDay[] {
             level: 0,
             hasCheckin: false,
             isToday: false,
+            isReachable: true,
             ...override,
         } satisfies CalendarDay;
     });
@@ -111,6 +112,55 @@ describe('MonthGrid', () => {
         expect(container.querySelector('[data-direction="back"]')).not.toBeNull();
     });
 
+    it('drops the next-month control when the journal does not reach it', () => {
+        render(<MonthGrid {...props({ nextMonth: null })} />);
+
+        expect(
+            screen.queryByRole('link', { name: 'Next month' }),
+        ).not.toBeInTheDocument();
+        expect(
+            screen.getByRole('link', { name: 'Previous month' }),
+        ).toBeInTheDocument();
+    });
+
+    it('drops the previous-month control when the journal does not reach it', () => {
+        render(<MonthGrid {...props({ previousMonth: null })} />);
+
+        expect(
+            screen.queryByRole('link', { name: 'Previous month' }),
+        ).not.toBeInTheDocument();
+        expect(
+            screen.getByRole('link', { name: 'Next month' }),
+        ).toBeInTheDocument();
+    });
+
+    it('renders a day the journal does not reach as a dead cell', () => {
+        render(
+            <MonthGrid
+                {...props({
+                    days: daysOfJuly(
+                        Array.from({ length: 16 }, (_, index) => ({
+                            date: `2026-07-${String(index + 16).padStart(2, '0')}` as IsoDate,
+                            level: 0 as const,
+                            hasCheckin: false,
+                            isToday: false,
+                            isReachable: false,
+                        })),
+                    ),
+                })}
+            />,
+        );
+
+        expect(
+            screen.queryByRole('link', { name: /^2026-07-16/ }),
+        ).not.toBeInTheDocument();
+        expect(screen.getByLabelText(/^2026-07-16/)).toBeInTheDocument();
+        expect(
+            screen.getByRole('link', { name: /^2026-07-15/ }),
+        ).toBeInTheDocument();
+        expect(screen.getAllByRole('link')).toHaveLength(17); // 15 days + 2 nav
+    });
+
     it('marks a day that has a check-in', () => {
         render(
             <MonthGrid
@@ -121,6 +171,7 @@ describe('MonthGrid', () => {
                             level: 1,
                             hasCheckin: true,
                             isToday: false,
+                            isReachable: true,
                         },
                     ]),
                 })}
