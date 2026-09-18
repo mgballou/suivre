@@ -11,12 +11,28 @@ use Illuminate\Contracts\Support\Arrayable;
 /**
  * What `ComputeCorrelations` hands back for one user × condition.
  *
+ * `comparableDays` is the volume the report rests on: local days carrying both
+ * a rating for this condition and a logged meal (D31). It is not the number of
+ * days the user rated — a rated day with no meal is dropped before anything is
+ * measured, so counting it here would overstate the evidence by exactly the days
+ * the ranking never saw.
+ *
  * The report has two shapes and only two, minted through the named
  * constructors: an insufficient-data outcome that carries no ranking, and a
  * ready outcome that does. `suspects()` throws on the former rather than
  * returning an empty list, so a caller cannot accidentally render "nothing
  * found" over "not enough logged yet" — SUI-36 findings 1 and 6 make those two
  * statements very different claims.
+ *
+ * `reportNoiseBand` is the bar every row on the ready report is gated on: the
+ * lift the strongest of these tags reaches when they are all rotated away from
+ * the ratings together (D29). It belongs to the report rather than to any row
+ * because it is a property of how many tags were tested at once.
+ *
+ * `measuredTags` and `thinTags` exist so an empty ranking can say which empty it
+ * means (D30). Nine tags measured and none above baseline is a result; nine tags
+ * seen and none of them on enough days to compare is the absence of one, and
+ * before these counts both arrived as the same empty array.
  *
  * @implements Arrayable<string, mixed>
  */
@@ -27,9 +43,12 @@ readonly class CorrelationReport implements Arrayable
      */
     private function __construct(
         public CorrelationStatus $status,
-        public int $loggedDays,
+        public int $comparableDays,
         public int $requiredDays,
         public int $windowDays,
+        public ?float $reportNoiseBand,
+        public int $measuredTags,
+        public int $thinTags,
         private array $suspects,
     ) {}
 
@@ -40,7 +59,7 @@ readonly class CorrelationReport implements Arrayable
     {
         throw_if(
             condition: $this->status->isInsufficient(),
-            exception: InsufficientCorrelationDataException::make($this->loggedDays, $this->requiredDays),
+            exception: InsufficientCorrelationDataException::make($this->comparableDays, $this->requiredDays),
         );
 
         return $this->suspects;
@@ -49,9 +68,12 @@ readonly class CorrelationReport implements Arrayable
     /**
      * @return array{
      *     status: string,
-     *     loggedDays: int,
+     *     comparableDays: int,
      *     requiredDays: int,
      *     windowDays: int,
+     *     reportNoiseBand: float|null,
+     *     measuredTags: int,
+     *     thinTags: int,
      *     suspects: array<int, array<string, mixed>>,
      * }
      */
@@ -59,9 +81,12 @@ readonly class CorrelationReport implements Arrayable
     {
         return [
             'status' => $this->status->value,
-            'loggedDays' => $this->loggedDays,
+            'comparableDays' => $this->comparableDays,
             'requiredDays' => $this->requiredDays,
             'windowDays' => $this->windowDays,
+            'reportNoiseBand' => $this->reportNoiseBand,
+            'measuredTags' => $this->measuredTags,
+            'thinTags' => $this->thinTags,
             'suspects' => array_map(
                 static fn (CorrelationSuspect $suspect): array => $suspect->toArray(),
                 $this->suspects,
@@ -72,30 +97,49 @@ readonly class CorrelationReport implements Arrayable
     /**
      * The user has not logged enough days for any ranking to be honest.
      */
-    public static function insufficientData(int $loggedDays, int $requiredDays, int $windowDays): self
+    public static function insufficientData(int $comparableDays, int $requiredDays, int $windowDays): self
     {
         return new self(
             status: CorrelationStatus::InsufficientData,
-            loggedDays: $loggedDays,
+            comparableDays: $comparableDays,
             requiredDays: $requiredDays,
             windowDays: $windowDays,
+            reportNoiseBand: null,
+            measuredTags: 0,
+            thinTags: 0,
             suspects: [],
         );
     }
 
     /**
-     * A ranking, ordered by lift descending. It may legitimately be empty when
-     * no tag has enough exposed and baseline days to measure.
+     * A ranking, ordered by lift descending, holding only tags whose lift is
+     * above baseline.
+     *
+     * It may legitimately be empty, and the two counts say why: `measuredTags`
+     * is how many tags cleared the exposed and baseline day floors, `thinTags`
+     * how many were seen in the log and dropped short of them. Empty with
+     * `measuredTags` above zero is a measurement that found nothing; empty with
+     * `measuredTags` at zero is no measurement at all (D30).
      *
      * @param  array<int, CorrelationSuspect>  $suspects
      */
-    public static function ranked(array $suspects, int $loggedDays, int $requiredDays, int $windowDays): self
-    {
+    public static function ranked(
+        array $suspects,
+        int $comparableDays,
+        int $requiredDays,
+        int $windowDays,
+        ?float $reportNoiseBand,
+        int $measuredTags,
+        int $thinTags,
+    ): self {
         return new self(
             status: CorrelationStatus::Ready,
-            loggedDays: $loggedDays,
+            comparableDays: $comparableDays,
             requiredDays: $requiredDays,
             windowDays: $windowDays,
+            reportNoiseBand: $reportNoiseBand,
+            measuredTags: $measuredTags,
+            thinTags: $thinTags,
             suspects: $suspects,
         );
     }

@@ -6,6 +6,8 @@ namespace App\Http\Requests\Conditions;
 
 use App\Enums\FlareIntensity;
 use App\Models\Condition;
+use App\Models\User;
+use App\Rules\WithinJournalBounds;
 use Carbon\CarbonImmutable;
 use Illuminate\Auth\Access\Response;
 use Illuminate\Foundation\Http\FormRequest;
@@ -24,12 +26,20 @@ class LogFlareEventRequest extends FormRequest
      * and note are the details a user adds later if at all — demanding them
      * would make the fast path the slow one.
      *
+     * `WithinJournalBounds` then rejects a day the user cannot have lived
+     * through — after their own today, or before their account began. The
+     * route allows four digits of year, and the insights read walks first
+     * rating to last rating one day at a time.
+     *
      * @return array<string, array<int, mixed>>
      */
     public function rules(): array
     {
+        /** @var User $user */
+        $user = $this->user();
+
         return [
-            'date' => ['required', 'date_format:Y-m-d'],
+            'date' => ['bail', 'required', 'date_format:Y-m-d', new WithinJournalBounds($user)],
             'intensity' => ['required', Rule::enum(FlareIntensity::class)],
             'duration_minutes' => ['nullable', 'integer', 'between:1,1440'],
             'note' => ['nullable', 'string', 'max:2000'],

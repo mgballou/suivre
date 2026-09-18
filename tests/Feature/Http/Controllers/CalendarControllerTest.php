@@ -29,7 +29,7 @@ class CalendarControllerTest extends TestCase
                 ->where('month', '2026-07')
                 ->where('label', 'July 2026')
                 ->where('previousMonth', '2026-06')
-                ->where('nextMonth', '2026-08')
+                ->where('nextMonth', null)
                 ->where('leadingBlanks', 2)
                 ->has('days', 31)
                 ->where('days.0.date', '2026-07-01')
@@ -142,12 +142,107 @@ class CalendarControllerTest extends TestCase
 
     public function test_it_offers_the_neighbouring_months_across_a_year_boundary(): void
     {
+        $this->travelTo(CarbonImmutable::parse('2026-07-15 09:00:00', 'UTC'));
+
         $this->actingAs(User::factory()->tracking()->create())
             ->get('/calendar/2026-01')
             ->assertOk()
             ->assertInertia(fn (Assert $page) => $page
                 ->where('previousMonth', '2025-12')
                 ->where('nextMonth', '2026-02')
+                ->etc()
+            );
+    }
+
+    public function test_it_does_not_offer_the_month_after_the_users_current_one(): void
+    {
+        $this->travelTo(CarbonImmutable::parse('2026-07-15 09:00:00', 'UTC'));
+
+        $this->actingAs(User::factory()->tracking()->create())
+            ->get('/calendar/2026-07')
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('nextMonth', null)
+                ->etc()
+            );
+    }
+
+    public function test_it_offers_no_next_month_from_a_month_already_past_the_users_today(): void
+    {
+        $this->travelTo(CarbonImmutable::parse('2026-07-15 09:00:00', 'UTC'));
+
+        $this->actingAs(User::factory()->tracking()->create())
+            ->get('/calendar/2026-09')
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('previousMonth', '2026-08')
+                ->where('nextMonth', null)
+                ->where('days.0.isReachable', false)
+                ->etc()
+            );
+    }
+
+    public function test_the_month_nav_still_reaches_backwards(): void
+    {
+        $this->travelTo(CarbonImmutable::parse('2026-07-15 09:00:00', 'UTC'));
+
+        $this->actingAs(User::factory()->tracking()->create())
+            ->get('/calendar/2026-07')
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('previousMonth', '2026-06')
+                ->etc()
+            );
+    }
+
+    public function test_it_leaves_no_link_to_a_day_that_has_not_happened(): void
+    {
+        $this->travelTo(CarbonImmutable::parse('2026-07-15 09:00:00', 'UTC'));
+
+        $this->actingAs(User::factory()->tracking()->create())
+            ->get('/calendar/2026-07')
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('days.13.date', '2026-07-14')
+                ->where('days.13.isReachable', true)
+                ->where('days.14.date', '2026-07-15')
+                ->where('days.14.isReachable', true)
+                ->where('days.15.date', '2026-07-16')
+                ->where('days.15.isReachable', false)
+                ->where('days.30.isReachable', false)
+                ->etc()
+            );
+    }
+
+    public function test_the_ceiling_follows_the_users_timezone_not_the_servers(): void
+    {
+        // 23:30 UTC on 31 July is already 1 August in Auckland (UTC+12), so an
+        // Auckland user may reach a day the server's own clock has not begun.
+        $this->travelTo(CarbonImmutable::parse('2026-07-31 23:30:00', 'UTC'));
+
+        $this->actingAs(User::factory()->tracking()->inTimezone('Pacific/Auckland')->create())
+            ->get('/calendar/2026-08')
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('days.0.date', '2026-08-01')
+                ->where('days.0.isReachable', true)
+                ->where('days.1.isReachable', false)
+                ->where('nextMonth', null)
+                ->etc()
+            );
+    }
+
+    public function test_the_month_before_the_users_current_one_still_offers_it(): void
+    {
+        // The ceiling is a month comparison, not an instant one: an Auckland
+        // user in August must still be offered August from July.
+        $this->travelTo(CarbonImmutable::parse('2026-07-31 23:30:00', 'UTC'));
+
+        $this->actingAs(User::factory()->tracking()->inTimezone('Pacific/Auckland')->create())
+            ->get('/calendar/2026-07')
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('nextMonth', '2026-08')
                 ->etc()
             );
     }

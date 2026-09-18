@@ -21,6 +21,11 @@ const START = '2026-01-01';
  * Rate the condition on every day of a run, worse across the exposure window
  * that follows each occurrence so there is a lift for the engine to find.
  *
+ * Every day also gets a meal with nothing in it. That is not decoration: the
+ * engine only compares days carrying both a rating and a logged meal (D31), so
+ * a run of ratings with no meals against them is an insufficient-data journal
+ * rather than a ready one, however long it runs.
+ *
  * Occurrences have to be sparse. The window is three days wide, so a tag eaten
  * every fourth day marks the whole calendar as exposed and leaves no baseline
  * to compare against — the engine then drops it as unmeasurable, which is
@@ -28,7 +33,7 @@ const START = '2026-01-01';
  *
  * @param  array<int, int>  $occurrences
  */
-function journal(Condition $condition, int $days, array $occurrences = []): void
+function journal(User $user, Condition $condition, int $days, array $occurrences = []): void
 {
     $worse = [];
 
@@ -43,6 +48,11 @@ function journal(Condition $condition, int $days, array $occurrences = []): void
             ->forCondition($condition)
             ->on(CarbonImmutable::parse(START)->addDays($offset))
             ->createQuietly(['intensity' => isset($worse[$offset]) ? 8 : 2]);
+
+        Meal::factory()
+            ->for($user)
+            ->eatenAt(CarbonImmutable::parse(START, 'UTC')->addDays($offset)->addHours(9))
+            ->createQuietly();
     }
 }
 
@@ -72,7 +82,7 @@ it('returns nothing for a condition below the volume gate', function (): void {
     $user = User::factory()->createQuietly();
     $condition = Condition::factory()->for($user)->createQuietly();
 
-    journal($condition, days: CorrelationThresholds::MINIMUM_LOGGED_DAYS - 1);
+    journal($user, $condition, days: CorrelationThresholds::MINIMUM_COMPARABLE_DAYS - 1);
 
     expect(app(BuildConditionInsights::class)($user))->toBeEmpty();
 });
@@ -82,14 +92,14 @@ it('returns a ranking once the condition clears the gate', function (): void {
     $condition = Condition::factory()->for($user)->createQuietly(['name' => 'Eczema']);
 
     $occurrences = range(0, 119, 10);
-    journal($condition, days: 120, occurrences: $occurrences);
+    journal($user, $condition, days: 120, occurrences: $occurrences);
     feed($user, taggedFood('whole milk', 'dairy'), $occurrences);
 
     $insights = app(BuildConditionInsights::class)($user);
 
     expect($insights)->toHaveCount(1);
     expect($insights[0]->conditionName)->toBe('Eczema');
-    expect($insights[0]->loggedDays)->toBe(120);
+    expect($insights[0]->comparableDays)->toBe(120);
     expect($insights[0]->suspects)->not->toBeEmpty();
 });
 
@@ -98,7 +108,7 @@ it('carries the sample sizes and timing each hint has to be read against', funct
     $condition = Condition::factory()->for($user)->createQuietly();
 
     $occurrences = range(0, 119, 10);
-    journal($condition, days: 120, occurrences: $occurrences);
+    journal($user, $condition, days: 120, occurrences: $occurrences);
     feed($user, taggedFood('whole milk', 'dairy'), $occurrences);
 
     $hint = app(BuildConditionInsights::class)($user)[0]->suspects[0];
@@ -110,25 +120,51 @@ it('carries the sample sizes and timing each hint has to be read against', funct
 });
 
 it('reports a ready condition with an empty ranking rather than skipping it', function (): void {
-    // Enough logged, but no meals at all — the engine has nothing to measure.
-    // That is a different statement from "not enough logged yet", and the
-    // surface has to be able to tell them apart.
+    // Enough days rated and logged, but nothing in the meals the classifier
+    // resolved to a food — the engine has nothing to measure. That is a
+    // different statement from "not enough logged yet", and the surface has to
+    // be able to tell them apart.
     $user = User::factory()->createQuietly();
     $condition = Condition::factory()->for($user)->createQuietly();
 
-    journal($condition, days: CorrelationThresholds::MINIMUM_LOGGED_DAYS);
+    journal($user, $condition, days: CorrelationThresholds::MINIMUM_COMPARABLE_DAYS);
 
     $insights = app(BuildConditionInsights::class)($user);
 
     expect($insights)->toHaveCount(1);
     expect($insights[0]->suspects)->toBe([]);
+    expect($insights[0]->measuredTags)->toBe(0);
+    expect($insights[0]->thinTags)->toBe(0);
+});
+
+it('carries the counts that say which empty an empty ranking is', function (): void {
+    $user = User::factory()->createQuietly();
+    $condition = Condition::factory()->for($user)->createQuietly();
+
+    $occurrences = range(0, 119, 10);
+    journal($user, $condition, days: 120, occurrences: $occurrences);
+    feed($user, taggedFood('whole milk', 'dairy'), $occurrences);
+
+    // Eaten twice in a hundred and twenty days: seen, never measurable.
+    feed($user, taggedFood('fennel', 'fennel'), [4, 60]);
+
+    $insight = app(BuildConditionInsights::class)($user)[0];
+
+    expect($insight->suspects)->not->toBeEmpty();
+    expect($insight->measuredTags)->toBe(1);
+    expect($insight->thinTags)->toBe(1);
+    expect($insight->toArray()['measuredTags'])->toBe(1);
 });
 
 it('names at most five suspects', function (): void {
     $user = User::factory()->createQuietly();
     $condition = Condition::factory()->for($user)->createQuietly();
 
-    journal($condition, days: 180, occurrences: range(0, 179, 10));
+    // Worse on every tag's exposure window and calm on the days between, so all
+    // eight sit above their own baseline and are ranked. Under the D30 floor a
+    // fixture whose worse days tracked only half the tags would leave four of
+    // them at or below baseline and test the floor rather than the cut.
+    journal($user, $condition, days: 180, occurrences: range(0, 179, 5));
 
     // Phases five days apart on a forty-day period: every tag clears the
     // exposed and baseline minimums, and no two exposure windows overlap, so
@@ -145,7 +181,7 @@ it('leaves stopped conditions out', function (): void {
     $user = User::factory()->createQuietly();
     $condition = Condition::factory()->for($user)->createQuietly(['is_active' => false]);
 
-    journal($condition, days: 120);
+    journal($user, $condition, days: 120);
 
     expect(app(BuildConditionInsights::class)($user))->toBeEmpty();
 });
@@ -155,7 +191,7 @@ it('never reaches another user\'s condition', function (): void {
     $stranger = User::factory()->createQuietly();
     $condition = Condition::factory()->for($stranger)->createQuietly();
 
-    journal($condition, days: 120);
+    journal($user, $condition, days: 120);
 
     expect(app(BuildConditionInsights::class)($user))->toBeEmpty();
 });
