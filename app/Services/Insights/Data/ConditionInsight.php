@@ -17,8 +17,13 @@ use Illuminate\Contracts\Support\Arrayable;
  * flattening them into one "nothing found" is exactly the confusion
  * `CorrelationReport::suspects()` throws to prevent.
  *
- * An empty `suspects` list is therefore meaningful and gets its own copy: enough
- * has been logged, and nothing separated itself from chance.
+ * An empty `suspects` list is not one statement but two, and `measuredTags`
+ * separates them (D30). With tags measured it means enough was logged, every
+ * food that could be compared was, and none came out above baseline — a result.
+ * At zero it means nothing in the log could be compared at all, which is a gap
+ * the surface has to name as one rather than dress as a finding. `thinTags`
+ * carries how many foods were seen and dropped short of the day floors, so the
+ * gap can say what would close it.
  *
  * @implements Arrayable<string, mixed>
  */
@@ -32,8 +37,10 @@ readonly class ConditionInsight implements Arrayable
         public string $conditionName,
         public string $hue,
         public array $suspects,
-        public int $loggedDays,
+        public int $comparableDays,
         public int $windowDays,
+        public int $measuredTags,
+        public int $thinTags,
     ) {}
 
     /**
@@ -42,8 +49,10 @@ readonly class ConditionInsight implements Arrayable
      *     conditionName: string,
      *     hue: string,
      *     suspects: array<int, array<string, mixed>>,
-     *     loggedDays: int,
+     *     comparableDays: int,
      *     windowDays: int,
+     *     measuredTags: int,
+     *     thinTags: int,
      * }
      */
     public function toArray(): array
@@ -56,8 +65,10 @@ readonly class ConditionInsight implements Arrayable
                 static fn (SuspectHint $hint): array => $hint->toArray(),
                 $this->suspects,
             ),
-            'loggedDays' => $this->loggedDays,
+            'comparableDays' => $this->comparableDays,
             'windowDays' => $this->windowDays,
+            'measuredTags' => $this->measuredTags,
+            'thinTags' => $this->thinTags,
         ];
     }
 
@@ -71,8 +82,10 @@ readonly class ConditionInsight implements Arrayable
             conditionName: $condition->name,
             hue: $condition->color->value,
             suspects: $suspects,
-            loggedDays: $report->loggedDays,
+            comparableDays: $report->comparableDays,
             windowDays: $report->windowDays,
+            measuredTags: $report->measuredTags,
+            thinTags: $report->thinTags,
         );
     }
 }

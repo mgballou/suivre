@@ -14,6 +14,7 @@ use App\Services\Insights\Data\CorrelationReport;
 use App\Services\Insights\Data\CorrelationSuspect;
 use App\Services\Insights\Data\DayMask;
 use App\Services\Insights\Data\LiftMeasurement;
+use App\Services\Insights\Data\NoiseBands;
 use App\Services\Insights\Data\SuspectTag;
 use Carbon\CarbonImmutable;
 
@@ -29,13 +30,21 @@ use Carbon\CarbonImmutable;
  *
  * Three things the spike forced into the design:
  *
- * - **Volume gate.** Under `MINIMUM_LOGGED_DAYS` the report is an explicit
+ * - **Volume gate.** Under `MINIMUM_COMPARABLE_DAYS` the report is an explicit
  *   insufficient-data outcome, not a hedged ranking. Below 90 days even the
  *   softest single hint is right barely more than half the time.
  * - **Noise band.** Each suspect states whether its lift beat the 95th
- *   percentile of what the same tag produces when rotated away from the
- *   intensity series. This is a gate on what is worth whispering, not a
- *   significance test — D11 rules out the false rigor of p-values at this `n`.
+ *   percentile of what the *strongest* tag on the report produces when every
+ *   tag is rotated away from the intensity series together. The band is drawn
+ *   once for the whole report because the report tests every measurable tag at
+ *   once (D29); gating each row on its own band left a flagged row on two
+ *   journals in five where nothing was a trigger. This is a gate on what is
+ *   worth whispering, not a significance test — D11 rules out the false rigor
+ *   of p-values at this `n`.
+ * - **Baseline floor (D30).** A tag is only ranked when its lift is above
+ *   zero. Below it the tag's exposed days were no worse than its baseline days,
+ *   and a list headed "Worth noticing" naming a food the log puts *below*
+ *   baseline is not a hedged suspicion — it is the wrong statement.
  * - **Separability (D24, stage 1).** Tags that travel together are only named
  *   individually when the marginal lift survives being measured on the days
  *   they appear apart. The criterion chosen here: two tags are co-travellers
@@ -48,6 +57,17 @@ use Carbon\CarbonImmutable;
  *   The thresholds are documented on `CorrelationThresholds` and become Spatie
  *   runtime settings in E5 (SUI-25).
  *
+ * **A day with no meal on it is missing, not empty (D31).** The engine only ever
+ * compares days that carry both a rating and a logged meal; a rated day with no
+ * meal is dropped from the intensity series before anything is measured, so it
+ * reaches neither mean, neither day floor, nor the rotations the noise band is
+ * drawn from. Treating it as "none of these foods" is what the exposure map
+ * silently did, and it is wrong in the one direction that matters: the days
+ * people skip logging food are their worst days, so every tag's baseline
+ * absorbed them and every lift collapsed towards zero. The cost is power — an
+ * exposed day inside the lag window is dropped along with the rest — and that is
+ * the trade the decision names.
+ *
  * Computed on demand — the MVP has no scheduled recompute, job, or cache (D11).
  */
 class ComputeCorrelations
@@ -56,10 +76,12 @@ class ComputeCorrelations
      * Rank the trigger categories suspected of preceding this condition's bad
      * days.
      *
-     * "Logged days" — the volume the gate reads — is the number of distinct
-     * local calendar days carrying a rating for **this** condition. Meals are
-     * not counted: a lift is a comparison of rated days, so an unrated day
-     * cannot contribute to either side of it however much was eaten on it.
+     * "Comparable days" — the volume the gate reads — is the number of distinct
+     * local calendar days carrying both a rating for **this** condition and a
+     * logged meal. A lift compares rated days, so an unrated day cannot
+     * contribute to either side of it however much was eaten on it; and it
+     * compares them by what was eaten, so a day with no meal logged cannot
+     * either, however it was rated (D31).
      */
     public function __invoke(
         User $user,
@@ -72,21 +94,33 @@ class ComputeCorrelations
             exception: ConditionNotOwnedException::make($user, $condition),
         );
 
-        $intensityByDate = app(CorrelationDataRepository::class)->dailyIntensity($user, $condition);
-        $loggedDays = count($intensityByDate);
+        $repository = app(CorrelationDataRepository::class);
+        $intensityByDate = $repository->dailyIntensity($user, $condition);
+        $lead = max($windowDays, $lagProfileDays);
 
-        if ($loggedDays < CorrelationThresholds::MINIMUM_LOGGED_DAYS) {
+        if ($intensityByDate !== []) {
+            $rated = array_keys($intensityByDate);
+
+            $intensityByDate = array_intersect_key($intensityByDate, $repository->mealDays(
+                $user,
+                CarbonImmutable::parse($rated[0]),
+                CarbonImmutable::parse($rated[count($rated) - 1]),
+            ));
+        }
+
+        $comparableDays = count($intensityByDate);
+
+        if ($comparableDays < CorrelationThresholds::MINIMUM_COMPARABLE_DAYS) {
             return CorrelationReport::insufficientData(
-                loggedDays: $loggedDays,
-                requiredDays: CorrelationThresholds::MINIMUM_LOGGED_DAYS,
+                comparableDays: $comparableDays,
+                requiredDays: CorrelationThresholds::MINIMUM_COMPARABLE_DAYS,
                 windowDays: $windowDays,
             );
         }
 
         $dates = array_keys($intensityByDate);
-        $lead = max($windowDays, $lagProfileDays);
         $start = CarbonImmutable::parse($dates[0])->subDays($lead);
-        $end = CarbonImmutable::parse($dates[$loggedDays - 1]);
+        $end = CarbonImmutable::parse($dates[$comparableDays - 1]);
 
         $days = $this->spanDays($start, $end);
         $intensities = array_map(
@@ -94,10 +128,11 @@ class ComputeCorrelations
             $days,
         );
 
-        $history = app(CorrelationDataRepository::class)->exposureHistory($user, $start, $end);
+        $history = $repository->exposureHistory($user, $start, $end);
         $presence = $this->presenceMasks($days, $history->categoryIdsByDate);
 
         $measurements = $this->measurableTags($intensities, $presence, $windowDays);
+        $thinTags = count($presence) - count($measurements);
         $presence = array_intersect_key($presence, $measurements);
 
         $clusters = app(GroupCoOccurringTags::class)(
@@ -107,14 +142,28 @@ class ComputeCorrelations
             $windowDays,
         );
 
+        $masks = [];
+
+        foreach ($clusters->groups as $row => $group) {
+            $mask = $this->clusterMask($presence, $group);
+
+            if ($mask !== null) {
+                $masks[$row] = $mask;
+            }
+        }
+
+        $bands = app(EstimateNoiseBands::class)($intensities, $masks, $windowDays);
+
         $suspects = [];
 
-        foreach ($clusters->groups as $group) {
+        foreach ($masks as $row => $mask) {
             $suspect = $this->buildSuspect(
                 $intensities,
-                $presence,
+                $mask,
                 $history->tags,
-                $group,
+                $clusters->groups[$row],
+                $bands,
+                $row,
                 $windowDays,
                 $lagProfileDays,
             );
@@ -131,9 +180,12 @@ class ComputeCorrelations
 
         return CorrelationReport::ranked(
             suspects: $suspects,
-            loggedDays: $loggedDays,
-            requiredDays: CorrelationThresholds::MINIMUM_LOGGED_DAYS,
+            comparableDays: $comparableDays,
+            requiredDays: CorrelationThresholds::MINIMUM_COMPARABLE_DAYS,
             windowDays: $windowDays,
+            reportNoiseBand: $bands->report,
+            measuredTags: count($measurements),
+            thinTags: $thinTags,
         );
     }
 
@@ -234,42 +286,62 @@ class ComputeCorrelations
     }
 
     /**
-     * Turn one cluster into a ranked row.
+     * The occurrence days a whole cluster covers.
      *
      * A cluster of several tags is measured on the union of their occurrence
      * days: the pattern is "a day any of these appeared", which is what the
      * coarse phrasing D24 mandates ("meals with X and Y") actually describes.
      *
-     * @param  array<int, int|null>  $intensities
      * @param  array<int, DayMask>  $presence
-     * @param  array<int, SuspectTag>  $tags
      * @param  array<int, int>  $group
      */
-    private function buildSuspect(
-        array $intensities,
-        array $presence,
-        array $tags,
-        array $group,
-        int $windowDays,
-        int $lagProfileDays,
-    ): ?CorrelationSuspect {
+    private function clusterMask(array $presence, array $group): ?DayMask
+    {
         $mask = null;
 
         foreach ($group as $categoryId) {
             $mask = $mask === null ? $presence[$categoryId] : $mask->union($presence[$categoryId]);
         }
 
-        if ($mask === null) {
-            return null;
-        }
+        return $mask;
+    }
 
+    /**
+     * Turn one cluster into a ranked row.
+     *
+     * `clearsNoiseBand` is gated on the report's band, not the row's own (D29):
+     * the page tests every measurable tag at once, and a row is only worth
+     * whispering about when it beats what the *best* of them reaches by
+     * coincidence. The row's own band still travels with it as the narrower
+     * comparison it is.
+     *
+     * A lift at or below zero returns no row at all (D30). The floor sits here
+     * rather than after the sort so that nothing below baseline can be ranked,
+     * sliced into the top five, or counted as a suspect the report found.
+     *
+     * @param  array<int, int|null>  $intensities
+     * @param  array<int, SuspectTag>  $tags
+     * @param  array<int, int>  $group
+     */
+    private function buildSuspect(
+        array $intensities,
+        DayMask $mask,
+        array $tags,
+        array $group,
+        NoiseBands $bands,
+        int $row,
+        int $windowDays,
+        int $lagProfileDays,
+    ): ?CorrelationSuspect {
         $measurement = $this->measure($intensities, $mask, $windowDays);
 
         if ($measurement === null) {
             return null;
         }
 
-        $noiseBand = app(EstimateNoiseBand::class)($intensities, $mask, $windowDays);
+        if ($measurement->lift <= 0.0) {
+            return null;
+        }
 
         return new CorrelationSuspect(
             granularity: count($group) === 1
@@ -281,8 +353,8 @@ class ComputeCorrelations
             )),
             measurement: $measurement,
             lagProfile: app(BuildLagProfile::class)($intensities, $mask, $lagProfileDays),
-            noiseBand: $noiseBand,
-            clearsNoiseBand: $noiseBand !== null && $measurement->lift > $noiseBand,
+            noiseBand: $bands->forRow($row),
+            clearsNoiseBand: $bands->clears($measurement->lift),
         );
     }
 }

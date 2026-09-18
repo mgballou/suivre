@@ -8,6 +8,7 @@ use App\Enums\ConditionHue;
 use App\Models\Condition;
 use App\Models\ConditionLog;
 use App\Models\User;
+use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Inertia\Testing\AssertableInertia as Assert;
 use Tests\TestCase;
@@ -15,6 +16,18 @@ use Tests\TestCase;
 class DayConditionControllerTest extends TestCase
 {
     use RefreshDatabase;
+
+    /**
+     * The journal is bounded to days the user has lived through, so the suite
+     * pins its own today rather than leaning on the wall clock being past July
+     * 2026.
+     */
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->travelTo(CarbonImmutable::parse('2026-07-15 09:00:00', 'UTC'));
+    }
 
     public function test_a_single_tap_persists_a_rating(): void
     {
@@ -97,6 +110,110 @@ class DayConditionControllerTest extends TestCase
             ->assertSessionHasErrors('date');
 
         $this->assertSame(0, ConditionLog::query()->count());
+    }
+
+    public function test_it_refuses_a_day_that_has_not_happened_yet(): void
+    {
+        $user = User::factory()->create();
+        $condition = Condition::factory()->for($user)->createQuietly();
+
+        $this->actingAs($user)
+            ->post("/day/9999-12-31/conditions/{$condition->id}", ['intensity' => 4])
+            ->assertSessionHasErrors(['date' => 'That day has not happened yet.']);
+
+        $this->assertSame(0, ConditionLog::query()->count());
+    }
+
+    public function test_it_refuses_a_day_before_the_account_existed(): void
+    {
+        $user = User::factory()->create();
+        $condition = Condition::factory()->for($user)->createQuietly();
+
+        $this->actingAs($user)
+            ->post("/day/2026-07-14/conditions/{$condition->id}", ['intensity' => 4])
+            ->assertSessionHasErrors(['date' => 'Your journal starts on 15 July 2026.']);
+
+        $this->assertSame(0, ConditionLog::query()->count());
+    }
+
+    public function test_the_bound_follows_the_users_own_today_rather_than_the_servers(): void
+    {
+        // 23:30 UTC on the 15th is already the 16th in Auckland (UTC+12 in July).
+        $this->travelTo(CarbonImmutable::parse('2026-07-15 23:30:00', 'UTC'));
+
+        $user = User::factory()->inTimezone('Pacific/Auckland')->create();
+        $condition = Condition::factory()->for($user)->createQuietly();
+
+        $this->actingAs($user)
+            ->post("/day/2026-07-16/conditions/{$condition->id}", ['intensity' => 4])
+            ->assertSessionHasNoErrors();
+
+        $this->assertSame('2026-07-16', ConditionLog::query()->sole()->date->toDateString());
+    }
+
+    public function test_the_clear_control_takes_a_rating_back_off_the_record(): void
+    {
+        $user = User::factory()->create();
+        $condition = Condition::factory()->for($user)->createQuietly();
+
+        $this->actingAs($user)->post("/day/2026-07-15/conditions/{$condition->id}", ['intensity' => 7]);
+
+        $this->actingAs($user)
+            ->delete("/day/2026-07-15/conditions/{$condition->id}")
+            ->assertRedirect('/day/2026-07-15');
+
+        $this->assertSame(0, ConditionLog::query()->count());
+    }
+
+    public function test_it_refuses_to_clear_another_users_rating(): void
+    {
+        $owner = User::factory()->create();
+        $condition = Condition::factory()->for($owner)->createQuietly();
+
+        $this->actingAs($owner)->post("/day/2026-07-15/conditions/{$condition->id}", ['intensity' => 7]);
+
+        $this->actingAs(User::factory()->tracking()->create())
+            ->delete("/day/2026-07-15/conditions/{$condition->id}")
+            ->assertForbidden();
+
+        $this->assertSame(1, ConditionLog::query()->count());
+    }
+
+    public function test_a_rating_stranded_outside_the_bound_can_still_be_cleared(): void
+    {
+        $user = User::factory()->create();
+        $condition = Condition::factory()->for($user)->createQuietly();
+
+        ConditionLog::query()->create([
+            'user_id' => $user->id,
+            'condition_id' => $condition->id,
+            'date' => '2526-01-01',
+            'intensity' => 4,
+        ]);
+
+        $this->actingAs($user)
+            ->delete("/day/2526-01-01/conditions/{$condition->id}")
+            ->assertRedirect('/day/2526-01-01');
+
+        $this->assertSame(0, ConditionLog::query()->count());
+    }
+
+    public function test_clearing_a_day_that_carries_no_rating_is_a_404(): void
+    {
+        $user = User::factory()->create();
+        $condition = Condition::factory()->for($user)->createQuietly();
+
+        $this->actingAs($user)
+            ->delete("/day/2026-07-15/conditions/{$condition->id}")
+            ->assertNotFound();
+    }
+
+    public function test_guests_cannot_clear_a_rating(): void
+    {
+        $condition = Condition::factory()->for(User::factory()->create())->createQuietly();
+
+        $this->delete("/day/2026-07-15/conditions/{$condition->id}")
+            ->assertRedirect(route('login'));
     }
 
     public function test_it_refuses_to_rate_another_users_condition(): void

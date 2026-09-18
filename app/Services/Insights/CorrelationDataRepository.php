@@ -15,11 +15,16 @@ use App\Services\Journal\Actions\ResolveUserDay;
 use Carbon\CarbonImmutable;
 
 /**
- * Read-side access to the two series the correlation engine correlates: a
- * condition's daily intensity, and the trigger categories a user was exposed to
- * each day.
+ * Read-side access to the three series the correlation engine reads: a
+ * condition's daily intensity, the trigger categories a user was exposed to each
+ * day, and the days on which the user logged a meal at all.
  *
- * Both are pulled in bulk. The engine walks a user's whole history several
+ * The third exists because the first two cannot distinguish "no meal" from "a
+ * meal with none of these foods in it" — the exposure map is keyed by the days
+ * that produced a category, so a day the user never opened the app is
+ * indistinguishable from a day of plain rice (D31).
+ *
+ * All three are pulled in bulk. The engine walks a user's whole history several
  * times over, so anything per-day here would be a per-day query.
  */
 class CorrelationDataRepository
@@ -44,6 +49,80 @@ class CorrelationDataRepository
                 $log->date->toDateString() => $log->intensity,
             ])
             ->all();
+    }
+
+    /**
+     * The local calendar days on which the user logged at least one meal.
+     *
+     * Coverage is "did the user log", not "did the classifier finish": a meal
+     * whose entries are still awaiting a food item covers its day, because the
+     * user did record eating and the gap is the pipeline's, not theirs. A meal
+     * with no trigger categories in it covers its day too — that is a genuine
+     * baseline day and the whole point of keeping it.
+     *
+     * Days come from `ResolveUserDay` and the span edges from `ResolveDayBounds`,
+     * exactly as `exposureHistory` does, so the two never disagree about which
+     * day a late-night meal belongs to. Passing no span reads the user's whole
+     * meal history, which is what the readiness count needs.
+     *
+     * @return array<string, true> keyed `Y-m-d`, so membership is a hash lookup
+     */
+    public function mealDays(User $user, ?CarbonImmutable $start = null, ?CarbonImmutable $end = null): array
+    {
+        $bounds = app(ResolveDayBounds::class);
+        $resolveDay = app(ResolveUserDay::class);
+
+        $query = Meal::query()->where('user_id', $user->getKey());
+
+        if ($start !== null) {
+            $query->where('eaten_at', '>=', $bounds($user, $start)->startsAt);
+        }
+
+        if ($end !== null) {
+            $query->where('eaten_at', '<', $bounds($user, $end)->endsAt);
+        }
+
+        $days = [];
+        $meals = $query->orderBy('eaten_at')->get(['id', 'eaten_at']);
+
+        foreach ($meals as $meal) {
+            $days[$resolveDay($user, $meal->eaten_at)->toDateString()] = true;
+        }
+
+        return $days;
+    }
+
+    /**
+     * How many days each of the user's conditions has that the engine can
+     * actually compare — a rating for that condition *and* a logged meal.
+     *
+     * This is the quantity `ComputeCorrelations` gates on, so readiness has to
+     * count it too: a meter reading "ready" against a gate that refuses would
+     * drop the condition off the insights page entirely, appearing in neither
+     * the waiting list nor the ranking.
+     *
+     * @return array<int, int> keyed by condition id; a condition with none is absent
+     */
+    public function comparableDayCounts(User $user): array
+    {
+        $mealDays = array_keys($this->mealDays($user));
+
+        if ($mealDays === []) {
+            return [];
+        }
+
+        $logs = ConditionLog::query()
+            ->where('user_id', $user->getKey())
+            ->whereIn('date', $mealDays)
+            ->get(['id', 'condition_id']);
+
+        $counts = [];
+
+        foreach ($logs as $log) {
+            $counts[$log->condition_id] = ($counts[$log->condition_id] ?? 0) + 1;
+        }
+
+        return $counts;
     }
 
     /**

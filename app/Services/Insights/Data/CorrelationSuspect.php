@@ -13,10 +13,16 @@ use Illuminate\Contracts\Support\Arrayable;
  * `granularity` is the load-bearing field (D24): a `SingleTag` suspect names
  * the one tag it carries, a `CoOccurrenceCluster` suspect names the whole
  * pattern its tags form and may never be phrased as an accusation of any one
- * member. `clearsNoiseBand` says whether the lift beat what the same tag
- * produces when its occurrences are shuffled away from the intensity series —
- * a gate on what is worth whispering, not a significance claim (D11 rules out
- * the false rigor of p-values at this sample size).
+ * member.
+ *
+ * The two band fields answer different questions and only one of them gates the
+ * row. `noiseBand` is this tag's own: the lift it alone reaches by coincidence.
+ * `clearsNoiseBand` is decided by the *report's* band instead (D29) — the lift
+ * the strongest tag on the page reaches by coincidence — because the page tests
+ * every measurable tag at once and a row that beats only its own band is the
+ * ordinary result of doing that eight times. Either way it is a gate on what is
+ * worth whispering, not a significance claim (D11 rules out the false rigor of
+ * p-values at this sample size).
  *
  * @implements Arrayable<string, mixed>
  */
