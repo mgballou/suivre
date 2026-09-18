@@ -135,7 +135,7 @@ it('leaves a reviewed day entirely collapsed', function (): void {
         'date' => $date->toDateString(),
         'sleep' => SleepQuality::Good,
     ]);
-    ConditionLog::factory()->for($user)->for($condition)->createQuietly([
+    ConditionLog::factory()->forCondition($condition)->createQuietly([
         'date' => $date->toDateString(),
     ]);
     Meal::factory()->for($user)->createQuietly([
@@ -151,7 +151,7 @@ it('never opens the flare card, because an absent flare is a complete answer', f
     $date = CarbonImmutable::parse('2026-08-12');
 
     DailyCheckin::factory()->for($user)->createQuietly(['date' => $date->toDateString()]);
-    ConditionLog::factory()->for($user)->for($condition)->createQuietly(['date' => $date->toDateString()]);
+    ConditionLog::factory()->forCondition($condition)->createQuietly(['date' => $date->toDateString()]);
     Meal::factory()->for($user)->createQuietly(['eaten_at' => $date->setTime(12, 0)]);
 
     $view = app(BuildDayView::class)($user, $date, $date);
@@ -165,7 +165,7 @@ it('counts what a meal card holds in entries, because an entry is what the user 
     $date = CarbonImmutable::parse('2026-08-12');
 
     $meal = Meal::factory()->for($user)->createQuietly(['eaten_at' => $date->setTime(12, 0)]);
-    FoodEntry::factory()->count(3)->for($meal)->createQuietly();
+    FoodEntry::factory()->count(3)->forMeal($meal)->createQuietly();
 
     $view = app(BuildDayView::class)($user, $date, $date);
 
@@ -902,3 +902,16 @@ Invoke **create-pr**. **The base is the SUI-58 branch, not `main`** — this is 
 **Type consistency.** `DaySectionSummary` (Task 2) is what Task 3 imports and what `DayProps` declares; its four fields match `DaySection::toArray()`'s shape in Task 1 exactly. `onToggle: (key: string) => void` is called with `section.key` in Task 2 and consumed by `setOpen` in Task 3. Section keys `checkin`/`conditions`/`meals`/`flares` are the same four strings in the PHP action, the PHP test, the React tests and the page's `children` record.
 
 **Known risk, stated rather than discovered.** `MealLogger` is a tall component with its own internal disclosure state. Inside a card that animates `grid-template-rows`, its content growing while the row is mid-transition can produce a single frame of clipping. If that shows up in the Step 3 screenshots, the fix is to let the transition finish before the body reflows — not to abandon the grid technique for a measured height, which has the same problem and costs a layout read.
+
+---
+
+## Corrections applied after the plan was written
+
+- `ConditionLogFactory::forCondition()` and `FoodEntryFactory::forMeal()` replace the chained
+  `->for()` calls the tests originally used. `forCondition()` aligns `user_id` from the condition's
+  owner; two chained `->for()` calls can produce a log whose user and condition disagree.
+- `FoodEntry`'s text column is `text`, not `raw_text`. No task names it, but do not invent one.
+- **`--glass-alpha` is `0.88`, not `0.8`.** SUI-58's plan called 0.8 final and it was wrong — the
+  muted ink over the worst backdrop measured 4.07:1 light and 3.78:1 dark. If you touch glass, the
+  measurement decides the value, not the look.
+- **`AGENTS.md` does not exist in this repo.** `boost:update` writes `CLAUDE.md` only.

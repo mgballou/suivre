@@ -41,7 +41,13 @@ it('shows the saved state when the day is revisited', function (): void {
         ->assertRadioSelected('stress', StressLevel::High->value)
         ->waitForEvent('networkidle');
 
+    /*
+     * The check-in is on file now, so the day opens on the next gap and the
+     * check-in card arrives collapsed (SUI-59). Its saved state is still what
+     * is asserted; the card just has to be opened to read it.
+     */
     visit('/day/2026-07-15')
+        ->click('button:has-text("Check-in")')
         ->assertRadioSelected('mood', MoodLevel::Low->value)
         ->assertRadioSelected('stress', StressLevel::High->value)
         ->assertRadioNotSelected('mood', MoodLevel::Good->value);

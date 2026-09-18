@@ -86,9 +86,6 @@ export function ConditionRatings({ date, conditions }: ConditionRatingsProps) {
     if (conditions.length === 0) {
         return (
             <section className="flex flex-col gap-2">
-                <h2 className="text-sm font-medium text-foreground">
-                    Conditions
-                </h2>
                 <p className="text-sm text-muted-foreground">
                     You are not tracking any conditions right now.{' '}
                     <Link
@@ -105,10 +102,6 @@ export function ConditionRatings({ date, conditions }: ConditionRatingsProps) {
 
     return (
         <section className="flex flex-col gap-8">
-            <h2 className="text-sm font-medium text-foreground">Conditions</h2>
-
-            <InputError message={error} />
-
             {conditions.map((condition) => (
                 <IntensityPicker
                     key={condition.id}

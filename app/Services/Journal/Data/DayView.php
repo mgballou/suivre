@@ -19,6 +19,10 @@ use Illuminate\Contracts\Support\Arrayable;
  * `month` is carried so the return link lands on the month the day belongs to
  * rather than the user's current month.
  *
+ * `openSection` is guidance without a wizard: the first thing not yet on file,
+ * or nothing at all once the day has been reviewed. Each `DaySection` says what
+ * it holds; none of them counts toward a total.
+ *
  * @implements Arrayable<string, mixed>
  */
 readonly class DayView implements Arrayable
@@ -30,6 +34,7 @@ readonly class DayView implements Arrayable
      * @param  array<int, ScaleOption>  $flareIntensities
      * @param  array<int, DayMeal>  $meals
      * @param  array<int, MealTypeOption>  $mealTypes
+     * @param  array<int, DaySection>  $sections
      */
     public function __construct(
         public string $date,
@@ -47,6 +52,8 @@ readonly class DayView implements Arrayable
         public array $flareIntensities,
         public array $meals,
         public array $mealTypes,
+        public array $sections,
+        public ?string $openSection,
     ) {}
 
     /**
@@ -63,6 +70,8 @@ readonly class DayView implements Arrayable
      *     flareIntensities: array<int, array{value: int, label: string}>,
      *     meals: array<int, array{id: int, type: string, time: string, entries: array<int, array{id: int, label: string, tags: array<int, string>, matched: bool}>}>,
      *     mealTypes: array<int, array{value: string, label: string}>,
+     *     sections: array<int, array{key: string, title: string, summary: string, recorded: bool}>,
+     *     openSection: string|null,
      * }
      */
     public function toArray(): array
@@ -106,6 +115,11 @@ readonly class DayView implements Arrayable
                 static fn (MealTypeOption $option): array => $option->toArray(),
                 $this->mealTypes,
             ),
+            'sections' => array_map(
+                static fn (DaySection $section): array => $section->toArray(),
+                $this->sections,
+            ),
+            'openSection' => $this->openSection,
         ];
     }
 }
