@@ -11,6 +11,8 @@ import {
     type DayCondition,
 } from '@/components/suivre/condition-ratings';
 import { RAMP_BG, type IntensityLevel } from '@/components/suivre/day-cell';
+import type { DaySectionSummary } from '@/components/suivre/day-section';
+import { DaySections } from '@/components/suivre/day-sections';
 import { FlareLogger, type DayFlare } from '@/components/suivre/flare-logger';
 import {
     MealLogger,
@@ -18,7 +20,6 @@ import {
     type MealTypeOption,
 } from '@/components/suivre/meal-logger';
 import type { ScaleOption } from '@/components/suivre/scale-picker';
-import { Separator } from '@/components/ui/separator';
 import { cn } from '@/lib/utils';
 import { calendar } from '@/routes';
 import type { IsoDate, IsoMonth } from '@/types';
@@ -36,6 +37,8 @@ type DayProps = {
     flareIntensities: ScaleOption[];
     meals: DayMeal[];
     mealTypes: MealTypeOption[];
+    sections: DaySectionSummary[];
+    openSection: string | null;
 };
 
 /**
@@ -57,6 +60,8 @@ export default function Day({
     flareIntensities,
     meals,
     mealTypes,
+    sections,
+    openSection,
 }: DayProps) {
     const [leaving, setLeaving] = useState(false);
 
@@ -71,7 +76,7 @@ export default function Day({
                 )}
             >
                 <div className="mx-auto w-full max-w-2xl">
-                    <header className="mb-8 flex items-center gap-2">
+                    <header className="mb-6 flex items-center gap-2">
                         <Link
                             href={calendar(month)}
                             onClick={() => setLeaving(true)}
@@ -109,41 +114,53 @@ export default function Day({
                         />
                     </header>
 
-                    <div className="flex flex-col gap-8">
-                        <CheckinForm
-                            key={date}
-                            date={date}
-                            values={checkin}
-                            scales={scales}
-                        />
-
-                        <Separator />
-
-                        <ConditionRatings
-                            key={`conditions-${date}`}
-                            date={date}
-                            conditions={conditions}
-                        />
-
-                        <Separator />
-
-                        <MealLogger
-                            key={`meals-${date}`}
-                            date={date}
-                            meals={meals}
-                            mealTypes={mealTypes}
-                        />
-
-                        <Separator />
-
-                        <FlareLogger
-                            key={`flares-${date}`}
-                            date={date}
-                            conditions={conditions}
-                            intensities={flareIntensities}
-                            flares={flares}
-                        />
-                    </div>
+                    {/*
+                     * Keyed by date for the same reason the bodies below are:
+                     * Inertia re-renders this page in place when moving between
+                     * days, and which card is open is per-day state. The key is
+                     * also what stops a save — whose response carries a fresh
+                     * `openSection` — from being read as an instruction to move.
+                     */}
+                    <DaySections
+                        key={`sections-${date}`}
+                        sections={sections}
+                        openSection={openSection}
+                    >
+                        {{
+                            checkin: (
+                                <CheckinForm
+                                    key={date}
+                                    date={date}
+                                    values={checkin}
+                                    scales={scales}
+                                />
+                            ),
+                            conditions: (
+                                <ConditionRatings
+                                    key={`conditions-${date}`}
+                                    date={date}
+                                    conditions={conditions}
+                                />
+                            ),
+                            meals: (
+                                <MealLogger
+                                    key={`meals-${date}`}
+                                    date={date}
+                                    meals={meals}
+                                    mealTypes={mealTypes}
+                                />
+                            ),
+                            flares: (
+                                <FlareLogger
+                                    key={`flares-${date}`}
+                                    date={date}
+                                    conditions={conditions}
+                                    intensities={flareIntensities}
+                                    flares={flares}
+                                />
+                            ),
+                        }}
+                    </DaySections>
                 </div>
             </div>
         </>
