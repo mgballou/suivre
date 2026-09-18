@@ -51,6 +51,36 @@ final class Wcag
     }
 
     /**
+     * `$over` laid on `$under` at `$alpha` opacity — what a translucent surface
+     * actually renders as. Contrast is measured against this, never against the
+     * glass token's nominal colour, because a user reads the composite.
+     */
+    public static function composite(string $over, string $under, float $alpha): string
+    {
+        $top = self::bytes($over);
+        $bottom = self::bytes($under);
+
+        return sprintf(
+            '#%02x%02x%02x',
+            ...array_map(
+                static fn (int $a, int $b): int => (int) round($alpha * $a + (1 - $alpha) * $b),
+                $top,
+                $bottom,
+            ),
+        );
+    }
+
+    /**
+     * @return array<int, int>
+     */
+    private static function bytes(string $hex): array
+    {
+        $value = (int) hexdec(ltrim($hex, '#'));
+
+        return [($value >> 16) & 0xFF, ($value >> 8) & 0xFF, $value & 0xFF];
+    }
+
+    /**
      * @return array<int, float>
      */
     private static function channels(string $hex): array

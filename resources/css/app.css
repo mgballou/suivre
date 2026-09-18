@@ -148,6 +148,38 @@
     --dur-base: 220ms;
     --dur-spatial: 380ms;
     --dur-arrival: 600ms;
+
+    /*
+     * Material (D28). Depth here is structure, never reward: a surface says
+     * "this is a distinct thing" and "this is above that", which is the same
+     * category of statement as a border. Three steps and no more.
+     */
+    --surface-page: #fbfbfa;
+    --surface-raised: #ffffff;
+    --surface-floating: #ffffff;
+
+    /*
+     * Shadow always ships with a surface, never alone. In light the shadow does
+     * most of the lifting and casts the app's own ink rather than pure black.
+     */
+    --shadow-raised: 0 1px 2px 0 rgb(22 32 31 / 0.04), 0 1px 3px 0 rgb(22 32 31 / 0.06);
+    --shadow-floating: 0 4px 6px -2px rgb(22 32 31 / 0.06), 0 12px 24px -4px rgb(22 32 31 / 0.10);
+
+    /* A group of controls reads as a group without a box drawn round it. */
+    --panel-tint: #f6f7f6;
+
+    /*
+     * Glass. Alpha and blur are scheme-independent; the fill is not. The alpha
+     * is set by the worst case MaterialLayerTest measures — glass over body
+     * text, carrying the quieter ink — not by how glassy it looks.
+     */
+    --glass-surface: #fbfbfa;
+    --glass-border: #e4e7e6;
+    --glass-alpha: 0.88;
+    --glass-blur: 12px;
+
+    /* The active-tab pill (SUI-60). Opaque, so what scrolls under cannot reach it. */
+    --tab-indicator: #e2eeee;
 }
 
 .dark {
@@ -206,6 +238,24 @@
     --ramp-ink-3: #edeeee;
     --ramp-ink-4: #101917;
     --ramp-ink-5: #101917;
+
+    /*
+     * Dark elevation is carried by the surface, not the shadow — a shadow alone
+     * on near-black reads as grime, so each step lightens as well as casts.
+     */
+    --surface-page: #131314;
+    --surface-raised: #1b1c1d;
+    --surface-floating: #222324;
+
+    --shadow-raised: 0 1px 2px 0 rgb(0 0 0 / 0.30), 0 1px 3px 0 rgb(0 0 0 / 0.24);
+    --shadow-floating: 0 4px 6px -2px rgb(0 0 0 / 0.36), 0 12px 24px -4px rgb(0 0 0 / 0.44);
+
+    --panel-tint: #191a1b;
+
+    --glass-surface: #1b1c1d;
+    --glass-border: #2a2e2e;
+
+    --tab-indicator: #262a2a;
 }
 
 /*
@@ -372,6 +422,51 @@
 
     .bg-condition-5 {
         background-color: var(--condition-5);
+    }
+}
+
+/*
+ * The material layer. Elevation is always a surface *and* a shadow; asking for
+ * one without the other is the mistake these classes exist to prevent.
+ */
+@layer utilities {
+    .elevation-raised {
+        background-color: var(--surface-raised);
+        box-shadow: var(--shadow-raised);
+    }
+
+    .elevation-floating {
+        background-color: var(--surface-floating);
+        box-shadow: var(--shadow-floating);
+    }
+
+    .panel-tint {
+        background-color: var(--panel-tint);
+    }
+
+    /*
+     * Only for something that genuinely overlays content. Glass over nothing is
+     * a lie about depth and looks like one.
+     */
+    .glass {
+        background-color: color-mix(
+            in srgb,
+            var(--glass-surface) calc(var(--glass-alpha) * 100%),
+            transparent
+        );
+        backdrop-filter: blur(var(--glass-blur));
+        border-color: var(--glass-border);
+    }
+}
+
+/*
+ * Without backdrop-filter the translucency has nothing to blur against and the
+ * surface reads as washed-out rather than as glass, so it falls back to opaque
+ * at the same elevation. It must never fall back to unreadable.
+ */
+@supports not (backdrop-filter: blur(1px)) {
+    .glass {
+        background-color: var(--surface-floating);
     }
 }
 
