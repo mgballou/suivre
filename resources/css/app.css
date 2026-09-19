@@ -169,14 +169,17 @@
     --panel-tint: #f6f7f6;
 
     /*
-     * Glass. Alpha and blur are scheme-independent; the fill is not. The alpha
-     * is set by the worst case MaterialLayerTest measures — glass over body
-     * text, carrying the quieter ink — not by how glassy it looks.
+     * Glass. Alpha, blur and saturate are scheme-independent; the fill is not.
+     * The alpha is set by the worst case MaterialLayerTest measures — glass
+     * over body text, carrying the quieter ink. Saturate boosts chroma in
+     * whatever scrolls behind, so the bar reads as glass rather than as a
+     * solid strip even at the opacity AA demands.
      */
     --glass-surface: #fbfbfa;
     --glass-border: #e4e7e6;
-    --glass-alpha: 0.88;
+    --glass-alpha: 0.86;
     --glass-blur: 12px;
+    --glass-saturate: 180%;
 
     /* The active-tab pill (SUI-60). Opaque, so what scrolls under cannot reach it. */
     --tab-indicator: #e2eeee;
@@ -454,7 +457,7 @@
             var(--glass-surface) calc(var(--glass-alpha) * 100%),
             transparent
         );
-        backdrop-filter: blur(var(--glass-blur));
+        backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
         border-color: var(--glass-border);
     }
 }
