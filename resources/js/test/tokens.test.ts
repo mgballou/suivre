@@ -260,10 +260,14 @@ test('nothing outside the token definition names a raw value', () => {
     // override them — they select, they do not paint.
     const roots = [path.join(ROOT, 'js'), path.join(ROOT, '..', 'css')];
     const tokenFile = path.join(ROOT, '..', 'css', 'app.css');
+    // The suite's own tools sit beside this test; they compute color, they do
+    // not paint it.
+    const suiteDir = path.dirname(fileURLToPath(import.meta.url));
     const files = roots.flatMap((dir) => (fs.existsSync(dir) ? walk(dir) : []));
 
     for (const file of files) {
         if (file === tokenFile) continue;
+        if (file.startsWith(`${suiteDir}${path.sep}`)) continue;
         if (file.includes(`${path.sep}ui${path.sep}`)) continue;
         if (/\.test\.[jt]sx?$/.test(file)) continue;
         fs.readFileSync(file, 'utf8')
