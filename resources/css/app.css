@@ -111,7 +111,12 @@
     --destructive: #b23a2e;
     --destructive-foreground: #ffffff;
     --border: #e4e7e6;
-    --input: #e4e7e6;
+    /*
+     * Control edges, not seams. WCAG 1.4.11 holds a control boundary to 3:1
+     * and the hairline gray managed 1.20, so --input is its own value — dark
+     * enough to draw a control, while --border keeps the quiet seam.
+     */
+    --input: #7b8785;
     --ring: #3f7d7b;
     --series-1: #2a78d6;
     --series-2: #008300;
@@ -198,10 +203,16 @@
     --muted-foreground: #9ba6a4;
     --accent: #262a2a;
     --accent-foreground: #edeeee;
-    --destructive: #c25548;
-    --destructive-foreground: #ffffff;
+    /*
+     * Destructive, lifted. At #c25548 the red was 3.24:1 as text on the muted
+     * surfaces and 4.48:1 under its own white label — one token cannot be dark
+     * enough for white ink and light enough to be ink, so the dark scheme takes
+     * primary's shape: a lighter red carrying dark ink. Hue held (51° → 52°).
+     */
+    --destructive: #dd7a6b;
+    --destructive-foreground: #101917;
     --border: #2a2e2e;
-    --input: #2a2e2e;
+    --input: #667270;
     --ring: #68a7a5;
     /* Same four hues, re-stepped for the dark surface — never a lightness flip. */
     --series-1: #3987e5;
