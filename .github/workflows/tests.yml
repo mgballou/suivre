@@ -1,13 +1,8 @@
 name: tests
 
 on:
-  push:
-    branches:
-      - develop
-      - main
-      - master
-      - workos
   pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
     branches:
       - develop
       - main
@@ -25,8 +20,26 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  gate:
+    if: github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      run: ${{ steps.base.outputs.run }}
+    steps:
+      - id: base
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          behind=$(gh api "repos/${{ github.repository }}/compare/${{ github.base_ref }}...${{ github.event.pull_request.head.sha }}" --jq .behind_by)
+          if [ "$behind" = "0" ]; then echo "run=true" >> "$GITHUB_OUTPUT"
+          else echo "::notice::This branch is $behind commits behind ${{ github.base_ref }}. Update it to run CI."; echo "run=false" >> "$GITHUB_OUTPUT"; fi
+
   static-analysis:
     name: PHPStan (Larastan, level 9)
+    needs: gate
+    if: needs.gate.outputs.run == 'true'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -55,6 +68,8 @@ jobs:
 
   frontend:
     name: Frontend (tsc + vitest)
+    needs: gate
+    if: needs.gate.outputs.run == 'true'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -94,6 +109,8 @@ jobs:
 
   test:
     name: Pest (Postgres)
+    needs: gate
+    if: needs.gate.outputs.run == 'true'
     runs-on: ubuntu-latest
     services:
       postgres:
