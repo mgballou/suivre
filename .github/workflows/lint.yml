@@ -1,12 +1,6 @@
 name: linter
 
 on:
-  push:
-    branches:
-      - develop
-      - main
-      - master
-      - workos
   pull_request:
     branches:
       - develop
@@ -18,7 +12,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: linter-${{ github.ref }}
+  group: linter-${{ github.event.pull_request.number }}
   cancel-in-progress: true
 
 jobs:

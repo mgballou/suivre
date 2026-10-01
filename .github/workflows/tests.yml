@@ -1,12 +1,6 @@
 name: tests
 
 on:
-  push:
-    branches:
-      - develop
-      - main
-      - master
-      - workos
   pull_request:
     branches:
       - develop
@@ -17,11 +11,11 @@ on:
 permissions:
   contents: read
 
-# Cancel superseded runs on the same ref so a fresh push gets feedback faster
+# Cancel superseded runs on the same PR so a fresh push gets feedback faster
 # and we don't burn minutes on stale commits. Deploy has its own (non-cancelling)
 # concurrency group, so this never interrupts a staging deploy.
 concurrency:
-  group: tests-${{ github.ref }}
+  group: tests-${{ github.event.pull_request.number }}
   cancel-in-progress: true
 
 jobs:

@@ -19,7 +19,7 @@ permissions:
   pull-requests: write
 
 concurrency:
-  group: screenshots-${{ github.ref }}
+  group: screenshots-${{ github.event.pull_request.number }}
   cancel-in-progress: true
 
 jobs:

@@ -10,8 +10,6 @@
 days it ranks which foods line up with the bad days, and at what lag.</p>
 
 <p>
-<a href="https://github.com/mgballou/suivre/actions/workflows/tests.yml"><img src="https://github.com/mgballou/suivre/actions/workflows/tests.yml/badge.svg" alt="tests" /></a>
-<a href="https://github.com/mgballou/suivre/actions/workflows/lint.yml"><img src="https://github.com/mgballou/suivre/actions/workflows/lint.yml/badge.svg" alt="linter" /></a>
 <img src="https://img.shields.io/badge/PHPStan-level%209-2a6f6d" alt="PHPStan level 9" />
 <img src="https://img.shields.io/badge/license-MIT-2a6f6d" alt="MIT" />
 </p>

@@ -8,13 +8,13 @@ name: pr-lint
 
 on:
   pull_request:
-    types: [opened, edited, reopened, ready_for_review, synchronize]
+    types: [opened, synchronize, reopened, ready_for_review, edited]
 
 permissions:
   contents: read
 
 concurrency:
-  group: pr-lint-${{ github.ref }}
+  group: pr-lint-${{ github.event.pull_request.number }}
   cancel-in-progress: true
 
 jobs:
