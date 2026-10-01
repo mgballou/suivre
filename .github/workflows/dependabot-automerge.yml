@@ -19,6 +19,9 @@ permissions:
 
 jobs:
   automerge:
+    # Waits on the tests result, not on the PR: `success` is the only way in.
+    # tests.yml fails a PR behind its base instead of skipping its jobs, since
+    # a run of skipped jobs also concludes `success` and would merge untested.
     if: >-
       github.event.workflow_run.event == 'pull_request' &&
       github.event.workflow_run.conclusion == 'success' &&
