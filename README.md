@@ -77,8 +77,8 @@ The thresholds it produced are what the engine runs on:
 
 ## Start with the decision log
 
-**[`docs/decisions/decision-log.md`](docs/decisions/decision-log.md)** is 28 numbered
-entries covering every significant product and architecture decision here. Each states the
+**[`docs/decisions/decision-log.md`](docs/decisions/decision-log.md)** is a numbered
+log covering every significant product and architecture decision here. Each states the
 decision, the reasoning, and what it rules out. It is append-only and newest-last, so a
 later entry supersedes an earlier one rather than editing it.
 
@@ -225,9 +225,14 @@ Everything runs through Laravel Herd — `herd php` and `herd composer`, not bar
 herd composer install
 cp .env.example .env          # if .env does not exist
 herd php artisan key:generate
+herd php -r '$p = new PDO("pgsql:host=127.0.0.1;port=5432;dbname=postgres", "root", "");
+$p->exec("CREATE DATABASE suivre"); $p->exec("CREATE DATABASE suivre_test");'
 npm install && npm run build
 herd php artisan migrate
 ```
+
+The `herd php -r` step creates the dev and test databases with Herd's default Postgres
+login (`root`, no password). It fails if they already exist.
 
 Served at `https://suivre.test`. A Vite manifest error means the front end has not been
 built — run `npm run build` or `npm run dev`.
@@ -241,7 +246,7 @@ in [`docs/local-setup.md`](docs/local-setup.md).
 
 | Path | What is in it |
 | --- | --- |
-| [`docs/decisions/decision-log.md`](docs/decisions/decision-log.md) | The 28 recorded decisions. Start here. |
+| [`docs/decisions/decision-log.md`](docs/decisions/decision-log.md) | Every recorded decision. Start here. |
 | [`docs/roadmap.md`](docs/roadmap.md) | The MVP epics, and the v1 phase that follows them. |
 | [`docs/2026-07-18-lag-lift-spike-findings.md`](docs/2026-07-18-lag-lift-spike-findings.md) | What the correlation spike found, and the thresholds it set. |
 | [`docs/superpowers/specs/`](docs/superpowers/specs/) · [`plans/`](docs/superpowers/plans/) | Dated design artifacts. Each carries a status banner saying whether it still applies. |
