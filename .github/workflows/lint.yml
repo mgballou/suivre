@@ -2,6 +2,7 @@ name: linter
 
 on:
   pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
     branches:
       - develop
       - main
@@ -16,7 +17,25 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  gate:
+    if: github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      run: ${{ steps.base.outputs.run }}
+    steps:
+      - id: base
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          behind=$(gh api "repos/${{ github.repository }}/compare/${{ github.base_ref }}...${{ github.event.pull_request.head.sha }}" --jq .behind_by)
+          if [ "$behind" = "0" ]; then echo "run=true" >> "$GITHUB_OUTPUT"
+          else echo "::notice::This branch is $behind commits behind ${{ github.base_ref }}. Update it to run CI."; echo "run=false" >> "$GITHUB_OUTPUT"; fi
+
   quality:
+    needs: gate
+    if: needs.gate.outputs.run == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1

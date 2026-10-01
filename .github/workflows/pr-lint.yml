@@ -18,10 +18,27 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  gate:
+    if: github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      run: ${{ steps.base.outputs.run }}
+    steps:
+      - id: base
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          behind=$(gh api "repos/${{ github.repository }}/compare/${{ github.base_ref }}...${{ github.event.pull_request.head.sha }}" --jq .behind_by)
+          if [ "$behind" = "0" ]; then echo "run=true" >> "$GITHUB_OUTPUT"
+          else echo "::notice::This branch is $behind commits behind ${{ github.base_ref }}. Update it to run CI."; echo "run=false" >> "$GITHUB_OUTPUT"; fi
+
   body:
     name: PR body conforms to template
     # Skip drafts (WIP bodies) and Dependabot (no Linear ticket by design).
-    if: github.event.pull_request.draft == false && github.actor != 'dependabot[bot]'
+    needs: gate
+    if: needs.gate.outputs.run == 'true' && github.event.pull_request.draft == false && github.actor != 'dependabot[bot]'
     runs-on: ubuntu-latest
     steps:
       - name: Validate PR body
