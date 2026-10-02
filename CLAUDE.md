@@ -1089,6 +1089,7 @@ Use Wayfinder to generate TypeScript functions for Laravel routes. Import from `
 </laravel-boost-guidelines>
 
 <!-- block:begin -->
+
 ## Agents
 
 Delegate anything that means many reads and one conclusion. A turn in this pane
