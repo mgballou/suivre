@@ -1,13 +1,13 @@
 name: tests
 
 on:
+  # A merge to main runs the suite once more: deploy.yml deploys only after a
+  # green tests run from a push to main. Branch pushes are left to the PR run.
   push:
     branches:
-      - develop
       - main
-      - master
-      - workos
   pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
     branches:
       - develop
       - main
@@ -17,16 +17,39 @@ on:
 permissions:
   contents: read
 
-# Cancel superseded runs on the same ref so a fresh push gets feedback faster
-# and we don't burn minutes on stale commits. Deploy has its own (non-cancelling)
-# concurrency group, so this never interrupts a staging deploy.
+# Cancel superseded runs on the same PR (or on main) so a fresh push gets
+# feedback faster and we don't burn minutes on stale commits. Deploy has its own
+# (non-cancelling) concurrency group, so this never interrupts a staging deploy.
 concurrency:
-  group: tests-${{ github.ref }}
+  group: tests-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 jobs:
+  # Fails, rather than skips, a PR behind its base: a run whose jobs were all
+  # skipped concludes success, and dependabot-automerge merges on that.
+  gate:
+    if: github.event_name == 'push' || github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Require the branch to be current with its base
+        if: github.event_name == 'pull_request'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          BASE: ${{ github.base_ref }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          behind=$(gh api "repos/$REPO/compare/$BASE...$HEAD_SHA" --jq .behind_by)
+          if [ "$behind" != "0" ]; then
+            echo "::error::This branch is $behind commits behind $BASE. Update it to run CI."
+            exit 1
+          fi
+
   static-analysis:
     name: PHPStan (Larastan, level 9)
+    needs: gate
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -55,6 +78,7 @@ jobs:
 
   frontend:
     name: Frontend (tsc + vitest)
+    needs: gate
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -94,6 +118,7 @@ jobs:
 
   test:
     name: Pest (Postgres)
+    needs: gate
     runs-on: ubuntu-latest
     services:
       postgres:
