@@ -17,12 +17,12 @@ on:
 permissions:
   contents: read
 
-# Cancel superseded runs on the same PR (or on main) so a fresh push gets
-# feedback faster and we don't burn minutes on stale commits. Deploy has its own
-# (non-cancelling) concurrency group, so this never interrupts a staging deploy.
+# Cancel superseded runs on the same PR so a fresh push gets feedback faster and
+# we don't burn minutes on stale commits. A run on main is never cancelled:
+# deploy.yml waits on it, and a cancelled run would leave main undeployed.
 concurrency:
   group: tests-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   # Fails, rather than skips, a PR behind its base: a run whose jobs were all
