@@ -17,14 +17,17 @@ use App\Enums\ColorScheme;
 final class Material
 {
     /**
-     * Set by the worst muted-ink case, not by taste. At 0.8 the composite over
-     * body text measured 4.07:1 in light and 3.78:1 in dark against the quieter
-     * ink — both short of AA. 0.88 is the first value that clears it in both
-     * schemes with margin, and still blurs what passes beneath.
+     * Set by the worst muted-ink case, not by taste. At 0.80 the composite over
+     * body text measured 4.07:1 in light and 3.78:1 in dark — both short of AA.
+     * 0.86 clears both schemes (light 4.63:1, dark 4.62:1) while letting enough
+     * backdrop through that the saturate makes content visibly move beneath the
+     * bar. 0.88 cleared comfortably but read as a solid strip in review.
      */
-    public const float GLASS_ALPHA = 0.88;
+    public const float GLASS_ALPHA = 0.86;
 
     public const string GLASS_BLUR = '12px';
+
+    public const string GLASS_SATURATE = '180%';
 
     /** @return array<string, string> token name (without leading dashes) => hex */
     public static function surfaces(ColorScheme $scheme): array

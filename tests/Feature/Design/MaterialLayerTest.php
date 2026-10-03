@@ -35,9 +35,10 @@ it('declares a shadow for each elevation step above the page', function (ColorSc
     expect(Stylesheet::raw(selector($scheme), '--shadow-floating'))->not->toBe('');
 })->with('schemes');
 
-it('declares the glass alpha and blur once, outside either scheme', function (): void {
+it('declares the glass alpha, blur and saturate once, outside either scheme', function (): void {
     expect(Stylesheet::raw(':root', '--glass-alpha'))->toBe((string) Material::GLASS_ALPHA);
     expect(Stylesheet::raw(':root', '--glass-blur'))->toBe(Material::GLASS_BLUR);
+    expect(Stylesheet::raw(':root', '--glass-saturate'))->toBe(Material::GLASS_SATURATE);
 });
 
 it('carries AA-legible ink on every opaque surface', function (ColorScheme $scheme): void {

@@ -7,10 +7,9 @@ import { cn } from '@/lib/utils';
  * Mobile bottom navigation. The desktop rail (AppSidebar) presents the same
  * `mainNavItems`.
  *
- * The bar is real glass (D28): it genuinely overlays the page it sits above, so
- * translucency here says something true about depth. Its contrast is proven
- * against the composite over the worst backdrop it can sit over, in
- * MaterialLayerTest — not against the token's nominal fill.
+ * The bar is real glass (D28): translucency plus saturated blur so content
+ * visibly moves under it rather than disappearing at its edge. Contrast is
+ * proven against the composite over the worst backdrop in MaterialLayerTest.
  *
  * The active indicator is two pills at different speeds inside one gooey group.
  * At rest they coincide and read as a single shape; mid-travel they separate

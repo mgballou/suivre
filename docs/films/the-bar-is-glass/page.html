@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The bar is glass</title>
+<style>
+  :root {
+    --bg: #fbfbfa;
+    --fg: #16201f;
+    --muted: #55625f;
+    --border: #e4e7e6;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #131314;
+      --fg: #edeeee;
+      --muted: #9ba6a4;
+      --border: #2a2e2e;
+    }
+  }
+  * { margin: 0; box-sizing: border-box; }
+  body {
+    font-family: system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--fg);
+    padding: 2rem 1rem;
+    max-width: 48rem;
+    margin: 0 auto;
+    line-height: 1.5;
+  }
+  h1 { font-size: 1.25rem; font-weight: 600; margin-bottom: 0.5rem; }
+  .verdict {
+    font-size: 0.875rem;
+    color: var(--muted);
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 1rem;
+    margin-bottom: 1.5rem;
+  }
+  .pair {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+  }
+  @media (max-width: 32rem) {
+    .pair { grid-template-columns: 1fr; }
+  }
+  figure { margin: 0; }
+  figcaption {
+    font-size: 0.75rem;
+    color: var(--muted);
+    text-align: center;
+    margin-top: 0.5rem;
+  }
+  img {
+    width: 100%;
+    height: auto;
+    border: 1px solid var(--border);
+    border-radius: 0.5rem;
+  }
+  .detail {
+    font-size: 0.875rem;
+    color: var(--muted);
+  }
+  .detail dt { font-weight: 600; color: var(--fg); margin-top: 0.75rem; }
+  .detail dd { margin-left: 0; }
+</style>
+</head>
+<body>
+
+<h1>The bar is glass</h1>
+<p class="verdict">The backdrop-filter was applied and the background was semi-transparent, but at 88% opacity with no saturation boost the effect was invisible — the bar read as a solid strip. Lowered alpha to 0.86 and added <code>saturate(180%)</code> so content visibly moves under the bar rather than disappearing at its edge.</p>
+
+<div class="pair">
+  <figure>
+    <img src="before.png" alt="Before: tab bar at 88% opacity, no saturate — content behind the bar is invisible">
+    <figcaption>Before — alpha 0.88, blur only</figcaption>
+  </figure>
+  <figure>
+    <img src="after.png" alt="After: tab bar at 86% opacity with saturate(180%) — content faintly visible through the bar">
+    <figcaption>After — alpha 0.86, blur + saturate</figcaption>
+  </figure>
+</div>
+
+<dl class="detail">
+  <dt>Cause</dt>
+  <dd>#2 from the brief: the background was too opaque. The <code>backdrop-filter</code> was applied correctly (confirmed via computed styles) and content did scroll behind the bar (the document scrolls, the bar is <code>position: fixed</code>). But at 88% opacity with the glass surface (#fbfbfa) identical to the page background (#fbfbfa), the 12% transparency was imperceptible — blurred content at 12% intensity on a matching base reads as nothing.</dd>
+
+  <dt>Fix</dt>
+  <dd>Added <code>saturate(180%)</code> to the backdrop-filter, the standard iOS/macOS glass technique that boosts chroma in whatever scrolls behind the bar. Lowered alpha from 0.88 to 0.86 for marginally more transparency. Both schemes still clear WCAG AA for muted ink on the worst-case composite (light 4.63:1, dark 4.62:1; threshold 4.5).</dd>
+
+  <dt>What did not change</dt>
+  <dd>Bar height, the pill indicator, the gooey travel, the glass surface colors, the border. Those four answers were confirmations.</dd>
+</dl>
+
+</body>
+</html>
