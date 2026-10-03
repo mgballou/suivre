@@ -1,0 +1,71 @@
+#!/usr/bin/env python3
+"""Refuses a commit whose message credits Claude or Anthropic.
+
+Installed into .git/hooks/commit-msg by scripts/install_hooks.sh, which
+validate.py checks is current. .git/ is not tracked, so the source lives here
+and the installed copy is a copy.
+
+His global rule in ~/.claude/CLAUDE.md forbids any Claude or AI attribution in
+a commit message. The harness tells every agent to add the trailer, and prose
+loses to it: 107 laila commits between 18 and 25 September carry
+`Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>`, 14 of them in one
+evening. So the rule is enforced here, where the message is final.
+
+It refuses two shapes, each only at the start of a line:
+
+  a Co-Authored-By trailer that names Claude or anthropic.com
+  the "Generated with Claude Code" footer, emoji or link or not
+
+A line that merely talks about the rule does not start with either, so a
+message like this file's own commit passes. Everything under git's scissors
+line is skipped, because `git commit -v` puts the staged diff there and a diff
+of this file would otherwise refuse itself. Comment lines are read: with `-F`
+and no editor, git keeps them in the message.
+
+It refuses a human too. `git commit --no-verify` is the way past it.
+
+    .git/hooks/commit-msg <message-file>
+"""
+
+import re
+import sys
+
+#: The two shapes. Case-insensitive; leading space and a leading emoji allowed.
+REFUSED = (
+    re.compile(r"^\s*co-authored-by:.*(claude|anthropic\.com)", re.I),
+    re.compile(r"^\W*generated\s+with\s+\[?claude\s+code", re.I),
+)
+
+#: git's scissors line. Everything under it is dropped from the message.
+SCISSORS = "------------------------ >8 ------------------------"
+
+
+def offending(text):
+    """The first line that credits Claude, or None."""
+    for line in text.splitlines():
+        if SCISSORS in line:
+            break
+        if any(p.search(line) for p in REFUSED):
+            return line.strip()
+    return None
+
+
+def main(argv):
+    if len(argv) < 2:
+        return 0
+    try:
+        with open(argv[1], errors="replace") as fh:
+            text = fh.read()
+    except OSError:
+        return 0
+    line = offending(text)
+    if line is None:
+        return 0
+    print(f"commit-msg: refused, the message credits Claude ({line!r}); "
+          f"drop that line — ~/.claude/CLAUDE.md forbids AI attribution",
+          file=sys.stderr)
+    return 1
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv))
