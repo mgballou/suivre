@@ -20,8 +20,8 @@ permissions:
 jobs:
   automerge:
     # Waits on the tests result, not on the PR: `success` is the only way in.
-    # tests.yml fails a PR behind its base instead of skipping its jobs, since
-    # a run of skipped jobs also concludes `success` and would merge untested.
+    # tests.yml skips its jobs on a PR behind its base and still concludes
+    # `success`, so the first step refuses a head that is behind: it ran nothing.
     if: >-
       github.event.workflow_run.event == 'pull_request' &&
       github.event.workflow_run.conclusion == 'success' &&
@@ -34,8 +34,14 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           HEAD: ${{ github.event.workflow_run.head_branch }}
+          HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
           REPO: ${{ github.repository }}
         run: |
+          behind=$(gh api "repos/$REPO/compare/${{ github.event.repository.default_branch }}...$HEAD_SHA" --jq .behind_by)
+          if [ "$behind" != "0" ]; then
+            echo "::notice::$HEAD is $behind commits behind the default branch, so tests did not run on it. Not merging."
+            exit 0
+          fi
           num=$(gh pr list --repo "$REPO" --head "$HEAD" --state open --json number -q '.[0].number')
           if [ -z "$num" ]; then
             echo "No open PR for $HEAD — nothing to merge."
