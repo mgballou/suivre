@@ -21,7 +21,7 @@ permissions:
 # we don't burn minutes on stale commits. A run on main is never cancelled:
 # deploy.yml waits on it, and a cancelled run would leave main undeployed.
 concurrency:
-  group: tests-${{ github.event.pull_request.number || github.ref }}
+  group: tests-${{ github.event.pull_request.number || github.ref }}-${{ github.event.pull_request.draft }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:

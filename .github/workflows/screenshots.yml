@@ -20,7 +20,7 @@ permissions:
   pull-requests: write
 
 concurrency:
-  group: screenshots-${{ github.event.pull_request.number }}
+  group: screenshots-${{ github.event.pull_request.number }}-${{ github.event.pull_request.draft }}
   cancel-in-progress: true
 
 jobs:

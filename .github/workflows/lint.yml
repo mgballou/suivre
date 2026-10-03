@@ -13,7 +13,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: linter-${{ github.event.pull_request.number }}
+  group: linter-${{ github.event.pull_request.number }}-${{ github.event.pull_request.draft }}
   cancel-in-progress: true
 
 jobs:
