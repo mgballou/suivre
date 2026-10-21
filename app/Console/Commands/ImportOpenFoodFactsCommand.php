@@ -31,7 +31,7 @@ class ImportOpenFoodFactsCommand extends Command
 
     public function handle(): int
     {
-        $path = (string) $this->argument('path');
+        $path = $this->stringArgument('path');
 
         $imported = 0;
 
@@ -70,6 +70,13 @@ class ImportOpenFoodFactsCommand extends Command
         $this->line(config()->string('food.catalog.license_url'));
 
         return self::SUCCESS;
+    }
+
+    private function stringArgument(string $name): string
+    {
+        $value = $this->argument($name);
+
+        return is_string($value) ? $value : '';
     }
 
     private function stringOption(string $name): ?string

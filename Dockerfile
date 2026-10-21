@@ -6,7 +6,7 @@
 # `npm run build`, so the asset build needs PHP present — hence
 # a PHP base here rather than a plain node image.
 # ============================================================
-FROM dunglas/frankenphp:1-php8.4 AS build
+FROM dunglas/frankenphp:1-php8.4.27 AS build
 
 # Runtime + build PHP extensions (pcntl required by Octane)
 RUN install-php-extensions pdo_pgsql pgsql intl zip opcache pcntl
@@ -50,7 +50,7 @@ RUN rm -rf node_modules
 # ============================================================
 # Stage 2 — runtime: slim FrankenPHP + Octane
 # ============================================================
-FROM dunglas/frankenphp:1-php8.4 AS runtime
+FROM dunglas/frankenphp:1-php8.4.27 AS runtime
 
 RUN install-php-extensions pdo_pgsql pgsql intl zip opcache pcntl
 
